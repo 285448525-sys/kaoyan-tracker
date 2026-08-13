@@ -1845,14 +1845,16 @@
     var token = (refs.syncToken ? refs.syncToken.value : '') || '';
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
-    var headers = { 'Content-Type': 'application/json' };
+    var headers = { 'Content-Type': 'application/json', 'X-Sync-Key': code, 'X-Sync-Device': Store.getLastDeviceId() };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
-    if (payload !== undefined) body.data = payload;
+    var body = null;
+    if (method === 'PUT' && payload !== undefined) {
+      body = JSON.stringify({ data: payload, device: Store.getLastDeviceId() });
+    }
     return fetch('/api/sync', {
       method: method,
       headers: headers,
-      body: JSON.stringify(body)
+      body: body
     }).then(function (r) { return r.json().then(function (j) { return [r, j]; }); }).then(function (arr) {
       var resp = arr[0], j = arr[1];
       if (!resp.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + resp.status));
