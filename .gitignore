@@ -1,9 +1,13 @@
 # 不上传到 GitHub（私有内容、不参与站点）
 .workbuddy/
 _publish/
+_cf_deploy/
+_cf_deploy.zip
 _test_*.js
 _smoke.js
+_worker.js
 雅思复盘模块/
+考研网站_*.md
 考研网站_离线版_*.zip
 考研学习记录_离线纯静态版_*.zip
 deploy-to-github.ps1
@@ -17,7 +21,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
 # 开发文档/临时产物
 overview.md
-*_指令_*.md
-*_补丁_*.md
