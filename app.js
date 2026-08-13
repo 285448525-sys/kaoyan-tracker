@@ -483,6 +483,111 @@
     });
   }
 
+  function buildMarkdownReport() {
+    var cfg = Store.getConfig();
+    var subs = Store.getSubjects();
+    var today = Store.todayStr();
+    var day = Store.getDay(today) || { durations: {}, completed: '', summary: '', note: '' };
+    var total = Store.totalMinutesForDay(day);
+    var countdown = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000) : null;
+    var days = Store.getDays();
+    var totalDays = Object.keys(days || {}).length;
+    var totalMinutes = 0;
+    Object.keys(days || {}).forEach(function (ds) { totalMinutes += Store.totalMinutesForDay(days[ds]); });
+    var exams = Store.getExams();
+    var mistakes = Store.getMistakes();
+    var plan = Store.getPlan(today) || [];
+    var planDone = plan.filter(function (p) { return p.done; }).length;
+    var lines = [];
+    lines.push('# 考研学习报告');
+    lines.push('');
+    lines.push('> 生成时间：' + today + '  ' + (cfg.nickname ? '**' + cfg.nickname + '** 专属报告' : ''));
+    if (cfg.major) lines.push('> 报考专业：' + cfg.major);
+    if (countdown !== null) lines.push('> 距考研：**' + countdown + '** 天');
+    lines.push('');
+    lines.push('## 📊 今日概览');
+    lines.push('');
+    lines.push('| 指标 | 数值 |');
+    lines.push('|---|---|');
+    lines.push('| 今日学习时长 | **' + (total / 60).toFixed(1) + ' 小时** (' + total + ' 分钟) |');
+    lines.push('| 连续打卡 | ' + Store.consecutiveStreak() + ' 天 |');
+    lines.push('| 今日计划 | ' + planDone + ' / ' + plan.length + ' |');
+    if (plan.length) {
+      lines.push('');
+      lines.push('**今日计划明细：**');
+      plan.forEach(function (p) {
+        var status = p.done ? '✅' : '⬜';
+        var time = (p.minutes || 0) + ' 分钟';
+        var subj = '';
+        if (p.subjectKey) {
+          var s = subs.find(function (x) { return x.key === p.subjectKey; });
+          if (s) subj = '【' + s.name + '】';
+        }
+        lines.push('- ' + status + ' ' + subj + (p.text || '未命名') + '（' + time + '）');
+      });
+    }
+    if (total > 0) {
+      lines.push('');
+      lines.push('## ⏱️ 今日各科目时长');
+      lines.push('');
+      lines.push('| 科目 | 时长（分钟） | 占比 |');
+      lines.push('|---|---|---|');
+      subs.forEach(function (s) {
+        var m = (day.durations && day.durations[s.key]) || 0;
+        var pct = total ? ((m / total) * 100).toFixed(1) + '%' : '-';
+        lines.push('| ' + s.name + ' | ' + m + ' | ' + pct + ' |');
+      });
+    }
+    if (day.completed) {
+      lines.push('');
+      lines.push('## ✅ 今日完成内容');
+      lines.push('');
+      lines.push(day.completed);
+    }
+    if (day.summary) {
+      lines.push('');
+      lines.push('## 💬 今日学习总结');
+      lines.push('');
+      lines.push(day.summary);
+    }
+    if (day.note) {
+      lines.push('');
+      lines.push('## 📝 心得笔记');
+      lines.push('');
+      lines.push(day.note);
+    }
+    lines.push('');
+    lines.push('## 📈 累计统计');
+    lines.push('');
+    lines.push('- 累计学习天数：**' + totalDays + ' 天**');
+    lines.push('- 累计学习时长：**' + (totalMinutes / 60).toFixed(1) + ' 小时**');
+    if (exams.length) {
+      lines.push('');
+      lines.push('## 🏆 模考记录');
+      lines.push('');
+      lines.push('| 考试 | 日期 | 总分 | 各科目 |');
+      lines.push('|---|---|---|---|');
+      exams.forEach(function (ex) {
+        var subjParts = subs.map(function (s) { return s.name + ':' + (ex.scores && ex.scores[s.key] !== undefined ? ex.scores[s.key] : '-'); }).join(' / ');
+        lines.push('| ' + ex.name + ' | ' + ex.date + ' | ' + (ex.total || '-') + ' | ' + subjParts + ' |');
+      });
+    }
+    if (mistakes.length) {
+      lines.push('');
+      lines.push('## 📌 错题 / 感悟整理');
+      lines.push('');
+      mistakes.slice(0, 20).forEach(function (m) {
+        lines.push('- **[' + (m.subject || '通用') + ']** ' + m.content + (m.note ? ' — ' + m.note : ''));
+      });
+      if (mistakes.length > 20) lines.push('');
+      if (mistakes.length > 20) lines.push('_（其余 ' + (mistakes.length - 20) + ' 条已省略，完整数据请用 JSON 导出）_');
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('_由「考研学习记录」自动生成_' + (cfg.nickname ? ' · ' + cfg.nickname : ''));
+    return lines.join('\n');
+  }
+
   /* ============ 数据看板 ============ */
   function renderData() {
     var cfg = Store.getConfig();
@@ -1845,16 +1950,14 @@
     var token = (refs.syncToken ? refs.syncToken.value : '') || '';
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
-    var headers = { 'Content-Type': 'application/json', 'X-Sync-Key': code, 'X-Sync-Device': Store.getLastDeviceId() };
+    var headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    var body = null;
-    if (method === 'PUT' && payload !== undefined) {
-      body = JSON.stringify({ data: payload, device: Store.getLastDeviceId() });
-    }
+    var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
+    if (payload !== undefined) body.data = payload;
     return fetch('/api/sync', {
       method: method,
       headers: headers,
-      body: body
+      body: JSON.stringify(body)
     }).then(function (r) { return r.json().then(function (j) { return [r, j]; }); }).then(function (arr) {
       var resp = arr[0], j = arr[1];
       if (!resp.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + resp.status));
@@ -2308,6 +2411,15 @@
       var blob = new Blob([Store.exportJSON()], { type: 'application/json' });
       var a = document.createElement('a'); a.download = '考研学习数据备份.json';
       a.href = URL.createObjectURL(blob); a.click();
+    });
+    refs.btnExportMd = $('btn-export-md');
+    if (refs.btnExportMd) refs.btnExportMd.addEventListener('click', function () {
+      var md = buildMarkdownReport();
+      var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      var a = document.createElement('a');
+      a.download = '考研学习报告_' + Store.todayStr() + '.md';
+      a.href = URL.createObjectURL(blob); a.click();
+      showToast('Markdown 报告已生成 📝');
     });
     refs.fileImport.addEventListener('change', function (e) {
       var f = e.target.files[0]; if (!f) return;
