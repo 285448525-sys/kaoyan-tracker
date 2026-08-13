@@ -470,17 +470,26 @@
     });
   }
   function onShareToday() {
-    var canvas = buildShareCanvas(Store.todayStr());
-    var link = document.createElement('a');
-    link.download = '考研打卡_' + Store.todayStr() + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    canvas.toBlob(function (blob) {
-      var f = new File([blob], '考研打卡.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [f] })) {
-        navigator.share({ files: [f], title: '考研学习打卡', text: '今日学习打卡' }).catch(function () {});
-      }
-    });
+    try {
+      var canvas = buildShareCanvas(Store.todayStr());
+      var dataUrl = canvas.toDataURL('image/png');
+      var link = document.createElement('a');
+      link.download = '考研打卡_' + Store.todayStr() + '.png';
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      canvas.toBlob(function (blob) {
+        try {
+          var f = new File([blob], '考研打卡.png', { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [f] })) {
+            navigator.share({ files: [f], title: '考研学习打卡', text: '今日学习打卡' }).catch(function () {});
+          }
+        } catch (e) {}
+      });
+    } catch (e) {
+      alert('分享生成失败：' + e.message);
+    }
   }
 
   function buildMarkdownReport() {
@@ -796,10 +805,15 @@
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) { var btn = document.querySelector('.tab-btn[data-tab="' + target + '"]'); if (btn) btn.click(); }
   function updateMathTabVisibility() {
+    var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
     var btn = document.querySelector('.tab-btn[data-tab="math"]');
     var panel = document.getElementById('tab-math');
-    if (btn) btn.classList.remove('nav-hidden');
-    if (panel) panel.classList.remove('nav-hidden');
+    if (btn) btn.classList.toggle('nav-hidden', !hasMath);
+    if (panel) panel.classList.toggle('nav-hidden', !hasMath);
+    if (!hasMath) {
+      var active = document.querySelector('.tab-btn.active');
+      if (active && active.getAttribute('data-tab') === 'math') switchTab('today');
+    }
   }
   function reminderCard(title, text, actionLabel, actionFn) {
     var c = el('div', 'reminder');
@@ -1450,10 +1464,16 @@
   }
 
   function update408TabVisibility() {
+    var major = Store.getConfig().major || '';
+    var is408 = major.indexOf('408') >= 0;
     var btn = document.querySelector('.tab-btn[data-tab="cs408"]');
     var panel = document.getElementById('tab-cs408');
-    if (btn) btn.classList.remove('nav-hidden');
-    if (panel) panel.classList.remove('nav-hidden');
+    if (btn) btn.classList.toggle('nav-hidden', !is408);
+    if (panel) panel.classList.toggle('nav-hidden', !is408);
+    if (!is408) {
+      var active = document.querySelector('.tab-btn.active');
+      if (active && active.getAttribute('data-tab') === 'cs408') switchTab('today');
+    }
   }
 
   /* ============ 学习网站 ============ */
