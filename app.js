@@ -796,15 +796,10 @@
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) { var btn = document.querySelector('.tab-btn[data-tab="' + target + '"]'); if (btn) btn.click(); }
   function updateMathTabVisibility() {
-    var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
     var btn = document.querySelector('.tab-btn[data-tab="math"]');
     var panel = document.getElementById('tab-math');
-    if (btn) btn.classList.toggle('nav-hidden', !hasMath);
-    if (panel) panel.classList.toggle('nav-hidden', !hasMath);
-    if (!hasMath) {
-      var active = document.querySelector('.tab-btn.active');
-      if (active && active.getAttribute('data-tab') === 'math') switchTab('today');
-    }
+    if (btn) btn.classList.remove('nav-hidden');
+    if (panel) panel.classList.remove('nav-hidden');
   }
   function reminderCard(title, text, actionLabel, actionFn) {
     var c = el('div', 'reminder');
@@ -1455,16 +1450,10 @@
   }
 
   function update408TabVisibility() {
-    var major = Store.getConfig().major || '';
-    var is408 = major.indexOf('408') >= 0;
     var btn = document.querySelector('.tab-btn[data-tab="cs408"]');
     var panel = document.getElementById('tab-cs408');
-    if (btn) btn.classList.toggle('nav-hidden', !is408);
-    if (panel) panel.classList.toggle('nav-hidden', !is408);
-    if (!is408) {
-      var active = document.querySelector('.tab-btn.active');
-      if (active && active.getAttribute('data-tab') === 'cs408') switchTab('today');
-    }
+    if (btn) btn.classList.remove('nav-hidden');
+    if (panel) panel.classList.remove('nav-hidden');
   }
 
   /* ============ 学习网站 ============ */
