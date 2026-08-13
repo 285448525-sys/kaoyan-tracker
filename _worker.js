@@ -203,6 +203,11 @@ export default {
     if (path === '/api/health') {
       return jsonResponse(200, { ok: true, service: 'kaoyan-study-hub', time: new Date().toISOString() }, cors);
     }
+    // 静态路径交给 Pages 静态资源处理器
+    if (env && env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+    // 兜底：没有 ASSETS 绑定时返回 404 JSON
     return jsonResponse(404, { error: 'Not Found. Endpoints: GET/PUT/DELETE /api/sync, GET /api/health' }, cors);
   }
 };
