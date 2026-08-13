@@ -16,6 +16,7 @@
   function defaults() {
     return {
       config: {
+        nickname: '',
         major: '',
         examDate: '',
         targetTotal: 0,
@@ -40,6 +41,15 @@
       mathMistakes: [],      // 数学错题 [{id,category,content,note,created,reviewed}]
       mathQuestions: [],     // 用户自定义选择题 [{id,category,q,options,answer,explain}]
       mathStats: {},         // { 分类: {total, correct} }
+      // 408 专业课模块
+      cs408Chapters: [],     // 408 全部章节（字符串数组，初始化预填）
+      cs408Current: -1,      // 408 当前学到章节 index
+      cs408Mistakes: [],     // 408 错题 [{id,category,content,note,created,reviewed,nextReview,reviewCount}]
+      cs408Questions: [],    // 408 用户自定义选择题
+      cs408Stats: {},        // 408 { 分类: {total, correct} }
+      cs408Knowledge: [],    // 408 知识点速查卡 [{id,subject,title,content,created}]
+      cs408Years: [],        // 408 历年真题年份记录 [{id,year,score,total,note}]
+      theme: 'light',        // 主题：'light' | 'dark'
       timer: { subjectKey: null, startTs: 0, accumulated: 0, running: false },
       _seq: 1
     };
@@ -72,6 +82,14 @@
         mathMistakes: (p.mathMistakes && Array.isArray(p.mathMistakes)) ? p.mathMistakes : [],
         mathQuestions: (p.mathQuestions && Array.isArray(p.mathQuestions)) ? p.mathQuestions : [],
         mathStats: (p.mathStats && typeof p.mathStats === 'object') ? p.mathStats : {},
+        cs408Chapters: (p.cs408Chapters && Array.isArray(p.cs408Chapters)) ? p.cs408Chapters : [],
+        cs408Current: (typeof p.cs408Current === 'number') ? p.cs408Current : -1,
+        cs408Mistakes: (p.cs408Mistakes && Array.isArray(p.cs408Mistakes)) ? p.cs408Mistakes : [],
+        cs408Questions: (p.cs408Questions && Array.isArray(p.cs408Questions)) ? p.cs408Questions : [],
+        cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
+        cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
+        cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
+        theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         _seq: p._seq || d._seq
       };
@@ -344,10 +362,142 @@
       mathMistakes: (p.mathMistakes && Array.isArray(p.mathMistakes)) ? p.mathMistakes : [],
       mathQuestions: (p.mathQuestions && Array.isArray(p.mathQuestions)) ? p.mathQuestions : [],
       mathStats: (p.mathStats && typeof p.mathStats === 'object') ? p.mathStats : {},
-      timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
-      _seq: p._seq || d._seq
-    };
+        cs408Chapters: (p.cs408Chapters && Array.isArray(p.cs408Chapters)) ? p.cs408Chapters : [],
+        cs408Current: (typeof p.cs408Current === 'number') ? p.cs408Current : -1,
+        cs408Mistakes: (p.cs408Mistakes && Array.isArray(p.cs408Mistakes)) ? p.cs408Mistakes : [],
+        cs408Questions: (p.cs408Questions && Array.isArray(p.cs408Questions)) ? p.cs408Questions : [],
+        cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
+        cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
+        cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
+        theme: (p.theme === 'dark') ? 'dark' : 'light',
+        timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
+        _seq: p._seq || d._seq
+      };
+      save();
+    }
+
+  /* ---------- 408 专业课模块 ---------- */
+  var CS408_REVIEW_INTERVALS = [1, 2, 4, 7, 15, 30]; // 错题间隔复习天数（Leitner 式）
+
+  function get408Chapters() { return (state.cs408Chapters || []).slice(); }
+  function set408Chapters(arr) { state.cs408Chapters = (arr || []).slice(); save(); }
+  function get408Current() { return (typeof state.cs408Current === 'number') ? state.cs408Current : -1; }
+  function set408Current(i) { state.cs408Current = (typeof i === 'number') ? i : -1; save(); }
+
+  function get408Mistakes() {
+    return (state.cs408Mistakes || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); });
+  }
+  function add408Mistake(m) {
+    if (!state.cs408Mistakes) state.cs408Mistakes = [];
+    m.id = 'cm_' + nextSeq();
+    m.reviewed = false; m.reviewCount = 0;
+    m.nextReview = Store.dateStr(Store.addDays(new Date(), CS408_REVIEW_INTERVALS[0]));
+    state.cs408Mistakes.push(m); save(); return m;
+  }
+  function update408Mistake(id, patch) {
+    var arr = state.cs408Mistakes || [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].id === id) {
+        if (patch.reviewed === true) {
+          // 标记已回顾：推进间隔复习
+          arr[i].reviewed = true;
+          arr[i].reviewCount = (arr[i].reviewCount || 0) + 1;
+          var idx = Math.min(CS408_REVIEW_INTERVALS.length - 1, arr[i].reviewCount);
+          arr[i].nextReview = Store.dateStr(Store.addDays(new Date(), CS408_REVIEW_INTERVALS[idx]));
+        } else {
+          for (var k in patch) { if (patch.hasOwnProperty(k)) arr[i][k] = patch[k]; }
+        }
+        break;
+      }
+    }
     save();
+  }
+  function remove408Mistake(id) { state.cs408Mistakes = (state.cs408Mistakes || []).filter(function (x) { return x.id !== id; }); save(); }
+  function get408DueMistakes(today) {
+    today = today || todayStr();
+    return (state.cs408Mistakes || []).filter(function (m) { return !m.reviewed || (m.nextReview && m.nextReview <= today); });
+  }
+
+  function get408Questions() { return (state.cs408Questions || []).slice(); }
+  function add408Question(q) { if (!state.cs408Questions) state.cs408Questions = []; q.id = 'cq_' + nextSeq(); state.cs408Questions.push(q); save(); return q; }
+  function remove408Question(id) { state.cs408Questions = (state.cs408Questions || []).filter(function (x) { return x.id !== id; }); save(); }
+
+  function get408Stats() { return state.cs408Stats || {}; }
+  function record408Stat(cat, correct) { if (!state.cs408Stats) state.cs408Stats = {}; if (!state.cs408Stats[cat]) state.cs408Stats[cat] = { total: 0, correct: 0 }; state.cs408Stats[cat].total++; if (correct) state.cs408Stats[cat].correct++; save(); }
+
+  function get408Knowledge() {
+    return (state.cs408Knowledge || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); });
+  }
+  function add408Knowledge(k) { if (!state.cs408Knowledge) state.cs408Knowledge = []; k.id = 'kp_' + nextSeq(); state.cs408Knowledge.push(k); save(); return k; }
+  function update408Knowledge(id, patch) { var arr = state.cs408Knowledge || []; for (var i = 0; i < arr.length; i++) { if (arr[i].id === id) { for (var k in patch) { if (patch.hasOwnProperty(k)) arr[i][k] = patch[k]; } } } save(); }
+  function remove408Knowledge(id) { state.cs408Knowledge = (state.cs408Knowledge || []).filter(function (x) { return x.id !== id; }); save(); }
+
+  function get408Years() {
+    return (state.cs408Years || []).slice().sort(function (a, b) { return (b.year || '').localeCompare(a.year || ''); });
+  }
+  function add408Year(y) { if (!state.cs408Years) state.cs408Years = []; y.id = 'yr_' + nextSeq(); state.cs408Years.push(y); save(); return y; }
+  function remove408Year(id) { state.cs408Years = (state.cs408Years || []).filter(function (x) { return x.id !== id; }); save(); }
+
+  /* ---------- 主题 ---------- */
+  function getTheme() { return state.theme === 'dark' ? 'dark' : 'light'; }
+  function setTheme(t) { state.theme = (t === 'dark') ? 'dark' : 'light'; save(); }
+
+  /* ---------- 云同步：本地快照 ---------- */
+  function snapshot() {
+    // 返回一个纯净的 state 克隆（JSON 可序列化），用于上传云端
+    return JSON.parse(JSON.stringify(state));
+  }
+  function restoreSnapshot(obj, opts) {
+    opts = opts || {};
+    if (!obj || typeof obj !== 'object') return false;
+    var d = defaults();
+    // 用 defaults 补齐缺失的一层字段，避免新版加载旧数据缺字段
+    var next = {};
+    for (var k in d) {
+      if (Object.prototype.hasOwnProperty.call(d, k)) {
+        next[k] = (obj[k] !== undefined) ? obj[k] : JSON.parse(JSON.stringify(d[k]));
+      }
+    }
+    // 兼容旧版没有 nickname/config 等字段的情况
+    if (next.config && typeof next.config === 'object') {
+      if (d.config.nickname !== undefined && next.config.nickname === undefined) next.config.nickname = d.config.nickname;
+      if (next.config.subjects === undefined) next.config.subjects = [];
+    }
+    state = next;
+    save();
+    return true;
+  }
+  /* 生成 8 位登录码（大写字母 + 数字，容易读） */
+  function generateSyncCode() {
+    var alpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var s = '';
+    for (var i = 0; i < 8; i++) s += alpha[Math.floor(Math.random() * alpha.length)];
+    return s;
+  }
+  /* 浏览器本地保存最近一次的登录码（不存敏感令牌，只存用户登录码方便下次用） */
+  function getLastSyncCode() {
+    try { return global.localStorage.getItem(KEY + ':last_sync_code') || ''; }
+    catch (_) { return ''; }
+  }
+  function setLastSyncCode(code) {
+    try { global.localStorage.setItem(KEY + ':last_sync_code', code || ''); } catch (_) {}
+  }
+  function getLastSyncToken() {
+    try { return global.localStorage.getItem(KEY + ':last_sync_token') || ''; }
+    catch (_) { return ''; }
+  }
+  function setLastSyncToken(tok) {
+    try { global.localStorage.setItem(KEY + ':last_sync_token', tok || ''); } catch (_) {}
+  }
+  function getLastDeviceId() {
+    try {
+      var id = global.localStorage.getItem(KEY + ':device_id');
+      if (!id) {
+        id = 'dev_' + Math.random().toString(36).slice(2, 10);
+        global.localStorage.setItem(KEY + ':device_id', id);
+      }
+      return id;
+    } catch (_) { return 'unknown'; }
   }
 
   global.Store = {
@@ -367,12 +517,26 @@
     getMathMistakes: getMathMistakes, addMathMistake: addMathMistake, updateMathMistake: updateMathMistake, removeMathMistake: removeMathMistake,
     getMathQuestions: getMathQuestions, addMathQuestion: addMathQuestion, removeMathQuestion: removeMathQuestion,
     getMathStats: getMathStats, recordMathStat: recordMathStat,
+    get408Chapters: get408Chapters, set408Chapters: set408Chapters, get408Current: get408Current, set408Current: set408Current,
+    get408Mistakes: get408Mistakes, add408Mistake: add408Mistake, update408Mistake: update408Mistake, remove408Mistake: remove408Mistake, get408DueMistakes: get408DueMistakes,
+    get408Questions: get408Questions, add408Question: add408Question, remove408Question: remove408Question,
+    get408Stats: get408Stats, record408Stat: record408Stat,
+    get408Knowledge: get408Knowledge, add408Knowledge: add408Knowledge, update408Knowledge: update408Knowledge, remove408Knowledge: remove408Knowledge,
+    get408Years: get408Years, add408Year: add408Year, remove408Year: remove408Year,
+    getTheme: getTheme, setTheme: setTheme,
+    exportJSON: exportJSON, importJSON: importJSON,
     getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab,
     getTranslator: getTranslator, setTranslator: setTranslator,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
     getTimer: getTimer, setTimer: setTimer,
     consecutiveStreak: consecutiveStreak, isCheckedIn: isCheckedIn, getCheckins: getCheckins, checkin: checkin,
     exportJSON: exportJSON, importJSON: importJSON,
-    save: save
+    save: save,
+    // 云同步
+    snapshot: snapshot, restoreSnapshot: restoreSnapshot,
+    generateSyncCode: generateSyncCode,
+    getLastSyncCode: getLastSyncCode, setLastSyncCode: setLastSyncCode,
+    getLastSyncToken: getLastSyncToken, setLastSyncToken: setLastSyncToken,
+    getLastDeviceId: getLastDeviceId
   };
 })(typeof window !== 'undefined' ? window : this);

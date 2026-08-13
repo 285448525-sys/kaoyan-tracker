@@ -15,6 +15,7 @@
         <h1>考研学习记录</h1>
         <p class="brand-sub">计时 · 计划 · 模考 · 词汇</p>
       </div>
+      <button class="theme-toggle" id="themeToggle" title="切换深色 / 浅色主题" aria-label="切换主题">🌙</button>
     </div>
     <nav class="side-menu">
       <button class="tab-btn" data-tab="config"><span>⚙️</span><span class="tab-label">配置</span></button>
@@ -25,6 +26,7 @@
       <button class="tab-btn" data-tab="data"><span>📊</span><span class="tab-label">数据</span></button>
       <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题</span></button>
       <button class="tab-btn" data-tab="math"><span>🧮</span><span class="tab-label">数学</span></button>
+      <button class="tab-btn" data-tab="cs408"><span>💻</span><span class="tab-label">408</span></button>
       <button class="tab-btn" data-tab="websites"><span>🌐</span><span class="tab-label">网站</span></button>
       <div class="side-divider"></div>
       <button class="tab-btn" data-tab="words"><span>📝</span><span class="tab-label">生词记录</span></button>
@@ -44,6 +46,10 @@
     <section id="tab-config" class="tab-panel">
       <div class="card">
         <h2 class="card-title">基础信息配置</h2>
+        <div class="field-row">
+          <label>你的昵称</label>
+          <input type="text" id="nickname-input" placeholder="用于打卡卡展示（如：小明同学）" />
+        </div>
         <div class="field-row">
           <label>报考专业</label>
           <select id="major-select">
@@ -90,6 +96,33 @@
         </div>
       </div>
 
+      <div class="card cloud-sync-card">
+        <h2 class="card-title">☁️ 云端同步（登录码）</h2>
+        <p class="hint">用一个「8 位登录码」把数据同步到 Cloudflare KV。相同登录码可在任意设备拉取同一套数据。</p>
+        <div class="field-row">
+          <label>全局同步令牌 SYNC_TOKEN</label>
+          <input type="password" id="sync-token" placeholder="管理员提供，没设留空即可" autocomplete="off" />
+        </div>
+        <div class="field-row">
+          <label>我的登录码</label>
+          <div style="display:flex;gap:8px;width:100%">
+            <input type="text" id="sync-code" placeholder="如：A7K9M3X2（8 位，分享给对象/朋友即可同步）" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',consolas,monospace" autocomplete="off" />
+            <button id="btn-gen-sync-code" class="btn btn-ghost" title="生成新登录码">🎲 生成</button>
+            <button id="btn-copy-sync-code" class="btn btn-ghost" title="复制登录码">📋 复制</button>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-sync-upload" class="btn btn-primary">⬆️ 上传数据到云端</button>
+          <button id="btn-sync-download" class="btn btn-ghost">⬇️ 从云端下载</button>
+          <button id="btn-sync-delete" class="btn btn-danger">🗑 删除云端数据</button>
+        </div>
+        <div class="field-row">
+          <label></label>
+          <div id="sync-status" class="import-status"></div>
+        </div>
+        <p class="hint">首次使用建议先点「导出备份」把本地数据存一份，再做云端操作；从云端下载会<strong>覆盖本机全部数据</strong>，下载前会弹窗二次确认。</p>
+      </div>
+
       <div class="card translator-card">
         <h2 class="card-title">🔑 翻译 API 密钥（自行申请填写）</h2>
         <p class="hint">翻译功能由你自己的<b>百度翻译开放平台</b>账号调用，<b>密钥仅保存在你本机浏览器</b>，网站不内置任何 key、也不上传服务器。申请后把 APP ID 与 密钥填到下方即可使用「即时翻译」。</p>
@@ -110,8 +143,16 @@
       </div>
     </section>
 
-    <!-- 今日：计划 + 总结分享 -->
+    <!-- 今日：聚合 + 计划 + 总结分享 -->
     <section id="tab-today" class="tab-panel active">
+      <div class="card today-aggregate" id="today-aggregate">
+        <div class="agg-grid">
+          <div class="agg-cell"><div class="agg-num" id="agg-countdown">--</div><div class="agg-label">距考研天数</div></div>
+          <div class="agg-cell"><div class="agg-num" id="agg-minutes">0</div><div class="agg-label">今日学习(分)</div></div>
+          <div class="agg-cell"><div class="agg-num" id="agg-plan">0/0</div><div class="agg-label">计划完成</div></div>
+          <div class="agg-cell"><div class="agg-num" id="agg-streak">0</div><div class="agg-label">连续打卡</div></div>
+        </div>
+      </div>
       <p class="hint" id="today-guide"></p>
       <div class="card">
         <h2 class="card-title">📅 今日计划</h2>
@@ -121,6 +162,7 @@
         </div>
         <div id="plan-list" class="plan-list"></div>
         <div class="plan-add">
+          <select id="plan-subject" style="max-width:140px"><option value="">不指定科目</option></select>
           <input type="text" id="plan-text" placeholder="添加自定义计划项，如：复盘英语阅读错题" />
           <input type="number" id="plan-min" placeholder="分钟" min="0" style="max-width:90px" />
           <button id="btn-add-plan" class="btn btn-ghost">添加</button>
@@ -137,12 +179,38 @@
       </div>
 
       <div class="card pomodoro-card">
-        <h2 class="card-title">🍅 番茄钟（25 学习 + 5 休息）</h2>
-        <p class="hint">专注 25 分钟学习，然后休息 5 分钟。开始时会请求通知权限，休息时弹窗 / 提示提醒你起来活动。</p>
+        <h2 class="card-title">🍅 番茄钟（可自定义时长）</h2>
+        <p class="hint">专注学习后短暂休息，循环往复。时长可自定义，默认 25 分钟学习 + 5 分钟休息。开始时会请求通知权限。</p>
+        <div class="pomo-setup">
+          <div class="field-row" style="margin-bottom:8px">
+            <label>学习(分)</label>
+            <input type="number" id="pomo-work" value="25" min="1" max="120" style="max-width:80px" />
+            <label>休息(分)</label>
+            <input type="number" id="pomo-break" value="5" min="1" max="60" style="max-width:80px" />
+          </div>
+        </div>
         <div class="pomo-display"><span id="pomo-mode" class="pomo-mode">🍅 学习中</span><span id="pomo-time" class="pomo-time">25:00</span></div>
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-pomo-start" class="btn btn-primary">开始</button>
           <button id="btn-pomo-reset" class="btn btn-ghost">重置</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">⏲ 自定义倒计时</h2>
+        <p class="hint">设置任意时长进行倒计时，到点提醒。适合做套卷限时、单项限时等场景。</p>
+        <div class="pomo-setup">
+          <div class="field-row" style="margin-bottom:8px">
+            <label>时长(分)</label>
+            <input type="number" id="timer-custom-min" value="25" min="1" max="300" style="max-width:80px" />
+            <label>秒</label>
+            <input type="number" id="timer-custom-sec" value="0" min="0" max="59" style="max-width:80px" />
+          </div>
+        </div>
+        <div class="pomo-display"><span id="timer-custom-mode" class="pomo-mode">⏲ 倒计时</span><span id="timer-custom-time" class="pomo-time">25:00</span></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button id="btn-timer-custom-start" class="btn btn-primary">开始</button>
+          <button id="btn-timer-custom-reset" class="btn btn-ghost">重置</button>
         </div>
       </div>
 
@@ -484,10 +552,115 @@
       </div>
     </section>
 
+    <!-- 408 专业课模块 -->
+    <section id="tab-cs408" class="tab-panel">
+      <div class="card">
+        <h2 class="card-title">💻 408 章节进度</h2>
+        <p class="hint">408 计算机学科专业基础（数据结构 / 计算机组成原理 / 操作系统 / 计算机网络）全套章节已预填，点击标记当前所学章节。</p>
+        <div id="cs408-chapters" class="chapter-list"></div>
+        <div class="plan-add">
+          <input type="text" id="cs408-chapter-add" placeholder="新增章节（可写「分组 · 章节名」）" />
+          <button id="btn-add-cs408-chapter" class="btn btn-ghost">添加章节</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">📝 408 错题整理 <span class="review-badge" id="cs408-due-badge" style="display:none"></span></h2>
+        <p class="hint">错题支持间隔复习（Leitner 式）：标记回顾后自动安排下次复习时间，到期会提醒。</p>
+        <div class="field-row">
+          <label>分类</label>
+          <select id="cs408-mistake-cat"></select>
+        </div>
+        <div class="field">
+          <label>题目 / 错因</label>
+          <textarea id="cs408-mistake-content" rows="3" placeholder="记录错题或错因……"></textarea>
+        </div>
+        <div class="field">
+          <label>备注（可选）</label>
+          <input type="text" id="cs408-mistake-note" placeholder="如：对应知识点 / 正确解法" />
+        </div>
+        <button id="btn-add-cs408-mistake" class="btn btn-primary full">保存错题</button>
+        <div class="chip-row" id="cs408-mistake-filter" style="margin-top:12px"></div>
+        <div id="cs408-mistake-list" class="mistake-list"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🧮 408 分类刷题</h2>
+        <p class="hint">按四科分类练习；内置示例题 + 你的自定义题。作答后显示解析与正确率。</p>
+        <div class="field-row">
+          <label>分类</label>
+          <select id="cs408-practice-cat">
+            <option value="全部">全部</option>
+            <option value="数据结构">数据结构</option>
+            <option value="计算机组成原理">计算机组成原理</option>
+            <option value="操作系统">操作系统</option>
+            <option value="计算机网络">计算机网络</option>
+            <option value="自定义">我的题库</option>
+          </select>
+        </div>
+        <div id="cs408-practice" class="practice-box"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button id="btn-cs408-practice-start" class="btn btn-primary">开始刷题</button>
+        </div>
+        <h3 class="sub-title">我的题库</h3>
+        <div id="cs408-question-list" class="mistake-list"></div>
+        <div class="plan-add">
+          <input type="text" id="cq-cat" placeholder="分类，如 数据结构" />
+          <input type="text" id="cq-q" placeholder="题干" />
+        </div>
+        <div class="plan-add">
+          <input type="text" id="cq-opt0" placeholder="选项 A" />
+          <input type="text" id="cq-opt1" placeholder="选项 B" />
+          <input type="text" id="cq-opt2" placeholder="选项 C" />
+          <input type="text" id="cq-opt3" placeholder="选项 D" />
+        </div>
+        <div class="plan-add">
+          <input type="number" id="cq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
+          <input type="text" id="cq-explain" placeholder="解析（可选）" />
+          <button id="btn-add-cq" class="btn btn-ghost">添加题目</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🧠 408 知识点速查卡</h2>
+        <p class="hint">随手记录核心知识点、公式、易忘结论，考前快速翻阅。可按科目筛选。</p>
+        <div class="plan-add">
+          <select id="kp-subject" style="max-width:160px">
+            <option value="数据结构">数据结构</option>
+            <option value="计算机组成原理">计算机组成原理</option>
+            <option value="操作系统">操作系统</option>
+            <option value="计算机网络">计算机网络</option>
+            <option value="其他">其他</option>
+          </select>
+          <input type="text" id="kp-title" placeholder="标题，如：红黑树性质" />
+        </div>
+        <div class="field">
+          <textarea id="kp-content" rows="2" placeholder="内容（支持多行）"></textarea>
+        </div>
+        <button id="btn-add-kp" class="btn btn-primary full">添加知识点</button>
+        <div class="chip-row" id="kp-filter" style="margin-top:12px"></div>
+        <div id="kp-list" class="kp-list"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">📅 408 历年真题年份记录</h2>
+        <p class="hint">记录每年真题的得分，追踪进步趋势。</p>
+        <div class="plan-add">
+          <input type="number" id="yr-year" placeholder="年份，如 2024" min="2000" max="2099" style="max-width:120px" />
+          <input type="number" id="yr-score" placeholder="得分" min="0" max="150" style="max-width:100px" />
+          <input type="number" id="yr-total" placeholder="总分" min="0" max="150" style="max-width:100px" />
+          <input type="text" id="yr-note" placeholder="备注（可选）" />
+          <button id="btn-add-yr" class="btn btn-ghost">添加</button>
+        </div>
+        <div id="yr-list" class="yr-list"></div>
+      </div>
+    </section>
+
   </main>
 
   <div id="toast" class="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="words.js"></script>
   <script src="store.js"></script>
   <script src="charts.js"></script>

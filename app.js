@@ -29,7 +29,7 @@
   var practiceSession = null; // {items, index, answered}
   var reviewQueue = null;     // {items, index, total}
   var LEITNER = [1, 2, 4, 7, 15]; // box 1..5 -> 间隔天数
-  function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+  function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function nextReviewDate(box){ var days = LEITNER[Math.max(0, Math.min(4, (box||1)-1))]; return Store.dateStr(Store.addDays(new Date(), days)); }
 
@@ -99,6 +99,57 @@
   ];
   var GROUP_COLORS = { '高数': '#4f46e5', '线代': '#10b981', '概率': '#f59e0b', '其他': '#9ca3af' };
 
+  /* ============ 408 专业课模块：常量 ============ */
+  // 408 计算机学科专业基础全套章节（按四科分组，预填充）
+  var CS408_CHAPTERS_PREFILL = [
+    '数据结构 · 线性表',
+    '数据结构 · 栈与队列',
+    '数据结构 · 树与二叉树',
+    '数据结构 · 图',
+    '数据结构 · 查找',
+    '数据结构 · 排序',
+    '计算机组成原理 · 计算机系统概述',
+    '计算机组成原理 · 数据的表示与运算',
+    '计算机组成原理 · 存储器层次结构',
+    '计算机组成原理 · 指令系统',
+    '计算机组成原理 · 中央处理器（CPU）',
+    '计算机组成原理 · 总线与 I/O 系统',
+    '操作系统 · 操作系统概述',
+    '操作系统 · 进程与线程管理',
+    '操作系统 · 内存管理',
+    '操作系统 · 文件管理',
+    '操作系统 · I/O 管理',
+    '计算机网络 · 体系结构（OSI / TCP-IP）',
+    '计算机网络 · 物理层',
+    '计算机网络 · 数据链路层',
+    '计算机网络 · 网络层',
+    '计算机网络 · 传输层',
+    '计算机网络 · 应用层'
+  ];
+  var CS408_GROUP_COLORS = { '数据结构': '#3b82f6', '计算机组成原理': '#8b5cf6', '操作系统': '#10b981', '计算机网络': '#f59e0b', '其他': '#9ca3af' };
+  var CS408_MISTAKE_CATS = ['概念不清', '计算错误', '思路错误', '代码实现', '易混淆', '综合大题', '其他'];
+  // 408 内置示例选择题
+  var CS408_BUILTIN_Q = [
+    { category: '数据结构', q: '在长度为 n 的有序顺序表中进行折半查找，最坏时间复杂度是？', options: ['O(1)', 'O(log₂n)', 'O(n)', 'O(n²)'], answer: 1, explain: '折半查找每次排除一半，最坏 O(log₂n)。' },
+    { category: '数据结构', q: '一棵有 n 个结点的二叉树，最小高度为？', options: ['⌊log₂n⌋', '⌈log₂(n+1)⌉', 'n/2', 'n-1'], answer: 1, explain: '完全二叉树高度最小，为 ⌈log₂(n+1)⌉。' },
+    { category: '数据结构', q: '快速排序的平均时间复杂度是？', options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(log n)'], answer: 1, explain: '快排平均 O(n log n)，最坏 O(n²)。' },
+    { category: '计算机组成原理', q: 'IEEE 754 单精度浮点数的尾数位数（不含隐藏位）是？', options: ['23 位', '24 位', '52 位', '8 位'], answer: 0, explain: '单精度 1+8+23=32 位，尾数 23 位（加隐藏位共 24 位有效）。' },
+    { category: '计算机组成原理', q: 'Cache 命中率与缺失率的描述，正确的是？', options: ['命中率 + 缺失率 = 1', '命中率 = 缺失率', '命中率恒为 1', '缺失率恒为 0'], answer: 0, explain: '命中率与缺失率互补，和为 1。' },
+    { category: '操作系统', q: '进程的三个基本状态不包括？', options: ['就绪', '运行', '阻塞', '挂起'], answer: 3, explain: '三态为就绪、运行、阻塞；挂起属于中级调度范畴。' },
+    { category: '操作系统', q: '页面置换算法 LRU 是指？', options: ['先进先出', '最近最久未使用', '最不经常使用', '最佳置换'], answer: 1, explain: 'LRU = Least Recently Used，淘汰最近最久未访问的页。' },
+    { category: '计算机网络', q: 'TCP 三次握手中，第二次握手报文的标志位是？', options: ['SYN', 'ACK', 'SYN+ACK', 'FIN'], answer: 2, explain: '服务端回复 SYN+ACK 表示同意连接并确认。' },
+    { category: '计算机网络', q: 'CIDR 地址 192.168.1.0/26 的可用主机数是？', options: ['62', '64', '254', '32'], answer: 0, explain: '/26 子网共 64 地址，减去网络号和广播号，可用 62。' }
+  ];
+  // 408 知识点速查卡预填示例
+  var CS408_KNOWLEDGE_PREFILL = [
+    { subject: '数据结构', title: '各种排序算法复杂度', content: '冒泡/选择/插入：O(n²)；快排/归并/堆排：O(n log n)。快排最坏 O(n²)，归并稳定。' },
+    { subject: '数据结构', title: '二叉树遍历', content: '前序(根左右)、中序(左根右)、后序(左右根)。已知前序+中序可唯一确定二叉树。' },
+    { subject: '计算机组成原理', title: '浮点数表示', content: 'IEEE754 单精度：1 符号 + 8 阶码(偏移127) + 23 尾数。隐藏最高位 1。' },
+    { subject: '操作系统', title: '死锁四条件', content: '互斥、占有并等待、不剥夺、循环等待。破坏任一即可预防死锁。' },
+    { subject: '操作系统', title: '进程与线程区别', content: '进程是资源分配单位，线程是 CPU 调度单位。同进程线程共享地址空间。' },
+    { subject: '计算机网络', title: 'TCP/UDP 区别', content: 'TCP 面向连接、可靠、有序；UDP 无连接、不可靠、高效。TCP 首部 20B，UDP 8B。' }
+  ];
+
   /* ============ 配置页 ============ */
   var SUBJECT_PRESETS = [
     { key: 'politics', label: '政治', defName: '政治', defTarget: 75 },
@@ -110,6 +161,7 @@
   function renderConfig() {
     var cfg = Store.getConfig();
     refs.majorSelect.value = cfg.major || '';
+    refs.nicknameInput.value = cfg.nickname || '';
     refs.examDate.value = cfg.examDate || '';
     refs.targetTotal.value = cfg.targetTotal || '';
     refs.autoPlan.checked = !!cfg.autoPlan;
@@ -324,6 +376,8 @@
       : '未启用自动计划，可点「自动制定计划」生成。';
     refs.planList.innerHTML = '';
     if (!plan.length) { refs.planList.appendChild(el('div', 'empty-hint', '还没有计划，点上方按钮生成吧')); return; }
+    var subs = Store.getSubjects();
+    var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
     plan.forEach(function (it) {
       var item = el('div', 'plan-item' + (it.done ? ' done' : ''));
@@ -334,11 +388,20 @@
         if (!wasDone) showToast('🌟 完成 1 项，继续加油！');
         renderPlan(); renderToday();
       });
-      var txt = el('div', 'plan-text', it.text);
-      var min = el('div', 'plan-min', it.minutes + ' 分钟');
+      var txtWrap = el('div', 'plan-text');
+      if (it.subjectKey && subMap[it.subjectKey]) {
+        var dot = el('span', 'plan-subject-dot');
+        dot.style.background = subMap[it.subjectKey].color || '#94a3b8';
+        dot.title = subMap[it.subjectKey].name;
+        txtWrap.appendChild(dot);
+      }
+      var txt = document.createElement('span');
+      txt.textContent = it.text;
+      txtWrap.appendChild(txt);
+      var min = el('div', 'plan-min', (it.minutes || 0) + ' 分钟');
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeDailyPlanItem(ds, it.id); renderPlan(); renderToday(); });
-      item.appendChild(chk); item.appendChild(txt); item.appendChild(min); item.appendChild(del);
+      item.appendChild(chk); item.appendChild(txtWrap); item.appendChild(min); item.appendChild(del);
       refs.planList.appendChild(item);
     });
     refs.planList.appendChild(el('div', 'plan-min', '今日计划完成 ' + doneCount + ' / ' + plan.length));
@@ -354,17 +417,56 @@
     if (!refs.todayGuide) return;
     var cfg = Store.getConfig();
     refs.todayGuide.textContent = cfg.examDate ? '' : '请先在「配置」页填写考研日期与目标分。';
+    renderTodayAggregate();
   }
   function buildShareCanvas(ds) {
     var day = Store.getDay(ds) || { durations: {}, completed: '' };
     var subs = Store.getSubjects();
+    var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var subjects = subs.map(function (s) { return { name: s.name, min: (day.durations && day.durations[s.key]) || 0, color: s.color }; }).filter(function (x) { return x.min > 0; });
     if (!subjects.length) subjects = [{ name: '（无记录）', min: 0, color: '#9ca3af' }];
     var cfg = Store.getConfig();
     var countdown = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000) : undefined;
+    // 计划明细（带科目颜色）
+    var rawPlans = Store.getPlans(ds) || [];
+    var plans = rawPlans.map(function (p) {
+      var color = '#64748b';
+      if (p.subjectKey && subMap[p.subjectKey] && subMap[p.subjectKey].color) color = subMap[p.subjectKey].color;
+      return { id: p.id, text: p.text, minutes: Number(p.minutes) || 0, done: !!p.done, subjectKey: p.subjectKey || '', color: color };
+    });
+    var planDone = plans.filter(function (p) { return p.done; }).length;
+    // 数学章节
+    var mathChs = Store.getMathChapters();
+    var mathCur = Store.getMathCurrent();
+    var hasMath = subs.some(function (s) { return s.key === 'math'; });
+    // 408 章节
+    var cs408Chs = Store.get408Chapters();
+    var cs408Cur = Store.get408Current();
+    var hasCs408 = cs408Chs && cs408Chs.length;
+    // 408 到期错题
+    var cs408Due = hasCs408 ? Store.get408DueMistakes(ds).length : undefined;
+    // 通用专业课章节（非 408 时显示）
+    var genericSubjectChapters = [];
+    if (!hasCs408) {
+      subs.forEach(function (s) {
+        if (s.key === 'math' || s.key === 'english' || s.key === 'politics') return;
+        var ch = Store.getSubjectChapters(s.key);
+        if (ch && ch.chapters && ch.chapters.length) {
+          genericSubjectChapters.push({ name: s.name, current: ch.current, total: ch.chapters.length });
+        }
+      });
+    }
     return Share.generate({
       dateStr: ds, totalMin: Store.totalMinutesForDay(day), streak: Store.consecutiveStreak(),
-      subjects: subjects, completed: day.completed || '', summary: day.summary || '', major: cfg.major, examCountdown: countdown
+      nickname: cfg.nickname || '', siteUrl: window.location.origin,
+      subjects: subjects,
+      completed: day.completed || '', summary: day.summary || '',
+      major: cfg.major, examCountdown: countdown,
+      plans: plans, planDone: planDone, planTotal: plans.length,
+      mathCurrent: hasMath ? mathCur : undefined, mathTotal: hasMath ? mathChs.length : undefined,
+      cs408Current: hasCs408 ? cs408Cur : undefined, cs408Total: hasCs408 ? cs408Chs.length : undefined,
+      cs408DueCount: cs408Due,
+      subjectChapters: genericSubjectChapters
     });
   }
   function onShareToday() {
@@ -724,6 +826,7 @@
   function renderChapterBlock(key, mount) {
     var subjectName, chapters, current;
     if (key === 'math') { subjectName = '数学'; chapters = Store.getMathChapters(); current = Store.getMathCurrent(); }
+    else if (key === 'cs408') { subjectName = '408 计算机专业基础'; chapters = Store.get408Chapters(); current = Store.get408Current(); }
     else {
       var obj = Store.getSubjectChapters(key) || { chapters: [], current: -1 };
       var s = Store.getSubjects().filter(function (x) { return x.key === key; })[0];
@@ -753,15 +856,20 @@
       var list = el('div', 'chapter-list');
       chapters.forEach(function (ch, idx) {
         var p = parseChapter(ch);
-        var item = el('button', 'chapter-item' + (idx === current ? ' current' : ''));
-        item.style.borderLeftColor = GROUP_COLORS[p.g] || '#9ca3af';
+        var cls = 'chapter-item';
+        if (idx === current) cls += ' current';
+        else if (current >= 0 && idx < current) cls += ' done';
+        var item = el('button', cls);
+        item.style.borderLeftColor = (key === 'cs408' ? (CS408_GROUP_COLORS[p.g] || '#9ca3af') : (GROUP_COLORS[p.g] || '#9ca3af'));
         item.appendChild(el('span', 'chapter-idx', String(idx + 1)));
         item.appendChild(el('span', 'chapter-name', (p.g !== '其他' ? '【' + p.g + '】' : '') + p.n));
         item.addEventListener('click', function () {
           if (key === 'math') Store.setMathCurrent(idx);
+          else if (key === 'cs408') Store.set408Current(idx);
           else Store.setSubjectChapters(key, { chapters: chapters, current: idx });
           renderChapterBlock(key, mount);
           if (key === 'math') { var mt = document.getElementById('math-chapters'); if (mt) renderChapterBlock('math', mt); }
+          if (key === 'cs408') { var ct = document.getElementById('cs408-chapters'); if (ct) renderChapterBlock('cs408', ct); }
         });
         list.appendChild(item);
       });
@@ -775,6 +883,7 @@
       var v = inp.value.trim(); if (!v) return;
       var newChapters = chapters.slice(); newChapters.push(v);
       if (key === 'math') Store.setMathChapters(newChapters);
+      else if (key === 'cs408') Store.set408Chapters(newChapters);
       else Store.setSubjectChapters(key, { chapters: newChapters, current: current });
       renderChapterBlock(key, mount);
     });
@@ -831,6 +940,14 @@
         else items.push({ text: '复习《' + s.name + '》已学章节', note: '已学完全部 ' + ch.chapters.length + ' 章，建议进入刷题巩固' });
       }
     });
+    // 408 章节进度纳入智能计划
+    var cs408Ch = Store.get408Chapters();
+    if (cs408Ch.length) {
+      var cs408Cur = Store.get408Current();
+      if (cs408Cur < 0) items.push({ text: '开始《408》第一章：' + parseChapter(cs408Ch[0]).n, note: '408 尚未标记进度' });
+      else if (cs408Cur < cs408Ch.length - 1) items.push({ text: '继续《408》：' + parseChapter(cs408Ch[cs408Cur + 1]).n, note: '408 当前在第 ' + (cs408Cur + 1) + '/' + cs408Ch.length + ' 章' });
+      else items.push({ text: '复习《408》已学章节', note: '408 已学完全部 ' + cs408Ch.length + ' 章，建议进入真题巩固' });
+    }
     if (!items.length) { showToast('暂无进度数据，先填写模块掌握情况或章节进度吧'); return; }
     items.forEach(function (it) { Store.addPlanItem({ text: it.text, note: it.note || '', done: false }); });
     renderPlanItems(); showToast('已按进度生成 ' + items.length + ' 项计划 ⚡');
@@ -988,6 +1105,261 @@
     Store.addMathQuestion({ category: cat, q: q, options: opts, answer: ans, explain: refs.mqExplain.value.trim() });
     refs.mqCat.value = ''; refs.mqQ.value = ''; refs.mqOpt0.value = ''; refs.mqOpt1.value = ''; refs.mqOpt2.value = ''; refs.mqOpt3.value = ''; refs.mqAnswer.value = ''; refs.mqExplain.value = '';
     renderMathQuestionList(); showToast('题目已加入题库 ✅');
+  }
+
+  /* ============ 408 专业课模块：章节 + 错题(间隔复习) + 刷题 + 知识点 + 真题 ============ */
+  var cs408MistakeFilter = '全部';
+  var cs408Practice = null;
+  var kpFilter = '全部';
+
+  function render408Chapters() {
+    var box = refs.cs408Chapters;
+    if (!Store.get408Chapters().length) Store.set408Chapters(CS408_CHAPTERS_PREFILL.slice());
+    renderChapterBlock('cs408', box);
+  }
+
+  function render408Mistakes() {
+    var box = refs.cs408MistakeList; box.innerHTML = '';
+    var all = Store.get408Mistakes();
+    var today = Store.todayStr();
+    var list = cs408MistakeFilter === '全部' ? all : all.filter(function (m) { return m.category === cs408MistakeFilter; });
+    // 分类筛选 chips
+    var cats = { '全部': all.length };
+    all.forEach(function (m) { cats[m.category] = (cats[m.category] || 0) + 1; });
+    refs.cs408MistakeFilter.innerHTML = '';
+    Object.keys(cats).forEach(function (c) {
+      var chip = el('div', 'chip' + (c === cs408MistakeFilter ? ' active' : ''), c + ' (' + cats[c] + ')');
+      chip.addEventListener('click', function () { cs408MistakeFilter = c; render408Mistakes(); });
+      refs.cs408MistakeFilter.appendChild(chip);
+    });
+    // 到期复习徽标
+    var dueCount = Store.get408DueMistakes(today).length;
+    if (refs.cs408DueBadge) {
+      if (dueCount > 0) { refs.cs408DueBadge.style.display = ''; refs.cs408DueBadge.textContent = dueCount + ' 题待复习'; }
+      else refs.cs408DueBadge.style.display = 'none';
+    }
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有错题记录')); return; }
+    list.forEach(function (m) {
+      var isDue = !m.reviewed || (m.nextReview && m.nextReview <= today);
+      var item = el('div', 'mistake-item' + (m.reviewed ? ' reviewed' : '') + (isDue ? ' due' : ''));
+      var top = el('div', 'mistake-top');
+      top.appendChild(el('span', 'mistake-badge', m.category || '其他'));
+      if (isDue) top.appendChild(el('span', 'due-tag', '待复习'));
+      var del = el('button', 'plan-del', '删除');
+      del.addEventListener('click', function () { Store.remove408Mistake(m.id); render408Mistakes(); });
+      top.appendChild(del);
+      item.appendChild(top);
+      item.appendChild(el('div', 'mistake-content', m.content || ''));
+      var meta = [];
+      if (m.created) meta.push(m.created);
+      if (m.note) meta.push('备注：' + m.note);
+      if (m.reviewCount) meta.push('已回顾 ' + m.reviewCount + ' 次');
+      if (m.nextReview) meta.push('下次复习：' + m.nextReview);
+      item.appendChild(el('div', 'mistake-meta', meta.join(' · ')));
+      var rev = el('button', 'btn btn-ghost mistake-review', m.reviewed ? '✓ 已回顾（再次复习）' : '✓ 标记已回顾');
+      rev.addEventListener('click', function () { Store.update408Mistake(m.id, { reviewed: true }); render408Mistakes(); showToast('已标记回顾，下次复习：' + Store.get408Mistakes().filter(function(x){return x.id===m.id;})[0].nextReview); });
+      item.appendChild(rev);
+      box.appendChild(item);
+    });
+  }
+
+  function onAdd408Mistake() {
+    var content = refs.cs408MistakeContent.value.trim();
+    if (!content) { alert('请输入错题 / 错因'); return; }
+    Store.add408Mistake({
+      category: refs.cs408MistakeCat.value || '其他',
+      content: content,
+      note: refs.cs408MistakeNote.value.trim(),
+      created: Store.todayStr()
+    });
+    refs.cs408MistakeContent.value = ''; refs.cs408MistakeNote.value = '';
+    cs408MistakeFilter = '全部'; render408Mistakes(); showToast('已保存错题 ✅');
+  }
+
+  function build408Pool(cat) {
+    var builtin = CS408_BUILTIN_Q;
+    var user = Store.get408Questions();
+    if (cat === '全部') return builtin.concat(user);
+    if (cat === '自定义') return user;
+    return builtin.filter(function (q) { return q.category === cat; }).concat(user.filter(function (q) { return q.category === cat; }));
+  }
+
+  function on408PracticeStart() {
+    var cat = refs.cs408PracticeCat.value;
+    var pool = build408Pool(cat);
+    if (!pool.length) { refs.cs408Practice.innerHTML = '<div class="empty-hint">该分类下还没有题目（去下方「我的题库」添加）</div>'; return; }
+    shuffle(pool);
+    cs408Practice = { items: pool, index: 0, answered: false, correct: 0, total: pool.length, cat: cat };
+    render408Practice();
+  }
+
+  function render408Practice() {
+    var box = refs.cs408Practice;
+    if (!cs408Practice) { box.innerHTML = '<div class="empty-hint">选择分类后点「开始刷题」</div>'; return; }
+    var s = cs408Practice;
+    if (s.index >= s.items.length) {
+      var acc = s.total ? Math.round(s.correct / s.total * 100) : 0;
+      box.innerHTML = '<div class="review-done"><div class="big">本组练习完成 🎉</div>' +
+        '<div class="muted" style="margin-top:8px">共 ' + s.total + ' 题，答对 ' + s.correct + ' 题，正确率 ' + acc + '%</div></div>';
+      return;
+    }
+    var cur = s.items[s.index];
+    var cat = cur.category || '自定义';
+    var html = '<div class="practice-en" style="font-size:18px">' + escapeHtml(cur.q) + '</div>';
+    html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 题 · ' + escapeHtml(cat) + '</div>';
+    html += '<div class="practice-options">';
+    cur.options.forEach(function (o, i) {
+      html += '<button class="practice-opt" data-i="' + i + '">' + escapeHtml(o) + '</button>';
+    });
+    html += '</div>';
+    html += '<div class="practice-feedback" id="cp-feedback"></div>';
+    html += '<div class="practice-actions" id="cp-actions"></div>';
+    box.innerHTML = html;
+    var fb = $('cp-feedback');
+    var answered = false;
+    box.querySelectorAll('.practice-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (answered) return; answered = true;
+        var i = Number(btn.getAttribute('data-i'));
+        var correct = (i === cur.answer);
+        if (correct) s.correct++;
+        Store.record408Stat(cat, correct);
+        box.querySelectorAll('.practice-opt').forEach(function (b) {
+          b.disabled = true;
+          if (Number(b.getAttribute('data-i')) === cur.answer) b.classList.add('correct');
+        });
+        if (correct) { btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669'; }
+        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + cur.options[cur.answer]; fb.style.color = '#dc2626'; }
+        if (cur.explain) fb.textContent += '　解析：' + cur.explain;
+        var act = $('cp-actions');
+        var next = el('button', 'btn btn-primary', s.index + 1 >= s.items.length ? '查看结果' : '下一题');
+        next.addEventListener('click', function () { s.index++; render408Practice(); });
+        act.appendChild(next);
+      });
+    });
+  }
+
+  function render408QuestionList() {
+    var box = refs.cs408QuestionList; box.innerHTML = '';
+    var list = Store.get408Questions();
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有自定义题目')); return; }
+    list.forEach(function (q) {
+      var item = el('div', 'mistake-item');
+      var top = el('div', 'mistake-top');
+      top.appendChild(el('span', 'mistake-badge', q.category || '自定义'));
+      var del = el('button', 'plan-del', '删除');
+      del.addEventListener('click', function () { Store.remove408Question(q.id); render408QuestionList(); });
+      top.appendChild(del);
+      item.appendChild(top);
+      item.appendChild(el('div', 'mistake-content', q.q));
+      var opts = q.options ? q.options.map(function (o, i) { return (i === q.answer ? '✔ ' : '') + o; }).join('　/　') : '';
+      item.appendChild(el('div', 'mistake-meta', '选项：' + opts + (q.explain ? '　解析：' + q.explain : '')));
+      box.appendChild(item);
+    });
+  }
+
+  function onAdd408Question() {
+    var cat = refs.cqCat.value.trim() || '自定义';
+    var q = refs.cqQ.value.trim();
+    var opts = [refs.cqOpt0.value.trim(), refs.cqOpt1.value.trim(), refs.cqOpt2.value.trim(), refs.cqOpt3.value.trim()];
+    var ans = Number(refs.cqAnswer.value);
+    if (!q) { alert('请输入题干'); return; }
+    if (opts.some(function (o) { return !o; })) { alert('请填全 4 个选项'); return; }
+    if (isNaN(ans) || ans < 0 || ans > 3) { alert('正确项须为 0-3'); return; }
+    Store.add408Question({ category: cat, q: q, options: opts, answer: ans, explain: refs.cqExplain.value.trim() });
+    refs.cqCat.value = ''; refs.cqQ.value = ''; refs.cqOpt0.value = ''; refs.cqOpt1.value = ''; refs.cqOpt2.value = ''; refs.cqOpt3.value = ''; refs.cqAnswer.value = ''; refs.cqExplain.value = '';
+    render408QuestionList(); showToast('题目已加入题库 ✅');
+  }
+
+  function render408Knowledge() {
+    var box = refs.kpList; box.innerHTML = '';
+    var all = Store.get408Knowledge();
+    // 首次预填
+    if (!all.length && !Store.get408Knowledge().length) {
+      CS408_KNOWLEDGE_PREFILL.forEach(function (k) { Store.add408Knowledge({ subject: k.subject, title: k.title, content: k.content, created: Store.todayStr() }); });
+      all = Store.get408Knowledge();
+    }
+    var list = kpFilter === '全部' ? all : all.filter(function (k) { return k.subject === kpFilter; });
+    // 筛选 chips
+    var cats = { '全部': all.length };
+    all.forEach(function (k) { cats[k.subject] = (cats[k.subject] || 0) + 1; });
+    refs.kpFilter.innerHTML = '';
+    Object.keys(cats).forEach(function (c) {
+      var chip = el('div', 'chip' + (c === kpFilter ? ' active' : ''), c + ' (' + cats[c] + ')');
+      chip.addEventListener('click', function () { kpFilter = c; render408Knowledge(); });
+      refs.kpFilter.appendChild(chip);
+    });
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有知识点，在上方添加吧')); return; }
+    list.forEach(function (k) {
+      var card = el('div', 'kp-card');
+      card.style.borderLeftColor = CS408_GROUP_COLORS[k.subject] || '#9ca3af';
+      var top = el('div', 'kp-top');
+      top.appendChild(el('span', 'kp-badge', k.subject || '其他'));
+      var del = el('button', 'plan-del', '删除');
+      del.addEventListener('click', function () { Store.remove408Knowledge(k.id); render408Knowledge(); });
+      top.appendChild(del);
+      card.appendChild(top);
+      card.appendChild(el('div', 'kp-title', k.title || ''));
+      card.appendChild(el('div', 'kp-content', k.content || ''));
+      box.appendChild(card);
+    });
+  }
+
+  function onAdd408Knowledge() {
+    var title = refs.kpTitle.value.trim();
+    var content = refs.kpContent.value.trim();
+    if (!title || !content) { alert('请填写标题和内容'); return; }
+    Store.add408Knowledge({ subject: refs.kpSubject.value, title: title, content: content, created: Store.todayStr() });
+    refs.kpTitle.value = ''; refs.kpContent.value = '';
+    render408Knowledge(); showToast('知识点已添加 ✅');
+  }
+
+  function render408Years() {
+    var box = refs.yrList; box.innerHTML = '';
+    var list = Store.get408Years();
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有真题记录，添加每年的得分来追踪进步')); return; }
+    list.forEach(function (y) {
+      var pct = y.total ? Math.round(y.score / y.total * 100) : 0;
+      var row = el('div', 'yr-row');
+      row.appendChild(el('span', 'yr-year', y.year + ' 年'));
+      var bar = el('div', 'yr-bar');
+      var fill = el('div', 'yr-fill'); fill.style.width = pct + '%';
+      if (pct >= 80) fill.style.background = 'var(--ok)';
+      else if (pct >= 60) fill.style.background = 'var(--primary)';
+      else fill.style.background = 'var(--danger)';
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      row.appendChild(el('span', 'yr-score', y.score + '/' + (y.total || 150)));
+      if (y.note) row.appendChild(el('span', 'yr-note', y.note));
+      var del = el('button', 'plan-del', '删除');
+      del.addEventListener('click', function () { Store.remove408Year(y.id); render408Years(); });
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function onAdd408Year() {
+    var year = Number(refs.yrYear.value);
+    var score = Number(refs.yrScore.value);
+    var total = Number(refs.yrTotal.value) || 150;
+    if (!year || isNaN(year)) { alert('请输入年份'); return; }
+    if (isNaN(score)) { alert('请输入得分'); return; }
+    Store.add408Year({ year: year, score: score, total: total, note: refs.yrNote.value.trim() });
+    refs.yrYear.value = ''; refs.yrScore.value = ''; refs.yrTotal.value = ''; refs.yrNote.value = '';
+    render408Years(); showToast('真题记录已添加 ✅');
+  }
+
+  function update408TabVisibility() {
+    var major = Store.getConfig().major || '';
+    var is408 = major.indexOf('408') >= 0;
+    var btn = document.querySelector('.tab-btn[data-tab="cs408"]');
+    var panel = document.getElementById('tab-cs408');
+    if (btn) btn.classList.toggle('nav-hidden', !is408);
+    if (panel) panel.classList.toggle('nav-hidden', !is408);
+    if (!is408) {
+      var active = document.querySelector('.tab-btn.active');
+      if (active && active.getAttribute('data-tab') === 'cs408') switchTab('today');
+    }
   }
 
   /* ============ 学习网站 ============ */
@@ -1191,8 +1563,9 @@
     else if (has && st.indexOf('请先在') === 0) refs.transQueryStatus.textContent = '';
   }
 
-  /* ============ 番茄钟（25 学习 + 5 休息） ============ */
-  var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, timer: null };
+  /* ============ 番茄钟（可自定义时长） + 自定义倒计时 ============ */
+  var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, workMin: 25, breakMin: 5, timer: null };
+  var customTimer = { running: false, remain: 25 * 60, total: 25 * 60, timer: null, done: false };
   function fmtPomo(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
   function renderPomodoro() {
     if (!refs.pomoTime) return;
@@ -1200,6 +1573,8 @@
     refs.pomoMode.textContent = pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中';
     refs.btnPomoStart.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
     refs.btnPomoReset.disabled = !pomodoro.running && pomodoro.remain === pomodoro.total;
+    var disp = refs.pomoTime ? refs.pomoTime.parentElement : null;
+    if (disp) { disp.classList.toggle('break', pomodoro.mode !== 'study'); disp.classList.remove('done'); }
   }
   function notifyPomodoro(msg) {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -1207,14 +1582,20 @@
     }
     showToast(msg);
   }
+  function readPomoTimes() {
+    var w = Number(refs.pomoWork && refs.pomoWork.value) || 25;
+    var b = Number(refs.pomoBreak && refs.pomoBreak.value) || 5;
+    pomodoro.workMin = Math.max(1, Math.min(120, w));
+    pomodoro.breakMin = Math.max(1, Math.min(60, b));
+  }
   function tickPomodoro() {
     pomodoro.remain--;
     if (pomodoro.remain <= 0) {
       if (pomodoro.mode === 'study') {
-        pomodoro.mode = 'rest'; pomodoro.total = 5 * 60; pomodoro.remain = 5 * 60;
-        notifyPomodoro('学习结束，休息 5 分钟！喝口水 💧');
+        pomodoro.mode = 'rest'; pomodoro.total = pomodoro.breakMin * 60; pomodoro.remain = pomodoro.breakMin * 60;
+        notifyPomodoro('学习结束，休息 ' + pomodoro.breakMin + ' 分钟！喝口水 💧');
       } else {
-        pomodoro.mode = 'study'; pomodoro.total = 25 * 60; pomodoro.remain = 25 * 60;
+        pomodoro.mode = 'study'; pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60;
         notifyPomodoro('休息结束，继续学习 💪');
       }
     }
@@ -1222,6 +1603,9 @@
   }
   function startPomodoro() {
     if (pomodoro.running) { pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); renderPomodoro(); return; }
+    readPomoTimes();
+    // 如果是初始状态，按自定义时长重置
+    if (pomodoro.remain === pomodoro.total && pomodoro.mode === 'study') { pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60; }
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') { try { Notification.requestPermission().catch(function () {}); } catch (e) {} }
     pomodoro.running = true;
     pomodoro.timer = setInterval(tickPomodoro, 1000);
@@ -1229,7 +1613,49 @@
   }
   function resetPomodoro() {
     pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer);
-    pomodoro.mode = 'study'; pomodoro.total = 25 * 60; pomodoro.remain = 25 * 60; renderPomodoro();
+    readPomoTimes();
+    pomodoro.mode = 'study'; pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60; renderPomodoro();
+  }
+
+  // 自定义倒计时
+  function renderCustomTimer() {
+    if (!refs.timerCustomTime) return;
+    refs.timerCustomTime.textContent = fmtPomo(customTimer.remain);
+    refs.timerCustomMode.textContent = customTimer.done ? '✅ 已完成' : '⏲ 倒计时';
+    refs.btnTimerCustomStart.textContent = customTimer.running ? '暂停' : (customTimer.remain < customTimer.total ? '继续' : '开始');
+    refs.btnTimerCustomReset.disabled = !customTimer.running && customTimer.remain === customTimer.total;
+    var disp = refs.timerCustomTime ? refs.timerCustomTime.parentElement : null;
+    if (disp) { disp.classList.toggle('done', !!customTimer.done); disp.classList.remove('break'); }
+  }
+  function tickCustomTimer() {
+    customTimer.remain--;
+    if (customTimer.remain <= 0) {
+      customTimer.remain = 0;
+      customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer);
+      customTimer.done = true;
+      notifyPomodoro('⏲ 倒计时结束！时间到 ⏰');
+    }
+    renderCustomTimer();
+  }
+  function startCustomTimer() {
+    if (customTimer.running) { customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer); renderCustomTimer(); return; }
+    if (customTimer.done || customTimer.remain === customTimer.total) {
+      var m = Number(refs.timerCustomMin && refs.timerCustomMin.value) || 25;
+      var s = Number(refs.timerCustomSec && refs.timerCustomSec.value) || 0;
+      var total = Math.max(1, m * 60 + s);
+      customTimer.total = total; customTimer.remain = total; customTimer.done = false;
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') { try { Notification.requestPermission().catch(function () {}); } catch (e) {} }
+    customTimer.running = true;
+    customTimer.timer = setInterval(tickCustomTimer, 1000);
+    renderCustomTimer();
+  }
+  function resetCustomTimer() {
+    customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer);
+    var m = Number(refs.timerCustomMin && refs.timerCustomMin.value) || 25;
+    var s = Number(refs.timerCustomSec && refs.timerCustomSec.value) || 0;
+    var total = Math.max(1, m * 60 + s);
+    customTimer.total = total; customTimer.remain = total; customTimer.done = false; renderCustomTimer();
   }
 
   function startPractice() {
@@ -1349,10 +1775,166 @@
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
   }
+  /* ============ 今日聚合 + 主题 + 键盘快捷键 ============ */
+  function renderTodayAggregate() {
+    if (!refs.aggCountdown) return;
+    // 倒计时
+    var examDate = Store.getConfig().examDate;
+    if (examDate) {
+      var diff = Math.ceil((new Date(examDate) - new Date(Store.todayStr())) / 86400000);
+      refs.aggCountdown.textContent = diff > 0 ? diff : (diff === 0 ? '今天' : '已过');
+    } else { refs.aggCountdown.textContent = '未设置'; }
+    // 今日学习时长
+    var today = Store.getDay(Store.todayStr()) || {};
+    refs.aggMinutes.textContent = Store.totalMinutesForDay(today);
+    // 计划完成
+    var plan = Store.getPlan(Store.todayStr()) || [];
+    var done = plan.filter(function (p) { return p.done; }).length;
+    refs.aggPlan.textContent = done + '/' + plan.length;
+    // 连续打卡
+    refs.aggStreak.textContent = Store.consecutiveStreak();
+  }
+
+  function applyTheme() {
+    var theme = Store.getTheme();
+    document.documentElement.setAttribute('data-theme', theme);
+    if (refs.themeToggle) refs.themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    var next = Store.getTheme() === 'dark' ? 'light' : 'dark';
+    Store.setTheme(next);
+    applyTheme();
+  }
+
+  function initKeyboardShortcuts() {
+    var KEY_MAP = { '1': 'config', '2': 'today', '3': 'plan', '4': 'summary', '5': 'record', '6': 'data', '7': 'mistakes', '8': 'math', '9': 'cs408', '0': 'websites' };
+    document.addEventListener('keydown', function (e) {
+      // 输入框中不触发
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      var k = e.key;
+      if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
+      if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
+    });
+  }
+
+  /* ---------------- 云端同步（登录码） ---------------- */
+  function renderSyncConfig() {
+    if (!refs.syncToken || !refs.syncCode) return;
+    refs.syncToken.value = Store.getLastSyncToken();
+    refs.syncCode.value = Store.getLastSyncCode();
+  }
+  function populatePlanSubjects() {
+    if (!refs.planSubject) return;
+    var cur = refs.planSubject.value;
+    refs.planSubject.innerHTML = '<option value="">不指定科目</option>';
+    Store.getSubjects().forEach(function (s) {
+      var o = document.createElement('option');
+      o.value = s.key; o.textContent = s.name;
+      refs.planSubject.appendChild(o);
+    });
+    if (cur) refs.planSubject.value = cur;
+  }
+  function syncSetStatus(msg, type) {
+    if (!refs.syncStatus) return;
+    refs.syncStatus.textContent = msg || '';
+    refs.syncStatus.className = 'import-status' + (type ? ' ' + type : '');
+  }
+  function syncApi(method, payload) {
+    var token = (refs.syncToken ? refs.syncToken.value : '') || '';
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
+    if (payload !== undefined) body.data = payload;
+    return fetch('/api/sync', {
+      method: method,
+      headers: headers,
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (j) { return [r, j]; }); }).then(function (arr) {
+      var resp = arr[0], j = arr[1];
+      if (!resp.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + resp.status));
+      return j;
+    });
+  }
+  function onSyncUpload() {
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
+    if (!confirm('确定把本机全部数据上传到云端登录码「' + code + '」？\n相同登录码的旧云端数据会被覆盖。')) return;
+    syncSetStatus('正在上传…', '');
+    var payload = Store.snapshot();
+    syncApi('PUT', payload).then(function (res) {
+      Store.setLastSyncToken((refs.syncToken ? refs.syncToken.value : '') || '');
+      Store.setLastSyncCode(code);
+      syncSetStatus('✅ 上传成功（版本 ' + (res && res.version ? res.version : '?') + '，设备：' + Store.getLastDeviceId() + '）', 'ok');
+      showToast('云端上传成功 ☁️');
+    }).catch(function (err) {
+      syncSetStatus('❌ 上传失败：' + (err.message || err), 'error');
+    });
+  }
+  function onSyncDownload() {
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
+    if (!confirm('从云端登录码「' + code + '」下载数据会覆盖本机全部数据，确定继续？')) return;
+    if (!confirm('二次确认：本机学习记录、计划、错题、词汇等都将被云端数据替换，建议先点「导出备份」留一份。确定下载？')) return;
+    syncSetStatus('正在下载…', '');
+    syncApi('GET').then(function (res) {
+      if (!res || !res.data) { syncSetStatus('⚠️ 该登录码暂无云端数据', 'error'); return; }
+      var ok = Store.restoreSnapshot(res.data);
+      if (!ok) { syncSetStatus('❌ 数据恢复失败，格式不兼容', 'error'); return; }
+      Store.setLastSyncToken((refs.syncToken ? refs.syncToken.value : '') || '');
+      Store.setLastSyncCode(code);
+      syncSetStatus('✅ 下载成功（版本 ' + (res.version || '?') + '），正在刷新页面…', 'ok');
+      setTimeout(function () { location.reload(); }, 900);
+    }).catch(function (err) {
+      syncSetStatus('❌ 下载失败：' + (err.message || err), 'error');
+    });
+  }
+  function onSyncDelete() {
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
+    if (!confirm('确定删除云端登录码「' + code + '」的全部数据？\n本机数据不受影响，但之后无法用这个登录码从云端拉取。')) return;
+    if (!confirm('二次确认：云端数据将被永久删除，无法恢复。确定删除？')) return;
+    syncSetStatus('正在删除…', '');
+    syncApi('DELETE').then(function (res) {
+      syncSetStatus('✅ 云端数据已删除（' + (res && res.removed ? res.removed + ' 条记录' : '完成') + '）', 'ok');
+      showToast('云端数据已删除');
+    }).catch(function (err) {
+      syncSetStatus('❌ 删除失败：' + (err.message || err), 'error');
+    });
+  }
+  function onGenSyncCode() {
+    var c = Store.generateSyncCode();
+    if (refs.syncCode) refs.syncCode.value = c;
+    Store.setLastSyncCode(c);
+    syncSetStatus('已生成新登录码，记得分享给要同步的设备哦 🎲', 'ok');
+  }
+  function onCopySyncCode() {
+    var c = ((refs.syncCode ? refs.syncCode.value : '') || '').trim();
+    if (!c) { syncSetStatus('登录码为空，无法复制', 'error'); return; }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c).then(function () {
+          syncSetStatus('✅ 登录码「' + c + '」已复制到剪贴板', 'ok');
+        }, function () { throw new Error('clipboard fail'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = c; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        syncSetStatus('✅ 登录码「' + c + '」已复制', 'ok');
+      }
+    } catch (e) {
+      syncSetStatus('复制失败，请手动选中文本复制：' + c, 'error');
+    }
+  }
+
   function renderAll() {
     renderConfig();
     renderTimerRows();
     renderManual();
+    populatePlanSubjects();
     renderPlan();
     renderToday();
     renderData();
@@ -1366,6 +1948,7 @@
     renderSummary();
     renderHfWords();
     renderTranslatorConfig();
+    renderSyncConfig();
     renderWrongBook();
     renderMastery();
     renderSubjectChapters();
@@ -1374,8 +1957,15 @@
     renderMathMistakes();
     renderMathQuestionList();
     renderMathPractice();
+    render408Chapters();
+    render408Mistakes();
+    render408QuestionList();
+    render408Practice();
+    render408Knowledge();
+    render408Years();
     updateTranslateButton();
     renderPomodoro();
+    renderCustomTimer();
   }
   function initTabs() {
     var tabs = document.querySelectorAll('.tab-btn');
@@ -1392,14 +1982,18 @@
         if (target === 'words') renderWrongBook();
         if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
         if (target === 'math') { renderMathChapters(); renderMathMistakes(); renderMathQuestionList(); renderMathPractice(); }
+        if (target === 'cs408') { render408Chapters(); render408Mistakes(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+        if (target === 'today') renderTodayAggregate();
         if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
       });
     });
     updateMathTabVisibility();
+    update408TabVisibility();
   }
 
   function init() {
     refs.majorSelect = $('major-select');
+    refs.nicknameInput = $('nickname-input');
     refs.examDate = $('exam-date');
     refs.targetTotal = $('target-total');
     refs.autoPlan = $('auto-plan');
@@ -1408,6 +2002,16 @@
     refs.btnExport = $('btn-export');
     refs.fileImport = $('file-import');
     refs.btnResetAll = $('btn-reset-all');
+
+    // 云同步（登录码）
+    refs.syncToken = $('sync-token');
+    refs.syncCode = $('sync-code');
+    refs.btnGenSyncCode = $('btn-gen-sync-code');
+    refs.btnCopySyncCode = $('btn-copy-sync-code');
+    refs.btnSyncUpload = $('btn-sync-upload');
+    refs.btnSyncDownload = $('btn-sync-download');
+    refs.btnSyncDelete = $('btn-sync-delete');
+    refs.syncStatus = $('sync-status');
 
     refs.timerRows = $('timer-rows');
     refs.pomoTime = $('pomo-time');
@@ -1441,6 +2045,7 @@
     refs.planHint = $('plan-hint');
     refs.btnAutoPlan = $('btn-auto-plan');
     refs.planList = $('plan-list');
+    refs.planSubject = $('plan-subject');
     refs.planText = $('plan-text');
     refs.planMin = $('plan-min');
     refs.btnAddPlan = $('btn-add-plan');
@@ -1538,6 +2143,60 @@
     refs.mqExplain = $('mq-explain');
     refs.btnAddMq = $('btn-add-mq');
 
+    // 408 专业课模块
+    refs.cs408Chapters = $('cs408-chapters');
+    refs.cs408ChapterAdd = $('cs408-chapter-add');
+    refs.btnAddCs408Chapter = $('btn-add-cs408-chapter');
+    refs.cs408MistakeCat = $('cs408-mistake-cat');
+    refs.cs408MistakeContent = $('cs408-mistake-content');
+    refs.cs408MistakeNote = $('cs408-mistake-note');
+    refs.btnAddCs408Mistake = $('btn-add-cs408-mistake');
+    refs.cs408MistakeFilter = $('cs408-mistake-filter');
+    refs.cs408MistakeList = $('cs408-mistake-list');
+    refs.cs408DueBadge = $('cs408-due-badge');
+    refs.cs408PracticeCat = $('cs408-practice-cat');
+    refs.cs408Practice = $('cs408-practice');
+    refs.btnCs408PracticeStart = $('btn-cs408-practice-start');
+    refs.cs408QuestionList = $('cs408-question-list');
+    refs.cqCat = $('cq-cat');
+    refs.cqQ = $('cq-q');
+    refs.cqOpt0 = $('cq-opt0');
+    refs.cqOpt1 = $('cq-opt1');
+    refs.cqOpt2 = $('cq-opt2');
+    refs.cqOpt3 = $('cq-opt3');
+    refs.cqAnswer = $('cq-answer');
+    refs.cqExplain = $('cq-explain');
+    refs.btnAddCq = $('btn-add-cq');
+    refs.kpSubject = $('kp-subject');
+    refs.kpTitle = $('kp-title');
+    refs.kpContent = $('kp-content');
+    refs.btnAddKp = $('btn-add-kp');
+    refs.kpFilter = $('kp-filter');
+    refs.kpList = $('kp-list');
+    refs.yrYear = $('yr-year');
+    refs.yrScore = $('yr-score');
+    refs.yrTotal = $('yr-total');
+    refs.yrNote = $('yr-note');
+    refs.btnAddYr = $('btn-add-yr');
+    refs.yrList = $('yr-list');
+
+    // 番茄钟自定义时长 + 自定义倒计时
+    refs.pomoWork = $('pomo-work');
+    refs.pomoBreak = $('pomo-break');
+    refs.timerCustomMin = $('timer-custom-min');
+    refs.timerCustomSec = $('timer-custom-sec');
+    refs.timerCustomTime = $('timer-custom-time');
+    refs.timerCustomMode = $('timer-custom-mode');
+    refs.btnTimerCustomStart = $('btn-timer-custom-start');
+    refs.btnTimerCustomReset = $('btn-timer-custom-reset');
+
+    // 主题切换 + 今日聚合
+    refs.themeToggle = $('themeToggle');
+    refs.aggCountdown = $('agg-countdown');
+    refs.aggMinutes = $('agg-minutes');
+    refs.aggPlan = $('agg-plan');
+    refs.aggStreak = $('agg-streak');
+
     // 翻译密钥（用户自带 key，仅存本机浏览器）
     refs.transAppid = $('trans-appid');
     refs.transKey = $('trans-key');
@@ -1555,7 +2214,8 @@
     refs.btnClearWrong = $('btn-clear-wrong');
 
     // 配置
-    refs.majorSelect.addEventListener('change', function () { Store.setConfig({ major: refs.majorSelect.value }); });
+    refs.majorSelect.addEventListener('change', function () { Store.setConfig({ major: refs.majorSelect.value }); update408TabVisibility(); renderTodayAggregate(); });
+    refs.nicknameInput.addEventListener('change', function () { Store.setConfig({ nickname: refs.nicknameInput.value.trim() }); });
     refs.examDate.addEventListener('change', function () { Store.setConfig({ examDate: refs.examDate.value }); renderData(); });
     refs.targetTotal.addEventListener('change', function () { Store.setConfig({ targetTotal: Number(refs.targetTotal.value) || 0 }); renderData(); });
     refs.autoPlan.addEventListener('change', function () { Store.setConfig({ autoPlan: refs.autoPlan.checked }); renderPlan(); });
@@ -1577,10 +2237,22 @@
     });
     refs.btnAddPlan.addEventListener('click', function () {
       var text = refs.planText.value.trim(); var min = Number(refs.planMin.value) || 0;
+      var subj = refs.planSubject ? refs.planSubject.value : '';
       if (!text) { alert('请输入计划内容'); return; }
-      Store.addDailyPlanItem(Store.todayStr(), { text: text, minutes: min, done: false });
-      refs.planText.value = ''; refs.planMin.value = ''; renderPlan(); renderToday();
+      Store.addDailyPlanItem(Store.todayStr(), { text: text, minutes: min, done: false, subjectKey: subj || '' });
+      refs.planText.value = ''; refs.planMin.value = '';
+      if (refs.planSubject) refs.planSubject.value = '';
+      renderPlan(); renderToday();
     });
+
+    // 云同步按钮
+    if (refs.btnGenSyncCode) refs.btnGenSyncCode.addEventListener('click', onGenSyncCode);
+    if (refs.btnCopySyncCode) refs.btnCopySyncCode.addEventListener('click', onCopySyncCode);
+    if (refs.btnSyncUpload) refs.btnSyncUpload.addEventListener('click', onSyncUpload);
+    if (refs.btnSyncDownload) refs.btnSyncDownload.addEventListener('click', onSyncDownload);
+    if (refs.btnSyncDelete) refs.btnSyncDelete.addEventListener('click', onSyncDelete);
+    if (refs.syncToken) refs.syncToken.addEventListener('change', function () { Store.setLastSyncToken(refs.syncToken.value || ''); });
+    if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
 
     // 数据
     refs.heatPrev.addEventListener('click', function () { heatMonth--; if (heatMonth < 0) { heatMonth = 11; heatYear--; } renderData(); });
@@ -1642,7 +2314,9 @@
       r.readAsText(f);
     });
     refs.btnResetAll.addEventListener('click', function () {
-      if (confirm('确定清空全部数据？此操作不可恢复（建议先导出备份）')) { localStorage.removeItem('kaoyan_tracker_v1'); location.reload(); }
+      if (!confirm('确定清空全部数据？此操作不可恢复（建议先导出备份）')) return;
+      if (!confirm('二次确认：所有学习记录、计划、错题、词汇都将永久删除，确定继续？')) return;
+      localStorage.removeItem('kaoyan_tracker_v1'); location.reload();
     });
 
     // 侧边栏折叠
@@ -1686,6 +2360,29 @@
     // 数学：自定义题库
     refs.btnAddMq.addEventListener('click', onAddMathQuestion);
 
+    // 408：章节新增
+    if (refs.btnAddCs408Chapter) refs.btnAddCs408Chapter.addEventListener('click', function () {
+      var v = refs.cs408ChapterAdd.value.trim(); if (!v) return;
+      var arr = Store.get408Chapters().slice(); arr.push(v); Store.set408Chapters(arr);
+      refs.cs408ChapterAdd.value = ''; render408Chapters();
+    });
+    // 408：错题
+    if (refs.btnAddCs408Mistake) refs.btnAddCs408Mistake.addEventListener('click', onAdd408Mistake);
+    // 408：分类刷题
+    if (refs.btnCs408PracticeStart) refs.btnCs408PracticeStart.addEventListener('click', on408PracticeStart);
+    // 408：自定义题库
+    if (refs.btnAddCq) refs.btnAddCq.addEventListener('click', onAdd408Question);
+    // 408：知识点
+    if (refs.btnAddKp) refs.btnAddKp.addEventListener('click', onAdd408Knowledge);
+    // 408：真题年份
+    if (refs.btnAddYr) refs.btnAddYr.addEventListener('click', onAdd408Year);
+
+    // 自定义倒计时
+    if (refs.btnTimerCustomStart) refs.btnTimerCustomStart.addEventListener('click', startCustomTimer);
+    if (refs.btnTimerCustomReset) refs.btnTimerCustomReset.addEventListener('click', resetCustomTimer);
+    // 主题切换
+    if (refs.themeToggle) refs.themeToggle.addEventListener('click', toggleTheme);
+
     refs.manualDate.value = Store.todayStr();
     refs.examDate2.value = Store.todayStr();
 
@@ -1698,9 +2395,22 @@
     refs.mathMistakeCat.innerHTML = '';
     MATH_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mathMistakeCat.appendChild(o); });
 
+    // 408 章节预填充（仅首次）
+    if (!Store.get408Chapters().length) Store.set408Chapters(CS408_CHAPTERS_PREFILL.slice());
+    // 408 错题分类下拉
+    if (refs.cs408MistakeCat) {
+      refs.cs408MistakeCat.innerHTML = '';
+      CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.cs408MistakeCat.appendChild(o); });
+    }
+
+    // 主题初始化 + 键盘快捷键 + 今日聚合
+    applyTheme();
+    initKeyboardShortcuts();
+
     initTabs();
     renderAll();
     applySidebar();
+    renderTodayAggregate();
 
     // 每日打卡与连续学习提醒
     if (!Store.isCheckedIn(Store.todayStr()) && Store.totalMinutesForDay(Store.getDay(Store.todayStr()) || {}) === 0) {

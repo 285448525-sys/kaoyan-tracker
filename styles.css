@@ -142,12 +142,14 @@ textarea { resize: vertical; }
 .plan-item.done .plan-text { text-decoration: line-through; color: var(--muted); }
 .plan-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--primary); cursor: pointer; display: grid; place-items: center; flex: none; color: #fff; font-size: 13px; }
 .plan-item.done .plan-check { background: var(--ok); border-color: var(--ok); }
-.plan-text { flex: 1; font-size: 14px; }
+.plan-text { flex: 1; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+.plan-subject-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
 .plan-min { font-size: 12px; color: var(--muted); flex: none; }
 .plan-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; }
 .plan-add { display: flex; gap: 8px; margin-top: 6px; }
 .plan-add input[type=text] { flex: 1; }
 .plan-add input[type=number] { flex: none; }
+.plan-add select { flex: none; }
 
 /* Today summary + share FAB */
 .today-summary .summary-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
@@ -482,3 +484,134 @@ textarea { resize: vertical; }
 .pomo-mode { font-size: 14px; color: var(--muted); }
 .pomo-time { font-size: 48px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1; }
 
+/* ============ 番茄钟 / 自定义倒计时：时长配置 ============ */
+.pomodoro-card { border-left: 4px solid #ef4444; }
+.pomo-setup { margin-bottom: 4px; }
+.pomo-setup .field-row label { width: auto; flex: none; font-size: 13px; }
+.pomo-setup .field-row input[type=number] { flex: none; }
+.pomo-display.break .pomo-time { color: #10b981; }
+.pomo-display.done .pomo-time { color: var(--ok); }
+
+/* ============ 深色 / 浅色主题切换按钮 ============ */
+.theme-toggle {
+  margin-left: auto; flex: none; width: 36px; height: 36px; border-radius: 10px;
+  border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 18px;
+  cursor: pointer; display: grid; place-items: center; transition: background .15s ease;
+}
+.theme-toggle:hover { background: rgba(255,255,255,.3); }
+
+/* ============ 今日聚合卡片 ============ */
+.today-aggregate { background: linear-gradient(120deg, #4f46e5, #7c3aed); color: #fff; }
+.agg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.agg-cell { text-align: center; padding: 6px 4px; }
+.agg-num { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.agg-label { font-size: 12px; opacity: .85; margin-top: 4px; }
+@media (max-width: 560px) {
+  .agg-grid { grid-template-columns: repeat(2, 1fr); gap: 14px 8px; }
+  .agg-num { font-size: 22px; }
+}
+
+/* ============ 408 错题：到期复习徽标 / 待复习标签 ============ */
+.review-badge {
+  display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+  background: var(--danger); border-radius: 10px; padding: 2px 8px; margin-left: 6px; vertical-align: middle;
+}
+.due-tag { font-size: 11px; font-weight: 700; color: #fff; background: #f59e0b; border-radius: 6px; padding: 2px 8px; }
+.mistake-item.due { border-left: 4px solid #f59e0b; }
+.mistake-item.due .mistake-content { color: var(--ink); }
+.mistake-review { align-self: flex-start; margin-top: 8px; }
+
+/* ============ 408 知识点速查卡 ============ */
+.kp-list { display: grid; gap: 10px; margin-top: 4px; }
+.kp-card {
+  background: #f9fafb; border: 1px solid var(--line); border-left: 4px solid var(--primary);
+  border-radius: 12px; padding: 12px 14px;
+}
+.kp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.kp-badge { font-size: 11px; font-weight: 700; color: #fff; background: var(--primary); border-radius: 6px; padding: 2px 8px; }
+.kp-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.kp-content { font-size: 13px; color: var(--muted); white-space: pre-wrap; line-height: 1.6; }
+
+/* ============ 408 历年真题年份记录 ============ */
+.yr-list { display: grid; gap: 8px; margin-top: 4px; }
+.yr-row { display: flex; align-items: center; gap: 10px; background: #f9fafb; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.yr-year { font-weight: 700; font-size: 14px; min-width: 64px; flex: none; }
+.yr-bar { flex: 1; background: #e5e7eb; border-radius: 8px; height: 10px; overflow: hidden; }
+.yr-fill { height: 100%; border-radius: 8px; transition: width .4s ease; }
+.yr-score { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; min-width: 64px; text-align: right; flex: none; }
+.yr-note { font-size: 12px; color: var(--muted); flex: none; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) { .yr-note { display: none; } }
+
+/* ============ 408 刷题区 / 空提示 ============ */
+.practice-box { margin-top: 10px; }
+.empty-hint { text-align: center; color: var(--muted); font-size: 13px; padding: 18px 0; }
+
+/* ============ 章节三态：已完成 / 进行中 / 未开始 ============ */
+.chapter-item.done { opacity: .65; }
+.chapter-item.done .chapter-name { text-decoration: line-through; color: var(--muted); }
+.chapter-item.done .chapter-idx { background: var(--ok); color: #fff; }
+
+/* ============ 深色主题 ============ */
+:root[data-theme="dark"] {
+  --bg: #14161f;
+  --card: #1e2030;
+  --ink: #e4e7ef;
+  --muted: #9aa3b2;
+  --line: #313548;
+  --primary: #818cf8;
+  --primary-d: #6366f1;
+  --danger: #f87171;
+  --ok: #34d399;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme="dark"] body { background: var(--bg); color: var(--ink); }
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: #272a3d; color: var(--ink); border-color: var(--line);
+}
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] select:focus,
+:root[data-theme="dark"] textarea:focus {
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.22);
+}
+:root[data-theme="dark"] .btn-ghost { background: #2a2d42; color: var(--primary); }
+:root[data-theme="dark"] .btn-danger { background: #3a2226; color: var(--danger); }
+:root[data-theme="dark"] .mini-btn { background: #2a2d42; color: var(--ink); }
+:root[data-theme="dark"] .mini-btn:hover { background: #313548; }
+:root[data-theme="dark"] .card { background: var(--card); }
+:root[data-theme="dark"] .toggle-row,
+:root[data-theme="dark"] .timer-row,
+:root[data-theme="dark"] .plan-item,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .list-item,
+:root[data-theme="dark"] .mistake-item,
+:root[data-theme="dark"] .site-item,
+:root[data-theme="dark"] .chapter-block,
+:root[data-theme="dark"] .reminder,
+:root[data-theme="dark"] .hf-item,
+:root[data-theme="dark"] .tw-item,
+:root[data-theme="dark"] .mastery-row,
+:root[data-theme="dark"] .kp-card,
+:root[data-theme="dark"] .yr-row { background: #272a3d; border-color: var(--line); }
+:root[data-theme="dark"] .plan-item.done { background: #1c3a2e; border-color: #2f6b53; }
+:root[data-theme="dark"] .timer-row.running { background: #2a2d42; border-color: var(--primary); }
+:root[data-theme="dark"] .chapter-item { background: #272a3d; border-color: var(--line); }
+:root[data-theme="dark"] .chapter-item.current { background: #2a2d42; }
+:root[data-theme="dark"] .chapter-bar,
+:root[data-theme="dark"] .yr-bar { background: #313548; }
+:root[data-theme="dark"] .goal-bar { background: #313548; }
+:root[data-theme="dark"] .practice-opt { background: #272a3d; border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .practice-opt.correct { background: #1c3a2e; border-color: var(--ok); color: #6ee7b7; }
+:root[data-theme="dark"] .practice-opt.wrong { background: #3a2226; border-color: var(--danger); color: #fca5a5; }
+:root[data-theme="dark"] .chip { background: #272a3d; border-color: var(--line); color: var(--muted); }
+:root[data-theme="dark"] .word-card { background: #2a2d42; border-color: #3b3f5c; }
+:root[data-theme="dark"] .word-card.err { background: #3a2226; border-color: #5c2f33; }
+:root[data-theme="dark"] .clause { background: #272a3d; border-color: var(--line); }
+:root[data-theme="dark"] .clause-main { background: #2a2d42; }
+:root[data-theme="dark"] .syn-card { background: #3a3220; border-color: #5c4a26; }
+:root[data-theme="dark"] .method-text { background: #272a3d; border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .grid-line { stroke: #313548; }
+:root[data-theme="dark"] .mheat-cell.in.lv0 { background: #313548; }
+:root[data-theme="dark"] .toast { background: rgba(40,44,64,.96); }
+:root[data-theme="dark"] .fab-share { box-shadow: 0 8px 20px rgba(0,0,0,.5); }

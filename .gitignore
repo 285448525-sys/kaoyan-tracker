@@ -5,12 +5,20 @@ _cf_deploy/
 _cf_deploy.zip
 _test_*.js
 _smoke.js
-_worker.js
 雅思复盘模块/
 考研网站_*.md
 考研网站_离线版_*.zip
 考研学习记录_离线纯静态版_*.zip
 deploy-to-github.ps1
+
+# npm / wrangler / CI（云同步功能用，本地装依赖不提交）
+node_modules/
+.wrangler/
+.wrangler.toml.bak
+.pnpm-store/
+.env
+.env.*
+!.env.example
 
 # 系统文件
 Thumbs.db
@@ -24,3 +32,5 @@ Thumbs.db
 
 # 开发文档/临时产物
 overview.md
+*_指令_*.md
+*_补丁_*.md
