@@ -428,7 +428,7 @@
     var cfg = Store.getConfig();
     var countdown = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000) : undefined;
     // 计划明细（带科目颜色）
-    var rawPlans = Store.getPlans(ds) || [];
+    var rawPlans = Store.getPlan(ds) || [];
     var plans = rawPlans.map(function (p) {
       var color = '#64748b';
       if (p.subjectKey && subMap[p.subjectKey] && subMap[p.subjectKey].color) color = subMap[p.subjectKey].color;
