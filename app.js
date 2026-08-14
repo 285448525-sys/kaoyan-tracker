@@ -1959,7 +1959,7 @@
     var token = (refs.syncToken ? refs.syncToken.value : '') || '';
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
-    var headers = { 'Content-Type': 'application/json' };
+    var headers = { 'Content-Type': 'application/json', 'X-Sync-Key': code };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
     if (payload !== undefined) body.data = payload;
