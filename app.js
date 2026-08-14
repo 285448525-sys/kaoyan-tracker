@@ -50,20 +50,6 @@
     }
     return null;
   }
-  // 渲染「分类筛选 chips」：原先在数学错题 / 408 错题 / 408 知识点三处各写了一份
-  // container 容器节点；items 数据数组；keyOf 取分类字段的函数；active 当前选中项；onPick 点击回调
-  function renderFilterChips(container, items, keyOf, active, onPick) {
-    if (!container) return;
-    var cats = { '全部': items.length };
-    items.forEach(function (it) { var k = keyOf(it); cats[k] = (cats[k] || 0) + 1; });
-    container.innerHTML = '';
-    Object.keys(cats).forEach(function (c) {
-      var chip = el('div', 'chip' + (c === active ? ' active' : ''), escapeHtml(c) + ' (' + cats[c] + ')');
-      chip.addEventListener('click', function () { onPick(c); });
-      container.appendChild(chip);
-    });
-  }
-
   var MISTAKE_TYPES = ['今日感悟', '刷题时遇到的问题', '知识点盲区', '易错点', '其他'];
   // 错题本科目：固定丰富列表，并与用户配置的考试科目合并去重（修复「科目无法选择」缺陷）
   var MISTAKE_SUBJECTS = ['阅读', '完形', '翻译', '写作', '语法', '词汇', '听力', '口语', '政治', '数学', '专业课'];
@@ -1704,9 +1690,13 @@
     var html = '<div class="practice-en" style="font-size:18px">' + escapeHtml(cur.q) + '</div>';
     html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 题 · ' + escapeHtml(cat) + '</div>';
     html += '<div class="practice-options">';
-    cur.options.forEach(function (o, i) {
-      html += '<button class="practice-opt" data-i="' + i + '">' + escapeHtml(o) + '</button>';
-    });
+    if (!Array.isArray(cur.options) || !cur.options.length) {
+      html += '<div class="empty-hint">该题缺少选项数据（旧数据或导入异常），请到「我的题库」删除后重新添加</div>';
+    } else {
+      cur.options.forEach(function (o, i) {
+        html += '<button class="practice-opt" data-i="' + i + '">' + escapeHtml(o) + '</button>';
+      });
+    }
     html += '</div>';
     html += '<div class="practice-feedback" id="mp-feedback"></div>';
     html += '<div class="practice-actions" id="mp-actions"></div>';
@@ -1725,7 +1715,7 @@
           if (Number(b.getAttribute('data-i')) === cur.answer) b.classList.add('correct');
         });
         if (correct) { btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669'; }
-        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + cur.options[cur.answer]; fb.style.color = '#dc2626'; }
+        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + (Array.isArray(cur.options) && cur.options[cur.answer] !== undefined ? cur.options[cur.answer] : '（缺失）'); fb.style.color = '#dc2626'; }
         if (cur.explain) fb.textContent += '　解析：' + cur.explain;
         var act = $('mp-actions');
         var next = el('button', 'btn btn-primary', s.index + 1 >= s.items.length ? '查看结果' : '下一题');
@@ -1868,9 +1858,13 @@
     var html = '<div class="practice-en" style="font-size:18px">' + escapeHtml(cur.q) + '</div>';
     html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 题 · ' + escapeHtml(cat) + '</div>';
     html += '<div class="practice-options">';
-    cur.options.forEach(function (o, i) {
-      html += '<button class="practice-opt" data-i="' + i + '">' + escapeHtml(o) + '</button>';
-    });
+    if (!Array.isArray(cur.options) || !cur.options.length) {
+      html += '<div class="empty-hint">该题缺少选项数据（旧数据或导入异常），请到「我的题库」删除后重新添加</div>';
+    } else {
+      cur.options.forEach(function (o, i) {
+        html += '<button class="practice-opt" data-i="' + i + '">' + escapeHtml(o) + '</button>';
+      });
+    }
     html += '</div>';
     html += '<div class="practice-feedback" id="cp-feedback"></div>';
     html += '<div class="practice-actions" id="cp-actions"></div>';
@@ -1889,7 +1883,7 @@
           if (Number(b.getAttribute('data-i')) === cur.answer) b.classList.add('correct');
         });
         if (correct) { btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669'; }
-        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + cur.options[cur.answer]; fb.style.color = '#dc2626'; }
+        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + (Array.isArray(cur.options) && cur.options[cur.answer] !== undefined ? cur.options[cur.answer] : '（缺失）'); fb.style.color = '#dc2626'; }
         if (cur.explain) fb.textContent += '　解析：' + cur.explain;
         var act = $('cp-actions');
         var next = el('button', 'btn btn-primary', s.index + 1 >= s.items.length ? '查看结果' : '下一题');
@@ -3505,8 +3499,6 @@
 
     // 数学模块
     refs.mathChapters = $('math-chapters');
-    refs.mathChapterAdd = $('math-chapter-add');
-    refs.btnAddMathChapter = $('btn-add-math-chapter');
     refs.mathMistakeCat = $('math-mistake-cat');
     refs.mathMistakeContent = $('math-mistake-content');
     refs.mathMistakeNote = $('math-mistake-note');
@@ -3532,8 +3524,6 @@
 
     // 408 专业课模块
     refs.cs408Chapters = $('cs408-chapters');
-    refs.cs408ChapterAdd = $('cs408-chapter-add');
-    refs.btnAddCs408Chapter = $('btn-add-cs408-chapter');
     refs.cs408MistakeCat = $('cs408-mistake-cat');
     refs.cs408MistakeContent = $('cs408-mistake-content');
     refs.cs408MistakeNote = $('cs408-mistake-note');
@@ -3814,12 +3804,6 @@
       Store.addPlanItem({ text: text, note: refs.planNote.value.trim(), done: false });
       refs.planItemText.value = ''; refs.planNote.value = ''; renderPlanItems();
     });
-    // 数学：章节新增（内部 addRow 已处理；此处兼容旧节点，元素不存在则跳过）
-    if (refs.btnAddMathChapter) refs.btnAddMathChapter.addEventListener('click', function () {
-      var v = refs.mathChapterAdd.value.trim(); if (!v) return;
-      var arr = Store.getMathChapters().slice(); arr.push(v); Store.setMathChapters(arr);
-      refs.mathChapterAdd.value = ''; renderMathChapters();
-    });
     // 数学：错题
     refs.btnAddMathMistake.addEventListener('click', onAddMathMistake);
     // 数学：错题速查卡（Leitner 复习）
@@ -3829,13 +3813,6 @@
     // 数学：自定义题库
     refs.btnAddMq.addEventListener('click', onAddMathQuestion);
 
-    // 408：章节新增（内部 addRow 已处理；此处兼容旧节点）
-    if (refs.btnAddCs408Chapter) refs.btnAddCs408Chapter.addEventListener('click', function () {
-      if (!refs.cs408ChapterAdd) return;
-      var v = refs.cs408ChapterAdd.value.trim(); if (!v) return;
-      var arr = Store.get408Chapters().slice(); arr.push(v); Store.set408Chapters(arr);
-      refs.cs408ChapterAdd.value = ''; render408Chapters();
-    });
     // 408：错题
     if (refs.btnAddCs408Mistake) refs.btnAddCs408Mistake.addEventListener('click', onAdd408Mistake);
     // 408：分类刷题
