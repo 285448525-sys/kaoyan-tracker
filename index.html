@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814u" />
+  <link rel="stylesheet" href="styles.css?v=20260814v" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -237,9 +237,30 @@
           <button id="btn-cheer" class="today-cheer" type="button" title="点一下，给自己一点鼓励">💪 加油！</button>
         </div>
 
-        <!-- 三大主指标 + 行动按钮 -->
+        <!-- 倒计时独立卡片：深色渐变紫（设计方案核心视觉） -->
+        <div class="today-countdown-card" id="today-countdown-card">
+          <div class="countdown-top">
+            <span class="countdown-tag" id="cd-target">🎯 目标院校 / 专业</span>
+            <span class="countdown-quote" id="cd-quote">“每天进步一点点”</span>
+          </div>
+          <div class="countdown-body">
+            <div class="countdown-number">
+              <span class="countdown-day" id="cd-day">--</span>
+              <span class="countday-unit">天</span>
+            </div>
+            <div class="countdown-progress-wrap">
+              <div class="countdown-label">
+                <span>备考进度</span><span id="cd-pct">0%</span>
+              </div>
+              <div class="countdown-bar"><div class="countdown-bar-fill" id="cd-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 四大主指标卡（时长/打卡/计划/趋势） -->
         <div class="today-stats">
           <div class="stat-block stat-focus" data-zero-toggle>
+            <div class="stat-icon">⏱</div>
             <div class="stat-value">
               <span class="num" id="agg-minutes">0</span>
               <span class="unit">min</span>
@@ -247,6 +268,7 @@
             <div class="stat-label">今日专注时长</div>
           </div>
           <div class="stat-block stat-streak" data-zero-toggle>
+            <div class="stat-icon">🔥</div>
             <div class="stat-value">
               <span class="num" id="agg-streak">0</span>
               <span class="unit">天</span>
@@ -254,6 +276,7 @@
             <div class="stat-label">连续打卡</div>
           </div>
           <div class="stat-block stat-plan" data-zero-toggle>
+            <div class="stat-icon">✅</div>
             <div class="stat-value">
               <span class="num" id="agg-plan-done">0</span>
               <span class="sep">/</span>
@@ -261,15 +284,34 @@
             </div>
             <div class="stat-label">计划项完成</div>
           </div>
-          <button id="btn-quick-focus" class="today-action" type="button" title="切换到记录页开始计时">
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path fill="currentColor" d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
+          <div class="stat-block stat-trend" data-zero-toggle>
+            <div class="stat-icon">📈</div>
+            <div class="stat-value">
+              <span class="num" id="agg-trend-hrs">0</span>
+              <span class="unit">h</span>
+            </div>
+            <div class="stat-label">本周学习时长</div>
+          </div>
         </div>
 
-        <!-- 次级指标：倒计时 / 今日得分 / 累计等级 -->
-        <div class="today-secondary">
+        <!-- 次级信息：今日得分 / 累计等级卡片组 -->
+        <div class="today-score-card" id="today-score-card">
+          <div class="sc-item">
+            <div class="sc-label">距考研</div>
+            <div class="sc-value"><span id="agg-countdown">--</span> <span style="font-size:14px;font-weight:600;color:var(--muted)">天</span></div>
+          </div>
+          <div class="sc-item">
+            <div class="sc-label">今日得分</div>
+            <div class="sc-value" id="agg-score">0</div>
+          </div>
+          <div class="sc-item">
+            <div class="sc-label">累计等级</div>
+            <div class="sc-value" id="agg-level">Lv.0</div>
+          </div>
+        </div>
+
+        <!-- 旧 secondary 隐藏（CSS 已 display:none 兜底） -->
+        <div class="today-secondary" style="display:none">
           <div class="sec-item">
             <span class="sec-label">距考研</span>
             <span class="sec-num" id="agg-countdown">--</span>
@@ -889,13 +931,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260814u"></script>
-  <script src="words.js?v=20260814u"></script>
-  <script src="store.js?v=20260814u"></script>
-  <script src="charts.js?v=20260814u"></script>
-  <script src="share.js?v=20260814u"></script>
-  <script src="md5.js?v=20260814u"></script>
-  <script src="sentences.js?v=20260814u"></script>
-  <script src="app.js?v=20260814u"></script>
+  <script src="qrcode.min.js?v=20260814v"></script>
+  <script src="words.js?v=20260814v"></script>
+  <script src="store.js?v=20260814v"></script>
+  <script src="charts.js?v=20260814v"></script>
+  <script src="share.js?v=20260814v"></script>
+  <script src="md5.js?v=20260814v"></script>
+  <script src="sentences.js?v=20260814v"></script>
+  <script src="app.js?v=20260814v"></script>
 </body>
 </html>

@@ -2912,10 +2912,70 @@
     if (refs.todayDate) refs.todayDate.textContent = fmtTodayWithWeekday(Store.todayStr());
     // 倒计时
     var examDate = Store.getConfig().examDate;
+    var diff = '--';
     if (examDate) {
-      var diff = Math.ceil((new Date(examDate) - new Date(Store.todayStr())) / 86400000);
+      diff = Math.ceil((new Date(examDate) - new Date(Store.todayStr())) / 86400000);
       refs.aggCountdown.textContent = diff > 0 ? diff : (diff === 0 ? '今天' : '已过');
     } else { refs.aggCountdown.textContent = '未设置'; }
+    // ====== 新增：倒计时深紫卡片填充 ======
+    var cdDay = document.getElementById('cd-day');
+    var cdPct = document.getElementById('cd-pct');
+    var cdFill = document.getElementById('cd-fill');
+    var cdTarget = document.getElementById('cd-target');
+    var cdQuote = document.getElementById('cd-quote');
+    if (cdDay) cdDay.textContent = (typeof diff === 'number' && diff > 0) ? diff : (diff === '今天' ? '0' : '--');
+    if (examDate) {
+      try {
+        var startHint = Store.getConfig() && Store.getConfig()._startDate ? Store.getConfig()._startDate : null;
+        var total = 200;  // 默认考研周期估算 200 天
+        if (startHint) {
+          total = Math.max(30, Math.round((new Date(examDate) - new Date(startHint)) / 86400000));
+        } else {
+          total = Math.max(30, 180 + (diff > 0 ? diff : 0));
+        }
+        var remain = typeof diff === 'number' && diff > 0 ? diff : 0;
+        var passed = Math.max(0, total - remain);
+        var pct = total ? Math.round(passed / total * 100) : 0;
+        if (cdPct) cdPct.textContent = pct + '%';
+        if (cdFill) cdFill.style.width = Math.min(100, pct) + '%';
+      } catch (e) { if (cdPct) cdPct.textContent = '--'; if (cdFill) cdFill.style.width = '0%'; }
+    } else {
+      if (cdPct) cdPct.textContent = '请设置考研日期';
+      if (cdFill) cdFill.style.width = '0%';
+    }
+    if (cdTarget) {
+      var cfg = Store.getConfig();
+      var majorName = (cfg.major && cfg.major.trim()) ? cfg.major : '目标院校 / 专业';
+      cdTarget.textContent = '🎯 ' + majorName;
+    }
+    if (cdQuote) {
+      var quotes = [
+        '“日拱一卒，功不唐捐”',
+        '“慢慢来，比较快”',
+        '“今天的努力，是幸运的伏笔”',
+        '“再坚持一下，你已经走了这么远”',
+        '“保持专注，静待花开”',
+        '“每天进步 1%”'
+      ];
+      cdQuote.textContent = quotes[new Date().getDate() % quotes.length];
+    }
+    // ====== 新增：本周学习时长（第 4 张趋势卡） ======
+    var weeklyHours = 0;
+    try {
+      var stats = getStudyStats();
+      var weekMin = 0;
+      var now = new Date(Store.todayStr());
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(now); d.setDate(d.getDate() - i);
+        var ds = d.toISOString().slice(0, 10);
+        var dd = Store.getDay(ds) || {};
+        weekMin += Store.totalMinutesForDay(dd);
+      }
+      weeklyHours = Math.round(weekMin / 60 * 10) / 10;
+    } catch (e) { weeklyHours = 0; }
+    var aggTrend = document.getElementById('agg-trend-hrs');
+    if (aggTrend) aggTrend.textContent = weeklyHours;
+
     // 今日学习时长
     var today = Store.getDay(Store.todayStr()) || {};
     var minutes = Store.totalMinutesForDay(today);
@@ -2941,6 +3001,7 @@
     syncStatZero('.stat-focus', minutes);
     syncStatZero('.stat-streak', refs.aggStreak.textContent);
     syncStatZero('.stat-plan', plan.length === 0 ? 0 : done);
+    syncStatZero('.stat-trend', weeklyHours);
     // 倒计时分阶段
     if (refs.aggPhase) {
       var ph = phaseInfo(examDate);
@@ -2959,26 +3020,32 @@
     renderTodayOnboarding();
   }
 
-  /* ============ H1：科目进度聚合条（今日页 KPI 卡下方） ============ */
+  /* ============ H1：科目进度聚合条（今日页 KPI 卡下方）——用语义色 ============ */
   function renderAggSubjectProgress() {
     if (!refs.aggSubjectProgress) return;
     var subs = Store.getSubjects();
     if (!subs.length) { refs.aggSubjectProgress.innerHTML = ''; return; }
     var html = '';
     subs.forEach(function (s) {
-      // 章节进度：用已完成章节数（支持跳跃式学习），而非 current+1
+      // 章节进度：用已完成章节数（支持跳跃式学习）
       var doneCount = 0, total = 0;
       if (s.key === 'math') { total = Store.getMathChapters().length; doneCount = Store.getMathDone().length; }
       else if (s.key === 'cs408') { total = Store.get408Chapters().length; doneCount = Store.get408Done().length; }
       else { var ch = Store.getSubjectChapters(s.key) || {}; total = (ch.chapters || []).length; doneCount = (Array.isArray(ch.done) ? ch.done.length : 0); }
       var pct = total ? Math.max(0, Math.min(100, Math.round(doneCount / total * 100))) : 0;
-      var progText;
-      if (!total) progText = '未设置';
-      else progText = doneCount + '/' + total;
+      // 科目语义色映射（和 styles.css 里的 c-politics/c-english/c-math/c-major/c-cs408 对应）
+      var key = (s.key || '').toLowerCase();
+      var name = (s.name || '').toLowerCase();
+      var colorClass = 'c-default';
+      if (key === 'politics' || name.indexOf('政治') >= 0) colorClass = 'c-politics';
+      else if (key === 'english' || name.indexOf('英语') >= 0) colorClass = 'c-english';
+      else if (key === 'math' || name.indexOf('数学') >= 0) colorClass = 'c-math';
+      else if (key === 'cs408' || name.indexOf('408') >= 0) colorClass = 'c-cs408';
+      else if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) colorClass = 'c-major';
       html += '<div class="agg-sp-row">' +
                 '<div class="agg-sp-name">' + escapeHtml(s.name) + '</div>' +
-                '<div class="agg-sp-bar"><div class="agg-sp-fill" style="width:' + pct + '%;background:' + (s.color || '#fff') + '"></div></div>' +
-                '<div class="agg-sp-text">' + progText + '</div>' +
+                '<div class="agg-sp-bar"><div class="agg-sp-fill ' + colorClass + '" style="width:' + pct + '%"></div></div>' +
+                '<div class="agg-sp-percent">' + (total ? pct : '--') + '%</div>' +
               '</div>';
     });
     refs.aggSubjectProgress.innerHTML = html;
