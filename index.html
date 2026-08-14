@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814j" />
+  <link rel="stylesheet" href="styles.css?v=20260814k" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -110,6 +110,35 @@
         <h2 class="card-title">考试科目组合</h2>
         <div id="toggles" class="toggles"></div>
         <div id="subject-detail" class="subject-detail"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🎯 得分权重配置</h2>
+        <p class="card-hint">近 30 天每日得分按以下权重实时重算。默认 时长50 / 计划20 / 生词15 / 错题15；不考英语词汇的 408 考生可把「生词复习」调低或归零。</p>
+        <div class="weight-row">
+          <label>学习时长</label>
+          <input type="range" id="w-duration" min="0" max="50" />
+          <input type="number" id="w-duration-num" min="0" max="100" class="weight-num" />
+        </div>
+        <div class="weight-row">
+          <label>计划完成</label>
+          <input type="range" id="w-plan" min="0" max="50" />
+          <input type="number" id="w-plan-num" min="0" max="100" class="weight-num" />
+        </div>
+        <div class="weight-row">
+          <label>生词复习</label>
+          <input type="range" id="w-vocab" min="0" max="50" />
+          <input type="number" id="w-vocab-num" min="0" max="100" class="weight-num" />
+        </div>
+        <div class="weight-row">
+          <label>错题整理</label>
+          <input type="range" id="w-mistake" min="0" max="50" />
+          <input type="number" id="w-mistake-num" min="0" max="100" class="weight-num" />
+        </div>
+        <div class="weight-total" id="weight-total"></div>
+        <div class="btn-row">
+          <button id="btn-reset-weights" class="btn btn-ghost">恢复默认</button>
+        </div>
       </div>
 
       <div class="card">
@@ -538,10 +567,6 @@
       <div class="card">
         <h2 class="card-title">📐 数学章节进度</h2>
         <div id="math-chapters" class="chapter-list"></div>
-        <div class="plan-add">
-          <input type="text" id="math-chapter-add" placeholder="新增章节名" />
-          <button id="btn-add-math-chapter" class="btn btn-ghost">添加章节</button>
-        </div>
       </div>
 
       <div class="card">
@@ -604,10 +629,6 @@
       <div class="card">
         <h2 class="card-title">💻 408 章节进度</h2>
         <div id="cs408-chapters" class="chapter-list"></div>
-        <div class="plan-add">
-          <input type="text" id="cs408-chapter-add" placeholder="新增章节（可写「分组 · 章节名」）" />
-          <button id="btn-add-cs408-chapter" class="btn btn-ghost">添加章节</button>
-        </div>
       </div>
 
       <div class="card">
@@ -729,13 +750,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814j"></script>
-  <script src="words.js?v=20260814j"></script>
-  <script src="store.js?v=20260814j"></script>
-  <script src="charts.js?v=20260814j"></script>
-  <script src="share.js?v=20260814j"></script>
-  <script src="md5.js?v=20260814j"></script>
-  <script src="sentences.js?v=20260814j"></script>
-  <script src="app.js?v=20260814j"></script>
+  <script src="qrcode.min.js?v=20260814k"></script>
+  <script src="words.js?v=20260814k"></script>
+  <script src="store.js?v=20260814k"></script>
+  <script src="charts.js?v=20260814k"></script>
+  <script src="share.js?v=20260814k"></script>
+  <script src="md5.js?v=20260814k"></script>
+  <script src="sentences.js?v=20260814k"></script>
+  <script src="app.js?v=20260814k"></script>
 </body>
 </html>

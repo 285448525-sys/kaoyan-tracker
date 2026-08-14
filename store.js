@@ -13,6 +13,77 @@
   };
   var FALLBACK_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
+  /* 数学三套卷种章节模板（按「分组 · 章节名」存储，与现有 parseChapter 一致）。
+     数二不含概率统计；数三高数偏经济应用（用「微积分的经济应用」替换空间解析几何）。 */
+  var MATH_VOLUME_CHAPTERS = {
+    '数学一': [
+      '高数 · 函数、极限、连续',
+      '高数 · 一元函数微分学（导数与微分）',
+      '高数 · 微分中值定理与导数应用',
+      '高数 · 不定积分',
+      '高数 · 定积分与反常积分',
+      '高数 · 多元函数微积分学',
+      '高数 · 无穷级数',
+      '高数 · 常微分方程',
+      '高数 · 向量代数与空间解析几何',
+      '线代 · 行列式',
+      '线代 · 矩阵',
+      '线代 · 向量组的线性相关性',
+      '线代 · 线性方程组',
+      '线代 · 特征值与特征向量',
+      '线代 · 二次型',
+      '概率 · 随机事件与概率',
+      '概率 · 随机变量及其分布',
+      '概率 · 多维随机变量',
+      '概率 · 随机变量的数字特征',
+      '概率 · 大数定律与中心极限定理',
+      '概率 · 数理统计的基本概念',
+      '概率 · 参数估计',
+      '概率 · 假设检验'
+    ],
+    '数学二': [
+      '高数 · 函数、极限、连续',
+      '高数 · 一元函数微分学（导数与微分）',
+      '高数 · 微分中值定理与导数应用',
+      '高数 · 不定积分',
+      '高数 · 定积分与反常积分',
+      '高数 · 多元函数微积分学（含二重积分）',
+      '高数 · 常微分方程',
+      '线代 · 行列式',
+      '线代 · 矩阵',
+      '线代 · 向量组的线性相关性',
+      '线代 · 线性方程组',
+      '线代 · 特征值与特征向量',
+      '线代 · 二次型'
+    ],
+    '数学三': [
+      '高数 · 函数、极限、连续',
+      '高数 · 一元函数微分学（导数与微分）',
+      '高数 · 微分中值定理与导数应用',
+      '高数 · 不定积分',
+      '高数 · 定积分与反常积分',
+      '高数 · 多元函数微积分学',
+      '高数 · 无穷级数',
+      '高数 · 常微分方程',
+      '高数 · 微积分的经济应用',
+      '线代 · 行列式',
+      '线代 · 矩阵',
+      '线代 · 向量组的线性相关性',
+      '线代 · 线性方程组',
+      '线代 · 特征值与特征向量',
+      '线代 · 二次型',
+      '概率 · 随机事件与概率',
+      '概率 · 随机变量及其分布',
+      '概率 · 多维随机变量',
+      '概率 · 随机变量的数字特征',
+      '概率 · 大数定律与中心极限定理',
+      '概率 · 数理统计的基本概念',
+      '概率 · 参数估计',
+      '概率 · 假设检验'
+    ]
+  };
+  var MATH_VOLUMES = ['数学一', '数学二', '数学三'];
+
   function defaults() {
     return {
       config: {
@@ -22,8 +93,12 @@
         targetTotal: 0,
         autoPlan: false,
         subjects: [],
-        sidebarCollapsed: false
+        sidebarCollapsed: false,
+        subjectExpanded: {}, // { 科目key: true } 配置页带子结构科目的展开态（数学/408）
+        scoreWeights: { duration: 50, plan: 20, vocab: 15, mistake: 15 } // 单日得分四项权重（合计满分100）
       },
+      mathVolume: '', // 当前数学卷种：'数学一'|'数学二'|'数学三'，空时按默认（数学一）处理
+      cs408BooksCollapsed: {}, // { 书名: true } 408 各书折叠态（true=折叠）
       days: {},   // 'YYYY-MM-DD' -> {durations:{key:min}, completed:'', summary:'', note:''}
       exams: [],  // {id,name,date,scores:{key:score},total}
       plans: {},  // 'YYYY-MM-DD' -> [{id,text,minutes,done}]
@@ -66,8 +141,20 @@
       if (!raw) return defaults();
       var p = JSON.parse(raw);
       var d = defaults();
+      var cfgIn = (p.config && p.config.subjects) ? p.config : null;
+      var cfgOut = {
+        nickname: cfgIn ? (cfgIn.nickname !== undefined ? cfgIn.nickname : d.config.nickname) : d.config.nickname,
+        major: cfgIn ? (cfgIn.major !== undefined ? cfgIn.major : d.config.major) : d.config.major,
+        examDate: cfgIn ? (cfgIn.examDate !== undefined ? cfgIn.examDate : d.config.examDate) : d.config.examDate,
+        targetTotal: cfgIn ? (cfgIn.targetTotal !== undefined ? cfgIn.targetTotal : d.config.targetTotal) : d.config.targetTotal,
+        autoPlan: cfgIn ? (cfgIn.autoPlan !== undefined ? cfgIn.autoPlan : d.config.autoPlan) : d.config.autoPlan,
+        subjects: cfgIn ? cfgIn.subjects : d.config.subjects,
+        sidebarCollapsed: cfgIn ? (cfgIn.sidebarCollapsed !== undefined ? cfgIn.sidebarCollapsed : d.config.sidebarCollapsed) : d.config.sidebarCollapsed,
+        subjectExpanded: cfgIn && cfgIn.subjectExpanded && typeof cfgIn.subjectExpanded === 'object' ? cfgIn.subjectExpanded : d.config.subjectExpanded,
+        scoreWeights: cfgIn && cfgIn.scoreWeights && typeof cfgIn.scoreWeights === 'object' ? cfgIn.scoreWeights : d.config.scoreWeights
+      };
       return {
-        config: (p.config && p.config.subjects) ? p.config : d.config,
+        config: cfgOut,
         days: (p.days && typeof p.days === 'object') ? p.days : {},
         exams: (p.exams && Array.isArray(p.exams)) ? p.exams : [],
         plans: (p.plans && typeof p.plans === 'object') ? p.plans : {},
@@ -97,6 +184,8 @@
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
+        mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
+        cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
         _seq: p._seq || d._seq
       };
     } catch (e) {
@@ -243,6 +332,54 @@
     if (!Array.isArray(state.mathDone)) state.mathDone = [];
     var i = state.mathDone.indexOf(idx);
     if (i >= 0) state.mathDone.splice(i, 1); else state.mathDone.push(idx);
+    save();
+  }
+
+  // 数学卷种：按大纲切换章节模板，已完成的「同名章节」进度保留，新大纲没有的章节进度丢弃
+  function getMathVolume() {
+    return MATH_VOLUMES.indexOf(state.mathVolume) >= 0 ? state.mathVolume : '数学一';
+  }
+  function setMathVolume(vol) {
+    if (MATH_VOLUMES.indexOf(vol) < 0) return;
+    var oldChapters = (state.mathChapters || []).slice();
+    var oldDone = Array.isArray(state.mathDone) ? state.mathDone.slice() : [];
+    var oldDoneNames = {};
+    oldDone.forEach(function (i) { if (oldChapters[i] != null) oldDoneNames[oldChapters[i]] = true; });
+    var oldCurName = (typeof state.mathCurrent === 'number' && oldChapters[state.mathCurrent] != null) ? oldChapters[state.mathCurrent] : null;
+    var newChapters = MATH_VOLUME_CHAPTERS[vol].slice();
+    var newDone = [];
+    newChapters.forEach(function (ch, i) { if (oldDoneNames[ch]) newDone.push(i); });
+    state.mathChapters = newChapters;
+    state.mathDone = newDone;
+    state.mathCurrent = oldCurName ? newChapters.indexOf(oldCurName) : -1;
+    state.mathVolume = vol;
+    save();
+  }
+  function getMathVolumeTemplates() { return MATH_VOLUME_CHAPTERS; }
+
+  // 408 各书折叠态（持久化到 localStorage）
+  function getCs408BooksCollapsed() { return (state.cs408BooksCollapsed && typeof state.cs408BooksCollapsed === 'object') ? state.cs408BooksCollapsed : {}; }
+  function setCs408BooksCollapsed(obj) { state.cs408BooksCollapsed = (obj && typeof obj === 'object') ? obj : {}; save(); }
+
+  // 单日得分权重（默认复刻原公式：时长50 + 计划20 + 生词15 + 错题15）
+  function getScoreWeights() {
+    var d = defaults().config.scoreWeights;
+    var w = (state.config && state.config.scoreWeights && typeof state.config.scoreWeights === 'object') ? state.config.scoreWeights : d;
+    return {
+      duration: Number(w.duration != null ? w.duration : d.duration) || 0,
+      plan: Number(w.plan != null ? w.plan : d.plan) || 0,
+      vocab: Number(w.vocab != null ? w.vocab : d.vocab) || 0,
+      mistake: Number(w.mistake != null ? w.mistake : d.mistake) || 0
+    };
+  }
+  function setScoreWeights(w) {
+    if (!state.config.scoreWeights) state.config.scoreWeights = {};
+    state.config.scoreWeights = {
+      duration: Number(w.duration) || 0,
+      plan: Number(w.plan) || 0,
+      vocab: Number(w.vocab) || 0,
+      mistake: Number(w.mistake) || 0
+    };
     save();
   }
 
@@ -409,6 +546,8 @@
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
+        mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
+        cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
         _seq: p._seq || d._seq
       };
       save();
@@ -559,6 +698,9 @@
     getModuleMastery: getModuleMastery, setModuleMastery: setModuleMastery, addModule: addModule,
     getSubjectChapters: getSubjectChapters, setSubjectChapters: setSubjectChapters,
     getMathChapters: getMathChapters, setMathChapters: setMathChapters, getMathCurrent: getMathCurrent, setMathCurrent: setMathCurrent, getMathDone: getMathDone, setMathDone: setMathDone, toggleMathDone: toggleMathDone,
+    getMathVolume: getMathVolume, setMathVolume: setMathVolume, getMathVolumeTemplates: getMathVolumeTemplates,
+    getCs408BooksCollapsed: getCs408BooksCollapsed, setCs408BooksCollapsed: setCs408BooksCollapsed,
+    getScoreWeights: getScoreWeights, setScoreWeights: setScoreWeights,
     getPlanItems: getPlanItems, addPlanItem: addPlanItem, updatePlanItem: updatePlanItem, removePlanItem: removePlanItem, togglePlanItem: togglePlanItem,
     getMathMistakes: getMathMistakes, addMathMistake: addMathMistake, updateMathMistake: updateMathMistake, removeMathMistake: removeMathMistake,
     getMathQuestions: getMathQuestions, addMathQuestion: addMathQuestion, removeMathQuestion: removeMathQuestion,

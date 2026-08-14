@@ -822,3 +822,60 @@ textarea { resize: vertical; }
 .badge-prog { font-size: 11px; color: var(--muted); margin-top: 6px; }
 .badge-tile.earned .badge-prog { color: var(--ok); font-weight: 700; }
 .tour-nav #tour-goto { flex: 1.4; }
+
+/* ============ P0-1 数学卷种选择器 ============ */
+.math-volume { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.mv-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.mv-btn { border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+.mv-btn:hover { border-color: var(--primary); }
+.mv-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ============ 章节掌握度热力图（A3 完成度版） ============ */
+.chapter-heatmap { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin: 8px 0 12px; }
+.heat-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.heat-cell { width: 14px; height: 14px; border-radius: 3px; background: #e5e7eb; transition: background .2s ease; cursor: default; }
+.heat-cell.done { background: var(--ok, #10b981); }
+.heat-cell.current { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,.3); }
+
+/* ============ P0-2 408 分书分组 ============ */
+.book-ctrl { display: flex; gap: 8px; margin: 4px 0 10px; }
+.btn-sm { font-size: 12px; padding: 4px 10px; }
+.book-group { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.book-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; user-select: none; background: #f8fafc; transition: background .15s ease; }
+.book-head:hover { background: #eef2ff; }
+.book-caret { color: var(--primary); font-size: 12px; width: 12px; text-align: center; }
+.book-name { font-weight: 700; font-size: 14px; color: var(--ink); flex: 1; }
+.book-count { font-size: 12px; font-weight: 700; color: var(--muted); background: #eef2ff; color: var(--primary); border-radius: 999px; padding: 2px 10px; }
+.book-list { padding: 4px 8px 8px; }
+.book-group.collapsed .book-list { display: none; }
+
+/* ============ P0-3 配置科目展开/收起 ============ */
+.subject-summary { font-size: 12px; color: var(--muted); margin-left: 2px; cursor: pointer; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; }
+.subject-summary:hover { background: #e2e8f0; }
+.subject-caret { font-size: 12px; color: var(--primary); cursor: pointer; margin-left: 2px; width: 14px; text-align: center; }
+.subject-subtree { margin: 6px 0 4px 24px; padding: 10px 12px; border-left: 2px dashed var(--line); background: #f8fafc; border-radius: 0 10px 10px 0; }
+.subtree-hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.vol-radios { display: flex; flex-wrap: wrap; gap: 8px; }
+.vol-radio { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease; }
+.vol-radio.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+.vol-radio input { accent-color: var(--primary); }
+.subtree-book { font-size: 13px; color: var(--ink); padding: 3px 0; }
+.subtree-goto { margin-top: 8px; }
+
+/* ============ A4 得分权重配置 ============ */
+.card-hint { font-size: 12px; color: var(--muted); margin: -6px 0 12px; line-height: 1.5; }
+.weight-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.weight-row label { width: 72px; font-size: 13px; font-weight: 600; color: var(--ink); flex: none; }
+.weight-row input[type=range] { flex: 1; accent-color: var(--primary); }
+.weight-num { width: 56px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; text-align: center; font-family: inherit; }
+.weight-total { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* 深色主题适配 */
+:root[data-theme="dark"] .book-head { background: #272a3d; }
+:root[data-theme="dark"] .book-head:hover { background: #2a2d42; }
+:root[data-theme="dark"] .book-count { background: #2a2d42; }
+:root[data-theme="dark"] .subject-summary { background: #2a2d42; }
+:root[data-theme="dark"] .subject-subtree { background: #272a3d; border-left-color: #3b3f5c; }
+:root[data-theme="dark"] .heat-cell { background: #313548; }
+:root[data-theme="dark"] .vol-radio.active { background: #2a2d42; }
+:root[data-theme="dark"] .card-hint { color: #9ca3af; }

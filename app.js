@@ -200,12 +200,96 @@
 
     refs.toggles.innerHTML = '';
     SUBJECT_PRESETS.forEach(function (p) {
-      var has = Store.getSubjects().some(function (s) { return s.key === p.key; });
-      var row = el('label', 'toggle-row');
-      var cb = el('input'); cb.type = 'checkbox'; cb.checked = has;
-      cb.addEventListener('change', function () { onToggleSubject(p, cb.checked); });
-      row.appendChild(cb);
-      row.appendChild(el('span', 'toggle-label', p.label));
+      refs.toggles.appendChild(renderConfigSubjectRow(p));
+    });
+    refs.detail.innerHTML = '';
+    var subs = Store.getSubjects();
+    if (!subs.length) { refs.detail.appendChild(el('div', 'empty-hint', '请先勾选上方考试科目')); return; }
+    subs.forEach(function (s) {
+      var row = el('div', 'detail-row');
+      row.appendChild(el('span', 'detail-name', s.name));
+      var lbl = el('label', 'detail-target');
+      lbl.appendChild(el('span', null, '目标分'));
+      var inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.value = s.target || 0; inp.className = 'target-input';
+      inp.addEventListener('change', function () { Store.updateSubjectTarget(s.key, Number(inp.value) || 0); });
+      lbl.appendChild(inp);
+      row.appendChild(lbl);
+      refs.detail.appendChild(row);
+    });
+    renderScoreWeights();
+  }
+
+  // 配置页单个科目行；数学 / 408 这类带子结构的科目支持展开 / 收起子树
+  function renderConfigSubjectRow(p) {
+    var has = Store.getSubjects().some(function (s) { return s.key === p.key; });
+    var isStructured = (p.key === 'math' || p.key === 'cs408');
+    var expState = Store.getConfig().subjectExpanded || {};
+    var expanded = !!expState[p.key];
+
+    var row = el('div', 'toggle-row' + (isStructured ? ' structured' : ''));
+    var cb = el('input'); cb.type = 'checkbox'; cb.checked = has;
+    cb.addEventListener('change', function () { onToggleSubject(p, cb.checked); });
+    row.appendChild(cb);
+    row.appendChild(el('span', 'toggle-label', p.label));
+
+    if (isStructured && has) {
+      var summary = el('span', 'subject-summary');
+      if (p.key === 'math') {
+        var cur = Store.getSubjects().filter(function (s) { return s.key === 'math'; })[0];
+        summary.textContent = '（' + (cur ? cur.name : Store.getMathVolume()) + '）已选';
+      } else {
+        summary.textContent = '（4 本）已选';
+      }
+      var caret = el('span', 'subject-caret', expanded ? '▾' : '▸');
+      var toggleExpand = function () {
+        var st = Store.getConfig().subjectExpanded || {};
+        st[p.key] = !st[p.key];
+        Store.setConfig({ subjectExpanded: st });
+        renderConfig();
+      };
+      summary.addEventListener('click', toggleExpand);
+      caret.addEventListener('click', toggleExpand);
+      row.appendChild(summary);
+      row.appendChild(caret);
+
+      if (expanded) {
+        var sub = el('div', 'subject-subtree');
+        if (p.key === 'math') {
+          sub.appendChild(el('div', 'subtree-hint', '选择卷种会按新大纲重置章节（同名已完成章保留）：'));
+          var vols = Object.keys(Store.getMathVolumeTemplates());
+          var curVol = Store.getMathVolume();
+          var rg = el('div', 'vol-radios');
+          vols.forEach(function (v) {
+            var rb = el('label', 'vol-radio' + (v === curVol ? ' active' : ''));
+            var input = el('input'); input.type = 'radio'; input.name = 'cfg-math-vol'; input.value = v; input.checked = (v === curVol);
+            input.addEventListener('change', function () {
+              if (v === Store.getMathVolume()) return;
+              if (!confirm('切换为「' + v + '」会按新大纲重置数学章节：同名已完成章节保留，新大纲没有的章节进度丢弃。确定切换？')) { renderConfig(); return; }
+              Store.setMathVolume(v);
+              renderConfig(); renderMathChapters(); renderSubjectChapters(); renderAggSubjectProgress();
+              showToast('已切换卷种：' + v, 'ok');
+            });
+            rb.appendChild(input);
+            rb.appendChild(el('span', null, v));
+            rg.appendChild(rb);
+          });
+          sub.appendChild(rg);
+        } else {
+          var groups = {};
+          Store.get408Chapters().forEach(function (ch) { var g = parseChapter(ch).g; groups[g] = (groups[g] || 0) + 1; });
+          var gk = Object.keys(groups);
+          if (!gk.length) gk = ['数据结构', '计算机组成原理', '操作系统', '计算机网络'];
+          gk.forEach(function (g) { sub.appendChild(el('div', 'subtree-book', g + '：' + (groups[g] || 0) + ' 章')); });
+          var go = el('button', 'btn btn-ghost btn-sm subtree-goto', '前往 408 标签页管理 →');
+          go.addEventListener('click', function () {
+            var tabBtn = document.querySelector('.tab-btn[data-tab="cs408"]');
+            if (tabBtn) tabBtn.click();
+          });
+          sub.appendChild(go);
+        }
+        row.appendChild(sub);
+      }
+    } else {
       if (p.variants) {
         var sel = el('select'); sel.className = 'variant-select';
         p.variants.forEach(function (v) { var o = el('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
@@ -224,22 +308,38 @@
         });
         row.appendChild(inp);
       }
-      refs.toggles.appendChild(row);
+    }
+    return row;
+  }
+
+  /* ============ 得分权重配置（A4） ============ */
+  function setWeightPair(range, num, val) {
+    if (range) range.value = val;
+    if (num) num.value = val;
+  }
+  function updateWeightTotal() {
+    if (!refs.weightTotal) return;
+    var w = Store.getScoreWeights();
+    var sum = Number(w.duration) + Number(w.plan) + Number(w.vocab) + Number(w.mistake);
+    refs.weightTotal.textContent = '当前权重合计：' + sum + '（满分基准；权重为 0 的项不计入分子与分母）';
+  }
+  function renderScoreWeights() {
+    var w = Store.getScoreWeights();
+    setWeightPair(refs.wDuration, refs.wDurationNum, w.duration);
+    setWeightPair(refs.wPlan, refs.wPlanNum, w.plan);
+    setWeightPair(refs.wVocab, refs.wVocabNum, w.vocab);
+    setWeightPair(refs.wMistake, refs.wMistakeNum, w.mistake);
+    updateWeightTotal();
+  }
+  function onWeightChange() {
+    Store.setScoreWeights({
+      duration: Number(refs.wDurationNum.value) || 0,
+      plan: Number(refs.wPlanNum.value) || 0,
+      vocab: Number(refs.wVocabNum.value) || 0,
+      mistake: Number(refs.wMistakeNum.value) || 0
     });
-    refs.detail.innerHTML = '';
-    var subs = Store.getSubjects();
-    if (!subs.length) { refs.detail.appendChild(el('div', 'empty-hint', '请先勾选上方考试科目')); return; }
-    subs.forEach(function (s) {
-      var row = el('div', 'detail-row');
-      row.appendChild(el('span', 'detail-name', s.name));
-      var lbl = el('label', 'detail-target');
-      lbl.appendChild(el('span', null, '目标分'));
-      var inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.value = s.target || 0; inp.className = 'target-input';
-      inp.addEventListener('change', function () { Store.updateSubjectTarget(s.key, Number(inp.value) || 0); });
-      lbl.appendChild(inp);
-      row.appendChild(lbl);
-      refs.detail.appendChild(row);
-    });
+    updateWeightTotal();
+    renderData();
   }
 
   function onToggleSubject(p, checked) {
@@ -1065,10 +1165,43 @@
   }
 
   // 单个学科的章节进度卡片（数学与计划页共用，数据联动）
+  // 章节完成度热力图（绿=已掌握，橙=学习中，灰=未触及）：一眼看出该攻哪章
+  function renderMasteryHeatmap(chapters, doneSet, current) {
+    var wrap = el('div', 'chapter-heatmap');
+    wrap.appendChild(el('span', 'heat-label', '掌握度：'));
+    chapters.forEach(function (ch, idx) {
+      var isDone = doneSet.indexOf(idx) >= 0;
+      var isCur = idx === current;
+      var cell = el('span', 'heat-cell' + (isDone ? ' done' : (isCur ? ' current' : '')));
+      cell.title = parseChapter(ch).n + (isDone ? '（已掌握）' : (isCur ? '（学习中）' : '（未触及）'));
+      wrap.appendChild(cell);
+    });
+    return wrap;
+  }
+
+  // 单个章节项（数学 / 通用 / 408 共用）
+  function buildChapterItem(o) {
+    var p = parseChapter(o.ch);
+    var cls = 'chapter-item';
+    if (o.isCurrent) cls += ' current';
+    if (o.isDone) cls += ' done';
+    var item = el('div', cls);
+    item.style.borderLeftColor = o.groupColor;
+    var chk = el('button', 'chapter-check' + (o.isDone ? ' checked' : ''));
+    chk.innerHTML = o.isDone ? '✓' : '';
+    chk.title = o.isDone ? '取消完成标记' : '标记为已完成';
+    chk.addEventListener('click', function (e) { e.stopPropagation(); o.onToggle(o.idx); });
+    item.appendChild(chk);
+    item.appendChild(el('span', 'chapter-idx', String(o.idx + 1)));
+    item.appendChild(el('span', 'chapter-name', (p.g !== '其他' ? '【' + p.g + '】' : '') + p.n));
+    item.addEventListener('click', function () { o.onCurrent(o.idx); });
+    return item;
+  }
+
   function renderChapterBlock(key, mount) {
+    if (key === 'cs408') { renderCs408Grouped(mount); return; }
     var subjectName, chapters, current, doneSet;
     if (key === 'math') { subjectName = '数学'; chapters = Store.getMathChapters(); current = Store.getMathCurrent(); doneSet = Store.getMathDone(); }
-    else if (key === 'cs408') { subjectName = '408 计算机专业基础'; chapters = Store.get408Chapters(); current = Store.get408Current(); doneSet = Store.get408Done(); }
     else {
       var obj = Store.getSubjectChapters(key) || { chapters: [], current: -1, done: [] };
       var s = Store.getSubjects().filter(function (x) { return x.key === key; })[0];
@@ -1094,6 +1227,7 @@
     prog.textContent = total ? ('已完成 ' + doneCount + ' / ' + total + '（' + pct + '%）' + (current >= 0 ? ' · 当前：' + parseChapter(chapters[current]).n : ' · 未开始'))
       : '暂无章节，可在下方添加';
     block.appendChild(prog);
+    if (total) block.appendChild(renderMasteryHeatmap(chapters, doneSet, current));
 
     if (total) {
       var list = el('div', 'chapter-list');
@@ -1101,40 +1235,27 @@
         var p = parseChapter(ch);
         var isDone = doneSet.indexOf(idx) >= 0;
         var isCurrent = idx === current;
-        var cls = 'chapter-item';
-        if (isCurrent) cls += ' current';
-        if (isDone) cls += ' done';
-        var item = el('div', cls);
-        item.style.borderLeftColor = (key === 'cs408' ? (CS408_GROUP_COLORS[p.g] || '#9ca3af') : (GROUP_COLORS[p.g] || '#9ca3af'));
-        // 勾选圆圈：独立标记完成状态（支持跳跃式学习）
-        var chk = el('button', 'chapter-check' + (isDone ? ' checked' : ''));
-        chk.innerHTML = isDone ? '✓' : '';
-        chk.title = isDone ? '取消完成标记' : '标记为已完成';
-        chk.addEventListener('click', function (e) {
-          e.stopPropagation();
-          if (key === 'math') Store.toggleMathDone(idx);
-          else if (key === 'cs408') Store.toggle408Done(idx);
-          else {
-            var newObj = Store.getSubjectChapters(key) || { chapters: chapters, current: current, done: doneSet.slice() };
-            newObj.done = Array.isArray(newObj.done) ? newObj.done : [];
-            var di = newObj.done.indexOf(idx);
-            if (di >= 0) newObj.done.splice(di, 1); else newObj.done.push(idx);
-            Store.setSubjectChapters(key, newObj);
+        var groupColor = GROUP_COLORS[p.g] || '#9ca3af';
+        list.appendChild(buildChapterItem({
+          key: key, ch: ch, idx: idx, isDone: isDone, isCurrent: isCurrent, groupColor: groupColor,
+          onToggle: function (i) {
+            if (key === 'math') Store.toggleMathDone(i);
+            else {
+              var newObj = Store.getSubjectChapters(key) || { chapters: chapters, current: current, done: doneSet.slice() };
+              newObj.done = Array.isArray(newObj.done) ? newObj.done : [];
+              var di = newObj.done.indexOf(i);
+              if (di >= 0) newObj.done.splice(di, 1); else newObj.done.push(i);
+              Store.setSubjectChapters(key, newObj);
+            }
+            renderChapterBlock(key, mount);
+            renderAggSubjectProgress();
+          },
+          onCurrent: function (i) {
+            if (key === 'math') Store.setMathCurrent(i);
+            else Store.setSubjectChapters(key, { chapters: chapters, current: i, done: doneSet });
+            renderChapterBlock(key, mount);
           }
-          renderChapterBlock(key, mount);
-          renderAggSubjectProgress();
-        });
-        item.appendChild(chk);
-        item.appendChild(el('span', 'chapter-idx', String(idx + 1)));
-        item.appendChild(el('span', 'chapter-name', (p.g !== '其他' ? '【' + p.g + '】' : '') + p.n));
-        // 点击章节项：仅设为"当前学习位置"，不影响完成状态
-        item.addEventListener('click', function () {
-          if (key === 'math') Store.setMathCurrent(idx);
-          else if (key === 'cs408') Store.set408Current(idx);
-          else Store.setSubjectChapters(key, { chapters: chapters, current: idx, done: doneSet });
-          renderChapterBlock(key, mount);
-        });
-        list.appendChild(item);
+        }));
       });
       block.appendChild(list);
     }
@@ -1146,9 +1267,104 @@
       var v = inp.value.trim(); if (!v) return;
       var newChapters = chapters.slice(); newChapters.push(v);
       if (key === 'math') Store.setMathChapters(newChapters);
-      else if (key === 'cs408') Store.set408Chapters(newChapters);
       else Store.setSubjectChapters(key, { chapters: newChapters, current: current, done: doneSet });
       renderChapterBlock(key, mount);
+    });
+    addRow.appendChild(inp); addRow.appendChild(btn);
+    block.appendChild(addRow);
+    mount.appendChild(block);
+  }
+
+  // 408：按 4 本书分组，每本书可展开/收起（折叠态持久化到 localStorage）
+  function renderCs408Grouped(mount) {
+    var chapters = Store.get408Chapters();
+    var current = Store.get408Current();
+    var doneSet = Store.get408Done();
+    mount.innerHTML = '';
+    var block = el('div', 'chapter-block');
+
+    var head = el('div', 'chapter-head');
+    head.appendChild(el('span', 'chapter-subject', '408 计算机专业基础'));
+    block.appendChild(head);
+    var total = chapters.length;
+    var doneCount = doneSet.length;
+    var pct = total ? Math.round(doneCount / total * 100) : 0;
+    var barWrap = el('div', 'chapter-bar');
+    var fill = el('div', 'chapter-fill'); fill.style.width = pct + '%';
+    if (doneCount === 0) fill.style.background = '#9ca3af';
+    barWrap.appendChild(fill);
+    block.appendChild(barWrap);
+    var prog = el('div', 'chapter-prog');
+    prog.textContent = total ? ('已完成 ' + doneCount + ' / ' + total + '（' + pct + '%）' + (current >= 0 ? ' · 当前：' + parseChapter(chapters[current]).n : ' · 未开始'))
+      : '暂无章节，可在下方添加';
+    block.appendChild(prog);
+    if (total) block.appendChild(renderMasteryHeatmap(chapters, doneSet, current));
+
+    if (total) {
+      var groups = {};
+      chapters.forEach(function (ch, idx) {
+        var p = parseChapter(ch);
+        if (!groups[p.g]) groups[p.g] = [];
+        groups[p.g].push({ ch: ch, idx: idx });
+      });
+      var groupKeys = Object.keys(groups);
+      var collapsed = Store.getCs408BooksCollapsed();
+      // 全部展开 / 收起
+      var ctrl = el('div', 'book-ctrl');
+      var expandAll = el('button', 'btn btn-ghost btn-sm', '▾ 全部展开');
+      expandAll.addEventListener('click', function () {
+        var nc = {}; groupKeys.forEach(function (g) { nc[g] = false; });
+        Store.setCs408BooksCollapsed(nc); renderCs408Grouped(mount);
+      });
+      var collapseAll = el('button', 'btn btn-ghost btn-sm', '▸ 全部收起');
+      collapseAll.addEventListener('click', function () {
+        var nc = {}; groupKeys.forEach(function (g) { nc[g] = true; });
+        Store.setCs408BooksCollapsed(nc); renderCs408Grouped(mount);
+      });
+      ctrl.appendChild(expandAll); ctrl.appendChild(collapseAll);
+      block.appendChild(ctrl);
+
+      groupKeys.forEach(function (g) {
+        var items = groups[g];
+        var gTotal = items.length;
+        var gDone = items.filter(function (it) { return doneSet.indexOf(it.idx) >= 0; }).length;
+        var isCollapsed = !!collapsed[g];
+        var book = el('div', 'book-group' + (isCollapsed ? ' collapsed' : ''));
+        var bhead = el('div', 'book-head');
+        bhead.appendChild(el('span', 'book-caret', isCollapsed ? '▸' : '▾'));
+        bhead.appendChild(el('span', 'book-name', g));
+        bhead.appendChild(el('span', 'book-count', gDone + '/' + gTotal));
+        bhead.addEventListener('click', function () {
+          var curState = Store.getCs408BooksCollapsed();
+          curState[g] = !curState[g];
+          Store.setCs408BooksCollapsed(curState); renderCs408Grouped(mount);
+        });
+        book.appendChild(bhead);
+        if (!isCollapsed) {
+          var list = el('div', 'chapter-list book-list');
+          items.forEach(function (it) {
+            var p = parseChapter(it.ch);
+            list.appendChild(buildChapterItem({
+              key: 'cs408', ch: it.ch, idx: it.idx,
+              isDone: doneSet.indexOf(it.idx) >= 0, isCurrent: it.idx === current,
+              groupColor: CS408_GROUP_COLORS[p.g] || '#9ca3af',
+              onToggle: function (i) { Store.toggle408Done(i); renderCs408Grouped(mount); renderAggSubjectProgress(); },
+              onCurrent: function (i) { Store.set408Current(i); renderCs408Grouped(mount); }
+            }));
+          });
+          book.appendChild(list);
+        }
+        block.appendChild(book);
+      });
+    }
+
+    var addRow = el('div', 'chapter-add');
+    var inp = el('input'); inp.type = 'text'; inp.placeholder = '新增章节（可写「分组 · 章节名」）';
+    var btn = el('button', 'btn btn-ghost', '添加');
+    btn.addEventListener('click', function () {
+      var v = inp.value.trim(); if (!v) return;
+      var newChapters = chapters.slice(); newChapters.push(v);
+      Store.set408Chapters(newChapters); renderCs408Grouped(mount);
     });
     addRow.appendChild(inp); addRow.appendChild(btn);
     block.appendChild(addRow);
@@ -1221,8 +1437,30 @@
 
   function renderMathChapters() {
     var box = refs.mathChapters;
-    if (!Store.getMathChapters().length) Store.setMathChapters(MATH_CHAPTERS_PREFILL.slice());
-    renderChapterBlock('math', box);
+    if (!Store.getMathChapters().length) Store.setMathChapters(Store.getMathVolumeTemplates()[Store.getMathVolume()].slice());
+    var vol = Store.getMathVolume();
+    var vols = Object.keys(Store.getMathVolumeTemplates());
+    box.innerHTML = '';
+    // 卷种选择器（数一/数二/数三，章节按大纲区分；数二不含概率）
+    var volWrap = el('div', 'math-volume');
+    volWrap.appendChild(el('span', 'mv-label', '卷种：'));
+    vols.forEach(function (v) {
+      var b = el('button', 'mv-btn' + (v === vol ? ' active' : ''), v);
+      b.addEventListener('click', function () {
+        if (v === Store.getMathVolume()) return;
+        if (!confirm('切换为「' + v + '」会按新大纲重置章节列表：同名已完成章节会保留，新大纲没有的章节进度将丢弃。确定切换？')) return;
+        Store.setMathVolume(v);
+        renderMathChapters();
+        renderSubjectChapters();
+        renderAggSubjectProgress();
+        showToast('已切换卷种：' + v, 'ok');
+      });
+      volWrap.appendChild(b);
+    });
+    box.appendChild(volWrap);
+    var mount = el('div');
+    box.appendChild(mount);
+    renderChapterBlock('math', mount);
   }
 
   function renderMathMistakes() {
@@ -2072,23 +2310,27 @@
     };
   }
 
-  /* 单日学习得分：时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，封顶 100。
-     没学习的日子不给分，避免“虚假正反馈”。 */
+  /* 单日学习得分：四项加权（权重可配置，默认 时长50/计划20/生词15/错题15，合计满分100）。
+     没学习的日子不给分，避免“虚假正反馈”。权重为 0 的项不计入分子与分母。 */
   function scoreForDay(ds, day) {
     day = day || Store.getDay(ds) || { durations: {} };
     var totalMin = Store.totalMinutesForDay(day);
     if (totalMin <= 0) return 0;
-    var mScore = Math.min(totalMin, 480) / 480 * 50;
+    var w = Store.getScoreWeights();
+    var wDur = Number(w.duration) || 0, wPlan = Number(w.plan) || 0, wVoc = Number(w.vocab) || 0, wMis = Number(w.mistake) || 0;
+    var sum = wDur + wPlan + wVoc + wMis;
+    if (sum <= 0) return 0;
+    var rDur = Math.min(totalMin, 480) / 480;
     var plan = Store.getPlan(ds) || [];
-    var pScore;
-    if (plan.length) { var done = plan.filter(function (p) { return p.done; }).length; pScore = done / plan.length * 20; }
-    else pScore = 10;
+    var rPlan;
+    if (plan.length) { var done = plan.filter(function (p) { return p.done; }).length; rPlan = done / plan.length; }
+    else rPlan = 0.5; // 无计划时给中性 0.5（等价于原公式未设计划的 10/20）
     var rev = Store.getVocab().filter(function (v) { return v.last === ds; }).length;
-    var rScore = Math.min(rev, 15) / 15 * 15;
+    var rVoc = Math.min(rev, 15) / 15;
     var mToday = Store.getMistakes().filter(function (m) { return (m.date || '').slice(0, 10) === ds; }).length;
-    var eScore = Math.min(mToday, 15) / 15 * 15;
-    var score = mScore + pScore + rScore + eScore;
-    return Math.max(0, Math.min(100, Math.round(score)));
+    var rMis = Math.min(mToday, 15) / 15;
+    var weighted = (rDur * wDur + rPlan * wPlan + rVoc * wVoc + rMis * wMis) / sum * 100;
+    return Math.max(0, Math.min(100, Math.round(weighted)));
   }
 
   /* 等级：每累计 10 小时 +1 级，每连续 7 天 +1 级（两者叠加） */
@@ -3168,6 +3410,25 @@
     refs.targetTotal.addEventListener('change', function () { Store.setConfig({ targetTotal: Number(refs.targetTotal.value) || 0 }); renderData(); });
     refs.autoPlan.addEventListener('change', function () { Store.setConfig({ autoPlan: refs.autoPlan.checked }); renderPlan(); });
 
+    // 得分权重配置（A4）
+    refs.wDuration = $('w-duration'); refs.wDurationNum = $('w-duration-num');
+    refs.wPlan = $('w-plan'); refs.wPlanNum = $('w-plan-num');
+    refs.wVocab = $('w-vocab'); refs.wVocabNum = $('w-vocab-num');
+    refs.wMistake = $('w-mistake'); refs.wMistakeNum = $('w-mistake-num');
+    refs.weightTotal = $('weight-total');
+    refs.btnResetWeights = $('btn-reset-weights');
+    [[refs.wDuration, refs.wDurationNum], [refs.wPlan, refs.wPlanNum], [refs.wVocab, refs.wVocabNum], [refs.wMistake, refs.wMistakeNum]].forEach(function (pair) {
+      var range = pair[0], num = pair[1];
+      if (!range || !num) return;
+      range.addEventListener('input', function () { num.value = range.value; onWeightChange(); });
+      num.addEventListener('input', function () { range.value = num.value; });
+      num.addEventListener('change', function () { range.value = num.value; onWeightChange(); });
+    });
+    if (refs.btnResetWeights) refs.btnResetWeights.addEventListener('click', function () {
+      Store.setScoreWeights({ duration: 50, plan: 20, vocab: 15, mistake: 15 });
+      renderScoreWeights(); renderData(); showToast('已恢复默认权重', 'ok');
+    });
+
     // 记录
     refs.manualDate.addEventListener('change', renderManual);
     refs.btnSaveManual.addEventListener('click', onSaveManual);
@@ -3321,8 +3582,8 @@
       Store.addPlanItem({ text: text, note: refs.planNote.value.trim(), done: false });
       refs.planItemText.value = ''; refs.planNote.value = ''; renderPlanItems();
     });
-    // 数学：章节新增
-    refs.btnAddMathChapter.addEventListener('click', function () {
+    // 数学：章节新增（内部 addRow 已处理；此处兼容旧节点，元素不存在则跳过）
+    if (refs.btnAddMathChapter) refs.btnAddMathChapter.addEventListener('click', function () {
       var v = refs.mathChapterAdd.value.trim(); if (!v) return;
       var arr = Store.getMathChapters().slice(); arr.push(v); Store.setMathChapters(arr);
       refs.mathChapterAdd.value = ''; renderMathChapters();
@@ -3334,8 +3595,9 @@
     // 数学：自定义题库
     refs.btnAddMq.addEventListener('click', onAddMathQuestion);
 
-    // 408：章节新增
+    // 408：章节新增（内部 addRow 已处理；此处兼容旧节点）
     if (refs.btnAddCs408Chapter) refs.btnAddCs408Chapter.addEventListener('click', function () {
+      if (!refs.cs408ChapterAdd) return;
       var v = refs.cs408ChapterAdd.value.trim(); if (!v) return;
       var arr = Store.get408Chapters().slice(); arr.push(v); Store.set408Chapters(arr);
       refs.cs408ChapterAdd.value = ''; render408Chapters();
@@ -3363,8 +3625,8 @@
     // 自动计划：启用且今日无计划则生成
     if (Store.getConfig().autoPlan) { var ds = Store.todayStr(); if (!Store.getPlan(ds)) autoGenPlan(ds); }
 
-    // 数学章节预填充（仅首次）
-    if (!Store.getMathChapters().length) Store.setMathChapters(MATH_CHAPTERS_PREFILL.slice());
+    // 数学章节预填充（仅首次，按当前卷种模板）
+    if (!Store.getMathChapters().length) Store.setMathChapters(Store.getMathVolumeTemplates()[Store.getMathVolume()].slice());
     // 数学错题分类下拉
     refs.mathMistakeCat.innerHTML = '';
     MATH_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mathMistakeCat.appendChild(o); });
