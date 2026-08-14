@@ -8,6 +8,15 @@
     if (html !== undefined) e.innerHTML = html;
     return e;
   }
+  // ===== XSS 防护助手 =====
+  // 规则：渲染任何「用户或云端他人输入」的文本时，二选一：
+  //  1) 纯文本 → 用 setText(node, text)（走 textContent，绝不会被当 HTML 解析，最安全）；
+  //  2) 需要拼接 HTML → 对其中每一段动态内容先 escapeHtml() 再拼。
+  // 已核对：renderWatchBody 等渲染云端数据的函数均已对全部字段 escapeHtml。
+  function setText(node, text) {
+    if (!node) return;
+    node.textContent = (text === undefined || text === null) ? '' : String(text);
+  }
   function $(id) { return document.getElementById(id); }
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function fmt(ms) {

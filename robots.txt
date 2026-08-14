@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kaoyan-tracker.pages.dev/sitemap.xml
