@@ -2340,8 +2340,7 @@
 
   /* ---------------- 云端同步（登录码） ---------------- */
   function renderSyncConfig() {
-    if (!refs.syncToken || !refs.syncCode) return;
-    refs.syncToken.value = Store.getLastSyncToken();
+    if (!refs.syncCode) return;
     refs.syncCode.value = Store.getLastSyncCode();
   }
   function populatePlanSubjects() {
@@ -2361,11 +2360,9 @@
     refs.syncStatus.className = 'import-status' + (type ? ' ' + type : '');
   }
   function syncApi(method, payload) {
-    var token = (refs.syncToken ? refs.syncToken.value : '') || '';
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
     var headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = 'Bearer ' + token;
     // 后端从 X-Sync-Key header 读取登录码（GET/DELETE 不能带 body，所以必须放 header）
     headers['X-Sync-Key'] = code;
     var opts = { method: method, headers: headers };
@@ -2388,7 +2385,6 @@
     syncSetStatus('正在上传…', '');
     var payload = Store.snapshot();
     syncApi('PUT', payload).then(function (res) {
-      Store.setLastSyncToken((refs.syncToken ? refs.syncToken.value : '') || '');
       Store.setLastSyncCode(code);
       syncSetStatus('✅ 上传成功（版本 ' + (res && res.version ? res.version : '?') + '，设备：' + Store.getLastDeviceId() + '）', 'ok');
       showToast('云端上传成功 ☁️');
@@ -2406,7 +2402,6 @@
       if (!res || !res.data) { syncSetStatus('⚠️ 该登录码暂无云端数据', 'error'); return; }
       var ok = Store.restoreSnapshot(res.data);
       if (!ok) { syncSetStatus('❌ 数据恢复失败，格式不兼容', 'error'); return; }
-      Store.setLastSyncToken((refs.syncToken ? refs.syncToken.value : '') || '');
       Store.setLastSyncCode(code);
       syncSetStatus('✅ 下载成功（版本 ' + (res.version || '?') + '），正在刷新页面…', 'ok');
       setTimeout(function () { location.reload(); }, 900);
@@ -2740,7 +2735,6 @@
     refs.btnResetAll = $('btn-reset-all');
 
     // 云同步（登录码）
-    refs.syncToken = $('sync-token');
     refs.syncCode = $('sync-code');
     refs.btnGenSyncCode = $('btn-gen-sync-code');
     refs.btnCopySyncCode = $('btn-copy-sync-code');
@@ -3001,7 +2995,6 @@
     if (refs.btnSyncUpload) refs.btnSyncUpload.addEventListener('click', onSyncUpload);
     if (refs.btnSyncDownload) refs.btnSyncDownload.addEventListener('click', onSyncDownload);
     if (refs.btnSyncDelete) refs.btnSyncDelete.addEventListener('click', onSyncDelete);
-    if (refs.syncToken) refs.syncToken.addEventListener('change', function () { Store.setLastSyncToken(refs.syncToken.value || ''); });
     if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
     // 邀请好友 / 实时查看云端 / 自动同步（双向实时）
     if (refs.btnInvite) refs.btnInvite.addEventListener('click', onInvite);
