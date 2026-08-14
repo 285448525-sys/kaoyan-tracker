@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814o" />
+  <link rel="stylesheet" href="styles.css?v=20260814p" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -201,18 +201,21 @@
 
       <div class="card ai-card">
         <h2 class="card-title">🤖 AI 能力（错题讲解 / 长难句深度分析）</h2>
-        <p class="hint">填写 OpenAI 兼容接口的地址、模型与 Key，即可在错题本、长难句模块使用 AI 讲解。你的 Key 经本站服务器中转、不暴露在浏览器中，推荐使用 DeepSeek（deepseek-chat）等国内 API。</p>
+        <p class="hint">填写 OpenAI 兼容接口的地址、模型与 Key，即可在错题本、长难句模块使用 AI 讲解。你的 Key 经本站服务器中转、不暴露在浏览器中。⚠️ 接口地址必须是 API 端点（不是网页管理后台），如 <code>https://api.deepseek.com/v1</code>。</p>
         <div class="field-row">
           <label>接口地址</label>
           <input type="text" id="ai-baseurl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
+          <div class="field-hint">接口地址必须包含 <code>/v1</code>，不能填管理后台网址（如 platform.deepseek.com/api_keys）。</div>
         </div>
         <div class="field-row">
           <label>模型名称</label>
           <input type="text" id="ai-model" placeholder="deepseek-chat" autocomplete="off" />
+          <div class="field-hint">例如 deepseek-chat、deepseek-reasoner、qwen-plus 等。</div>
         </div>
         <div class="field-row">
           <label>API Key</label>
           <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
+          <div class="field-hint">在对应平台「API Keys」页面生成，以 sk- 开头。</div>
         </div>
         <div class="btn-row">
           <button id="btn-save-ai" class="btn btn-primary">保存配置</button>
@@ -875,13 +878,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814o"></script>
-  <script src="words.js?v=20260814o"></script>
-  <script src="store.js?v=20260814o"></script>
-  <script src="charts.js?v=20260814o"></script>
-  <script src="share.js?v=20260814o"></script>
-  <script src="md5.js?v=20260814o"></script>
-  <script src="sentences.js?v=20260814o"></script>
-  <script src="app.js?v=20260814o"></script>
+  <script src="qrcode.min.js?v=20260814p"></script>
+  <script src="words.js?v=20260814p"></script>
+  <script src="store.js?v=20260814p"></script>
+  <script src="charts.js?v=20260814p"></script>
+  <script src="share.js?v=20260814p"></script>
+  <script src="md5.js?v=20260814p"></script>
+  <script src="sentences.js?v=20260814p"></script>
+  <script src="app.js?v=20260814p"></script>
 </body>
 </html>

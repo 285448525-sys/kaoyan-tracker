@@ -2247,25 +2247,53 @@
     if (refs.aiKey) refs.aiKey.value = c.key || '';
   }
   function onSaveAi() {
-    var c = Store.setAiConfig({
-      baseUrl: (refs.aiBaseUrl.value || '').trim(),
-      model: (refs.aiModel.value || '').trim(),
-      key: (refs.aiKey.value || '').trim()
-    });
+    var btn = refs.btnSaveAi;
+    if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
+    var baseUrl = (refs.aiBaseUrl.value || '').trim();
+    var model = (refs.aiModel.value || '').trim();
+    var key = (refs.aiKey.value || '').trim();
+    var c = Store.setAiConfig({ baseUrl: baseUrl, model: model, key: key });
     refs.aiStatus.textContent = (c.baseUrl && c.model && c.key) ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
-    showToast('AI 配置已保存 ✅');
+    refs.aiStatus.className = 'import-status ai-status ok';
+    showToast('AI 配置已保存', 'ok');
+    // 如果 URL 明显不是 API 端点，给出警告
+    if (baseUrl && !/^https?:\/\//i.test(baseUrl)) {
+      showToast('接口地址必须以 http:// 或 https:// 开头', 'warn');
+    } else if (baseUrl && /\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) {
+      showToast('接口地址看起来是管理页面，不是 API 端点。正确示例：' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
+    } else if (baseUrl && !baseUrl.includes('/v1')) {
+      showToast('建议接口地址以 /v1 结尾，例如 ' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '保存配置'; }
   }
   function onTestAi() {
+    var baseUrl = (refs.aiBaseUrl.value || '').trim();
+    var model = (refs.aiModel.value || '').trim();
+    var key = (refs.aiKey.value || '').trim();
+    if (!baseUrl) { showToast('请填写接口地址', 'err'); refs.aiStatus.textContent = '✗ 接口地址未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (!/^https?:\/\//i.test(baseUrl)) { showToast('接口地址必须以 http:// 或 https:// 开头', 'err'); refs.aiStatus.textContent = '✗ 接口地址格式错误'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (/\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) { showToast('接口地址是管理页面，不是 API 端点。请填写 API 地址，如 https://api.deepseek.com/v1', 'err'); refs.aiStatus.textContent = '✗ 接口地址不是 API 端点'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (!model) { showToast('请填写模型名称', 'err'); refs.aiStatus.textContent = '✗ 模型名称未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (/^\d+$/.test(model)) { showToast('模型名称不能是纯数字，请填写如 deepseek-chat', 'err'); refs.aiStatus.textContent = '✗ 模型名称格式错误'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (!key) { showToast('请填写 API Key', 'err'); refs.aiStatus.textContent = '✗ API Key 未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
     onSaveAi();
-    var c = Store.getAiConfig();
-    if (!c.baseUrl || !c.model || !c.key) { refs.aiStatus.textContent = '✗ 请先填写接口地址、模型与 Key'; return; }
+    var btn = refs.btnTestAi;
+    if (btn) { btn.disabled = true; btn.textContent = '测试中…'; }
     refs.aiStatus.textContent = '测试中…';
+    refs.aiStatus.className = 'import-status ai-status pending';
     aiChat([{ role: 'user', content: '你好，请只回复"连接成功"四个字' }], { maxTokens: 32 })
       .then(function (res) {
         refs.aiStatus.textContent = '✓ 连接成功：' + (res.content || '').slice(0, 30);
+        refs.aiStatus.className = 'import-status ai-status ok';
+        showToast('AI 连接成功 ✅', 'ok');
+        if (btn) { btn.disabled = false; btn.textContent = '测试连接'; }
       })
       .catch(function (err) {
-        refs.aiStatus.textContent = '✗ ' + (err && err.msg || '测试失败');
+        var msg = (err && err.msg) || '测试失败';
+        refs.aiStatus.textContent = '✗ ' + msg;
+        refs.aiStatus.className = 'import-status ai-status err';
+        showToast('AI 连接失败：' + msg, 'err');
+        if (btn) { btn.disabled = false; btn.textContent = '测试连接'; }
       });
   }
   // 通用 AI 对话：调本站 /api/ai 中转（key 走请求头，不出现在前端网络面板）
