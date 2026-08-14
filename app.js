@@ -492,6 +492,45 @@
     }
   }
 
+  function onInvite() {
+    var cfg = Store.getConfig();
+    var streak = Store.consecutiveStreak();
+    var nick = cfg.nickname || '我';
+    var url = window.location.origin;
+    var msg = '我正在用「考研学习Hub」记录每天的复习进度';
+    if (streak > 0) msg += '，已连续打卡 ' + streak + ' 天';
+    msg += '！\n\n背单词、刷题、计时、学习计划、番茄钟全都有，还能跨设备云同步，手机电脑数据一样。\n\n一起来打卡吧 👉 ' + url;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(msg).then(function () {
+          alert('邀请文案已复制到剪贴板！\n\n直接粘贴到微信群/QQ群即可，朋友们点链接就能用。');
+        }).catch(function () {
+          fallbackCopy(msg);
+        });
+      } else {
+        fallbackCopy(msg);
+      }
+    } catch (e) {
+      fallbackCopy(msg);
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      alert('邀请文案已复制到剪贴板！\n\n直接粘贴到微信群/QQ群即可，朋友们点链接就能用。');
+    } catch (e) {
+      prompt('复制失败，请手动选中以下文字复制：', text);
+    }
+    document.body.removeChild(ta);
+  }
+
   function buildMarkdownReport() {
     var cfg = Store.getConfig();
     var subs = Store.getSubjects();
@@ -2220,6 +2259,7 @@
     refs.summaryBody = $('summary-body');
     refs.btnCheckin = $('btn-checkin');
     refs.btnShareSummary = $('btn-share-summary');
+    refs.btnInvite = $('btn-invite');
     refs.summaryReminders = $('summary-reminders');
 
     // 学习计划
@@ -2455,6 +2495,7 @@
     // 今日总结：打卡 + 分享
     refs.btnCheckin.addEventListener('click', onCheckin);
     refs.btnShareSummary.addEventListener('click', onShareToday);
+    if (refs.btnInvite) refs.btnInvite.addEventListener('click', onInvite);
 
     // 学习计划：模块掌握
     refs.btnAddModule.addEventListener('click', function () {

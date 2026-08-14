@@ -528,7 +528,7 @@
 
   /* ---------------- 底栏（含 QR 码）---------------- */
   function drawFooter(ctx, W, H, opts) {
-    var y = H - 210;
+    var y = H - 240;
     // 细分割线
     ctx.strokeStyle = 'rgba(79,70,229,0.14)';
     ctx.lineWidth = 1;
@@ -537,8 +537,8 @@
     ctx.lineTo(W - 56, y);
     ctx.stroke();
 
-    // QR 码（左下角）
-    var qrSize = 96;
+    // QR 码（左下角，放大到 120px）
+    var qrSize = 120;
     var qrX = 56, qrY = y + 24;
     if (opts.siteUrl) {
       drawQRCode(ctx, qrX, qrY, qrSize, opts.siteUrl);
@@ -546,7 +546,7 @@
 
     // 品牌信息（QR 右侧）
     var bx = qrX + qrSize + 28;
-    var by = y + 38;
+    var by = y + 42;
     // Logo 圆点
     ctx.save();
     ctx.fillStyle = COLORS.brand;
@@ -559,20 +559,30 @@
     ctx.restore();
 
     ctx.fillStyle = COLORS.ink;
-    ctx.font = 'bold 18px ' + FONT_FAMILY;
+    ctx.font = 'bold 20px ' + FONT_FAMILY;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     ctx.fillText('考研学习 Hub', bx + 20, by);
 
-    ctx.fillStyle = COLORS.muted;
-    ctx.font = '13px ' + FONT_FAMILY;
-    ctx.fillText('扫码一起打卡学习 →', bx + 20, by + 24);
+    ctx.fillStyle = COLORS.brand;
+    ctx.font = '600 15px ' + FONT_FAMILY;
+    ctx.fillText('长按扫码，和我一起打卡 →', bx + 20, by + 26);
 
     // 专业信息
     if (opts.major) {
       ctx.fillStyle = COLORS.inkSoft;
       ctx.font = '13px ' + FONT_FAMILY;
-      ctx.fillText('目标专业：' + opts.major, bx + 20, by + 46);
+      ctx.fillText('目标专业：' + opts.major, bx + 20, by + 48);
+    }
+
+    // 网址文字（二维码下方，作为扫码失败的备份）
+    if (opts.siteUrl) {
+      ctx.fillStyle = COLORS.muted;
+      ctx.font = '11px ' + FONT_FAMILY;
+      ctx.textAlign = 'center';
+      var urlText = opts.siteUrl.replace(/^https?:\/\//, '');
+      ctx.fillText(urlText, qrX + qrSize / 2, qrY + qrSize + 20);
+      ctx.textAlign = 'left';
     }
 
     // 励志金句（底部居中）
@@ -587,7 +597,7 @@
     ctx.fillStyle = COLORS.brandSoft;
     ctx.font = '600 15px ' + FONT_FAMILY;
     ctx.textAlign = 'center';
-    ctx.fillText('「 ' + q + ' 」', W / 2, H - 36);
+    ctx.fillText('「 ' + q + ' 」', W / 2, H - 24);
     ctx.textAlign = 'left';
   }
 
