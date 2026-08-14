@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814q" />
+  <link rel="stylesheet" href="styles.css?v=20260814u" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -878,13 +878,24 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814q"></script>
-  <script src="words.js?v=20260814q"></script>
-  <script src="store.js?v=20260814q"></script>
-  <script src="charts.js?v=20260814q"></script>
-  <script src="share.js?v=20260814q"></script>
-  <script src="md5.js?v=20260814q"></script>
-  <script src="sentences.js?v=20260814q"></script>
-  <script src="app.js?v=20260814q"></script>
+  <!-- 移动端底部 Tab Bar -->
+  <nav class="bottom-tabbar" id="bottomTabbar" aria-label="底部导航">
+    <button class="btb-btn active" data-tab="today"><span>📅</span><span>今日</span></button>
+    <button class="btb-btn" data-tab="plan"><span>🗺️</span><span>计划</span></button>
+    <button class="btb-btn" data-tab="record"><span>⏱</span><span>记录</span></button>
+    <button class="btb-btn" data-tab="data"><span>📊</span><span>数据</span></button>
+    <button class="btb-btn" data-tab="config"><span>⚙️</span><span>我的</span></button>
+  </nav>
+  <!-- 移动端 FAB 悬浮操作按钮 -->
+  <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
+
+  <script src="qrcode.min.js?v=20260814u"></script>
+  <script src="words.js?v=20260814u"></script>
+  <script src="store.js?v=20260814u"></script>
+  <script src="charts.js?v=20260814u"></script>
+  <script src="share.js?v=20260814u"></script>
+  <script src="md5.js?v=20260814u"></script>
+  <script src="sentences.js?v=20260814u"></script>
+  <script src="app.js?v=20260814u"></script>
 </body>
 </html>

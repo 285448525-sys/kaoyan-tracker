@@ -1,26 +1,40 @@
 :root {
-  --bg: #f4f6fb;
+  --bg: #f8fafc;
   --card: #ffffff;
-  --ink: #1f2937;
-  --muted: #6b7280;
-  --line: #e5e7eb;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
   --primary: #4f46e5;
   --primary-d: #4338ca;
-  --danger: #ef4444;
+  --primary-l: #6366f1;
+  --accent: #06b6d4;
+  --danger: #f43f5e;
   --ok: #10b981;
-  --radius: 16px;
-  --shadow: 0 6px 24px rgba(31, 41, 55, 0.08);
+  --warn: #f59e0b;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  /* 设计方案阴影分层 */
+  --shadow: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.1);
+  --shadow-hover: 0 4px 6px -2px rgba(15,23,42,.05), 0 12px 24px -4px rgba(15,23,42,.1);
+  --shadow-modal: 0 20px 40px -12px rgba(15,23,42,.25);
+  /* 科目语义色 */
+  --c-politics: #f97316;
+  --c-english: #3b82f6;
+  --c-math: #8b5cf6;
+  --c-major: #10b981;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--ink);
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 24px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Header */
@@ -43,11 +57,16 @@ body {
 /* Cards */
 .card {
   background: var(--card);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 18px;
+  padding: 20px;
   margin-bottom: 16px;
   position: relative;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow-hover);
 }
 .card-title { font-size: 16px; margin: 0 0 14px; font-weight: 700; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
@@ -1119,7 +1138,141 @@ body.theme-dark .sec-num { color: #f5f3ff; }
 .phase-badge { font-weight: 800; font-size: 13px; padding: 3px 12px; border-radius: 999px; color: #fff; }
 .phase-badge.基础 { background: #3b82f6; }
 .phase-badge.强化 { background: #f59e0b; }
-.phase-badge.冲刺 { background: #ef4444; }
+.phase-badge.冲刺 { background: #f43f5e; }
+
+/* ================================================================
+   UI 设计方案升级（v20260814u）
+   ================================================================ */
+
+/* Inter 数字字体引入 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* 页面切换动画：淡入 + 上移 8px */
+.tab-panel {
+  animation: pageIn 180ms ease-out;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel { animation: none; }
+}
+
+/* 按钮交互升级：active 缩放 0.98 */
+.btn { transition: transform .1s ease, box-shadow .2s ease, background .2s ease; }
+.btn:active { transform: scale(0.98); }
+.btn-primary {
+  background: linear-gradient(120deg, var(--primary), #7c3aed);
+  color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius-sm);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  box-shadow: 0 4px 14px -4px rgba(79,70,229,.4);
+}
+.btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 20px -4px rgba(79,70,229,.5); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-ghost {
+  background: var(--bg); color: var(--primary); border: 1px solid var(--line);
+  padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.btn-ghost:hover { border-color: var(--primary); background: rgba(79,70,229,.05); }
+.btn-danger {
+  background: rgba(244,63,94,.08); color: var(--danger); border: 1px solid rgba(244,63,94,.2);
+  padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.btn-danger:hover { background: rgba(244,63,94,.15); }
+
+/* 输入框聚焦光晕 */
+input, select, textarea {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+  outline: none;
+}
+
+/* 进度条统一升级 */
+.chapter-bar, .goal-bar, .yr-bar { height: 8px; border-radius: 999px; overflow: hidden; background: var(--line); }
+.chapter-fill, .goal-fill, .yr-fill { height: 100%; border-radius: 999px; transition: width .3s ease; }
+
+/* 标签样式 */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+  background: rgba(79,70,229,.08); color: var(--primary);
+}
+
+/* ============ 移动端底部 Tab Bar ============ */
+.bottom-tabbar {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 80;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 12px rgba(15,23,42,.06);
+  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+  justify-content: space-around;
+  align-items: center;
+}
+.bottom-tabbar .btb-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  color: var(--muted); font-size: 10px; font-weight: 600; padding: 4px 0;
+  transition: color .15s ease;
+}
+.bottom-tabbar .btb-btn span:first-child { font-size: 20px; line-height: 1.2; }
+.bottom-tabbar .btb-btn.active { color: var(--primary); }
+.bottom-tabbar .btb-btn:active { transform: scale(0.92); }
+
+/* ============ FAB 悬浮操作按钮（移动端） ============ */
+.fab-action {
+  display: none;
+  position: fixed; bottom: 72px; right: 16px; z-index: 79;
+  width: 52px; height: 52px; border-radius: 50%; border: none;
+  background: linear-gradient(120deg, var(--primary), #7c3aed);
+  color: #fff; font-size: 24px; cursor: pointer;
+  box-shadow: 0 6px 20px -4px rgba(79,70,229,.5);
+  align-items: center; justify-content: center;
+  transition: transform .15s ease;
+}
+.fab-action:hover { transform: translateY(-2px); }
+.fab-action:active { transform: scale(0.92); }
+
+/* 移动端显示底部 Tab Bar + FAB */
+@media (max-width: 860px) {
+  .bottom-tabbar { display: flex; }
+  .fab-action { display: flex; }
+  .app-main { padding-bottom: 80px; }
+  body { padding-bottom: 60px; }
+}
+
+/* ============ 深色模式补充 ============ */
+:root[data-theme="dark"] .btn-primary { box-shadow: 0 4px 14px -4px rgba(79,70,229,.5); }
+:root[data-theme="dark"] .btn-ghost { background: #2a2d42; border-color: var(--line); }
+:root[data-theme="dark"] .bottom-tabbar { background: #1a1d2e; border-top-color: var(--line); box-shadow: 0 -4px 12px rgba(0,0,0,.3); }
+:root[data-theme="dark"] .fab-action { box-shadow: 0 6px 20px -4px rgba(0,0,0,.6); }
+:root[data-theme="dark"] .tag { background: rgba(129,140,248,.12); color: #a5b4fc; }
+
+/* ============ 空状态升级 ============ */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--muted);
+}
+.empty-state .es-icon { font-size: 40px; margin-bottom: 8px; opacity: .6; }
+.empty-state .es-text { font-size: 14px; margin-bottom: 12px; }
+.empty-state .es-btn {
+  display: inline-block; padding: 8px 16px; border-radius: var(--radius-sm);
+  background: rgba(79,70,229,.08); color: var(--primary); font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(79,70,229,.2); transition: all .15s ease;
+}
+.empty-state .es-btn:hover { background: rgba(79,70,229,.15); }
+
+/* ============ Toast 升级 ============ */
+.toast {
+  animation: toastIn 200ms ease-out;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 .phase-badge.ended { background: var(--muted); }
 .phase-text { font-size: 13px; color: var(--muted); }
 .phase-text b { color: var(--ink); }

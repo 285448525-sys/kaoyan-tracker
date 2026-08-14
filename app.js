@@ -3260,6 +3260,10 @@
       var k = e.key;
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
       if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
+      /* N：新建任务 → 跳到计划页并聚焦添加框 */
+      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('plan'); setTimeout(function () { var pi = document.getElementById('plan-input'); if (pi) pi.focus(); }, 200); }
+      /* 斜杠 /：聚焦第一个搜索/输入框 */
+      if (k === '/') { e.preventDefault(); var si = document.querySelector('.tab-panel.active input[type="text"], .tab-panel.active input[type="search"]'); if (si) si.focus(); }
     });
   }
 
@@ -3652,6 +3656,36 @@
     });
     updateMathTabVisibility();
     update408TabVisibility();
+
+    /* ===== 移动端底部 Tab Bar 交互 ===== */
+    var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
+    btbBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-tab');
+        var sideBtn = document.querySelector('.tab-btn[data-tab="' + target + '"]');
+        if (sideBtn) sideBtn.click();
+      });
+    });
+
+    /* ===== FAB 悬浮按钮：切换到记录页开始计时 ===== */
+    var fab = document.getElementById('fabAction');
+    if (fab) {
+      fab.addEventListener('click', function () {
+        var sideBtn = document.querySelector('.tab-btn[data-tab="record"]');
+        if (sideBtn) sideBtn.click();
+      });
+    }
+
+    /* ===== 底部 Tab Bar 高亮同步 ===== */
+    var origTabHandler = tabs.length ? tabs[0].onclick : null;
+    tabs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-tab');
+        btbBtns.forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-tab') === target);
+        });
+      });
+    });
   }
 
   function init() {
