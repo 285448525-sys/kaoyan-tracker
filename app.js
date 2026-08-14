@@ -2249,22 +2249,32 @@
   function onSaveAi() {
     var btn = refs.btnSaveAi;
     if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
-    var baseUrl = (refs.aiBaseUrl.value || '').trim();
-    var model = (refs.aiModel.value || '').trim();
-    var key = (refs.aiKey.value || '').trim();
-    var c = Store.setAiConfig({ baseUrl: baseUrl, model: model, key: key });
-    refs.aiStatus.textContent = (c.baseUrl && c.model && c.key) ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
-    refs.aiStatus.className = 'import-status ai-status ok';
-    showToast('AI 配置已保存', 'ok');
-    // 如果 URL 明显不是 API 端点，给出警告
-    if (baseUrl && !/^https?:\/\//i.test(baseUrl)) {
-      showToast('接口地址必须以 http:// 或 https:// 开头', 'warn');
-    } else if (baseUrl && /\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) {
-      showToast('接口地址看起来是管理页面，不是 API 端点。正确示例：' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
-    } else if (baseUrl && !baseUrl.includes('/v1')) {
-      showToast('建议接口地址以 /v1 结尾，例如 ' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
+    var restore = function () { if (btn) { btn.disabled = false; btn.textContent = '保存配置'; } };
+    var safeToast = function (msg, type) { try { showToast(msg, type); } catch (e) {} };
+    try {
+      var baseUrl = (refs.aiBaseUrl.value || '').trim();
+      var model = (refs.aiModel.value || '').trim();
+      var key = (refs.aiKey.value || '').trim();
+      var c = Store.setAiConfig({ baseUrl: baseUrl, model: model, key: key });
+      refs.aiStatus.textContent = (c.baseUrl && c.model && c.key) ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
+      refs.aiStatus.className = 'import-status ai-status ok';
+      safeToast('AI 配置已保存', 'ok');
+      // 如果 URL 明显不是 API 端点，给出警告
+      if (baseUrl && !/^https?:\/\//i.test(baseUrl)) {
+        safeToast('接口地址必须以 http:// 或 https:// 开头', 'warn');
+      } else if (baseUrl && /\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) {
+        safeToast('接口地址看起来是管理页面，不是 API 端点。正确示例：' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
+      } else if (baseUrl && !baseUrl.includes('/v1')) {
+        safeToast('建议接口地址以 /v1 结尾，例如 ' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
+      }
+    } catch (e) {
+      console.error('onSaveAi error', e);
+      safeToast('保存失败：' + (e && e.message || '未知错误'), 'err');
+      refs.aiStatus.textContent = '✗ 保存失败';
+      refs.aiStatus.className = 'import-status ai-status err';
+    } finally {
+      restore();
     }
-    if (btn) { btn.disabled = false; btn.textContent = '保存配置'; }
   }
   function onTestAi() {
     var baseUrl = (refs.aiBaseUrl.value || '').trim();
@@ -3576,43 +3586,47 @@
   }
 
   function renderAll() {
+    // 第一批：用户立即可见的内容（配置、头部、计时器、今日页）
     renderConfig();
     renderTimerRows();
     renderManual();
     populatePlanSubjects();
     renderPlan();
     renderToday();
-    renderData();
     renderMistakeTypes();
     populateMistakeSubjects();
-    renderMistakeList();
-    renderSites();
-    renderWords();
-    renderPractice();
-    renderReview();
-    renderSummary();
-    renderHfWords();
     renderTranslatorConfig();
     renderAiConfig();
     renderSyncConfig();
-    renderWrongBook();
-    renderMastery();
-    renderSubjectChapters();
-    renderPlanItems();
-    renderMathChapters();
-    renderMathMistakes();
-    startMathFlash();
-    renderMathQuestionList();
-    renderMathPractice();
-    render408Chapters();
-    render408Mistakes();
-    render408QuestionList();
-    render408Practice();
-    render408Knowledge();
-    render408Years();
     updateTranslateButton();
     renderPomodoro();
     renderCustomTimer();
+    // 第二批：不在当前 tab 或 DOM 密集的内容，延迟到下一帧执行，避免阻塞主线程
+    setTimeout(function () {
+      renderData();
+      renderMistakeList();
+      renderSites();
+      renderWords();
+      renderPractice();
+      renderReview();
+      renderSummary();
+      renderHfWords();
+      renderWrongBook();
+      renderMastery();
+      renderSubjectChapters();
+      renderPlanItems();
+      renderMathChapters();
+      renderMathMistakes();
+      startMathFlash();
+      renderMathQuestionList();
+      renderMathPractice();
+      render408Chapters();
+      render408Mistakes();
+      render408QuestionList();
+      render408Practice();
+      render408Knowledge();
+      render408Years();
+    }, 0);
   }
   function initTabs() {
     var tabs = document.querySelectorAll('.tab-btn');
