@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>考研学习记录</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、模考成绩、单月热力图、错题整理、资料网站与今日总结分享。" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260814f" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -18,23 +18,31 @@
       <button class="theme-toggle" id="themeToggle" title="切换深色 / 浅色主题" aria-label="切换主题">🌙</button>
     </div>
     <nav class="side-menu">
-      <button class="tab-btn" data-tab="config"><span>⚙️</span><span class="tab-label">配置</span></button>
+      <div class="side-group-title">📋 核心流程</div>
       <button class="tab-btn active" data-tab="today"><span>📅</span><span class="tab-label">今日</span></button>
       <button class="tab-btn" data-tab="plan"><span>🗺️</span><span class="tab-label">计划</span></button>
-      <button class="tab-btn" data-tab="summary"><span>📋</span><span class="tab-label">总结</span></button>
       <button class="tab-btn" data-tab="record"><span>⏱</span><span class="tab-label">记录</span></button>
+      <button class="tab-btn" data-tab="summary"><span>📋</span><span class="tab-label">总结</span></button>
       <button class="tab-btn" data-tab="data"><span>📊</span><span class="tab-label">数据</span></button>
-      <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题</span></button>
+
+      <div class="side-divider"></div>
+      <div class="side-group-title">📚 专项科目</div>
       <button class="tab-btn" data-tab="math"><span>🧮</span><span class="tab-label">数学</span></button>
       <button class="tab-btn" data-tab="cs408"><span>💻</span><span class="tab-label">408</span></button>
-      <button class="tab-btn" data-tab="websites"><span>🌐</span><span class="tab-label">网站</span></button>
+      <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题本</span></button>
+
       <div class="side-divider"></div>
-      <button class="tab-btn" data-tab="words"><span>📝</span><span class="tab-label">生词记录</span></button>
+      <div class="side-group-title">🗣️ 英语 · 词汇</div>
       <button class="tab-btn" data-tab="practice"><span>🎴</span><span class="tab-label">背单词</span></button>
       <button class="tab-btn" data-tab="review"><span>🔁</span><span class="tab-label">生词复习</span></button>
-      <div class="side-group-title">积累</div>
-      <button class="tab-btn" data-tab="sentences"><span>🧩</span><span class="tab-label">长难句</span></button>
       <button class="tab-btn" data-tab="hfwords"><span>📚</span><span class="tab-label">高频词</span></button>
+      <button class="tab-btn" data-tab="sentences"><span>🧩</span><span class="tab-label">长难句</span></button>
+      <button class="tab-btn" data-tab="words"><span>📝</span><span class="tab-label">生词记录</span></button>
+
+      <div class="side-divider"></div>
+      <div class="side-group-title">🧰 工具 · 资源</div>
+      <button class="tab-btn" data-tab="websites"><span>🌐</span><span class="tab-label">资源网站</span></button>
+      <button class="tab-btn" data-tab="config"><span>⚙️</span><span class="tab-label">配置</span></button>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
@@ -116,14 +124,14 @@
           <button id="btn-sync-upload" class="btn btn-primary">⬆️ 上传数据到云端</button>
           <button id="btn-sync-download" class="btn btn-ghost">⬇️ 从云端下载</button>
           <button id="btn-sync-delete" class="btn btn-danger">🗑 删除云端数据</button>
+        </div>
+        <div class="btn-row">
+          <button id="btn-invite" class="btn btn-ghost">💌 邀请好友</button>
           <button id="btn-sync-watch" class="btn btn-ghost">👁 实时查看云端</button>
         </div>
-        <div class="field-row" style="margin-top:12px;align-items:center">
-          <label for="auto-sync-toggle" style="margin:0">🔄 自动同步（实时双向）</label>
-          <label class="switch" style="margin:0">
-            <input type="checkbox" id="auto-sync-toggle" />
-            <span class="slider"></span>
-          </label>
+        <div class="switch-row">
+          <label class="switch"><input type="checkbox" id="auto-sync-toggle" /><span class="slider"></span></label>
+          <span>🔄 自动同步（实时双向：本机改动自动上传，其他设备改动自动拉取）</span>
         </div>
         <div id="auto-sync-status" class="import-status"></div>
         <div class="field-row">
@@ -162,6 +170,13 @@
           <div class="agg-cell"><div class="agg-num" id="agg-plan">0/0</div><div class="agg-label">计划完成</div></div>
           <div class="agg-cell"><div class="agg-num" id="agg-streak">0</div><div class="agg-label">连续打卡</div></div>
         </div>
+        <!-- 科目进度聚合条（H1 新增） -->
+        <div id="agg-subject-progress" class="agg-subject-progress"></div>
+      </div>
+      <!-- 快速开始引导卡（H3 新增） -->
+      <div id="today-onboarding" class="card onboarding-card" hidden>
+        <h2 class="card-title">🚀 30 秒快速开始</h2>
+        <div id="onboarding-steps" class="onboarding-steps"></div>
       </div>
       <p class="hint" id="today-guide"></p>
       <div class="card">
@@ -272,6 +287,12 @@
       </div>
 
       <div class="card">
+        <h2 class="card-title">🍰 今日学习时长分布</h2>
+        <p class="hint">环形饼图直观展示今天各科时间分配占比。</p>
+        <div id="today-pie"></div>
+      </div>
+
+      <div class="card">
         <h2 class="card-title">🔥 学习热力图</h2>
         <div class="mheat-nav">
           <button id="heat-prev" class="mini-btn">‹</button>
@@ -288,8 +309,15 @@
       </div>
 
       <div class="card">
+        <h2 class="card-title">🧭 综合掌握度雷达图</h2>
+        <p class="hint">按「章节进度 50% + 模考达成度 40% + 累计时长 10%」综合评分，直观看到薄弱科目。</p>
+        <div id="subject-radar"></div>
+      </div>
+
+      <div class="card">
         <h2 class="card-title">📚 各科目学习统计</h2>
-        <div id="subject-stats" class="stats-grid"></div>
+        <div id="subject-bars" class="subject-bars"></div>
+        <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
       </div>
     </section>
 
@@ -453,7 +481,6 @@
         <div class="btn-row" style="margin-top:14px">
           <button id="btn-checkin" class="btn btn-ghost">✅ 今日打卡</button>
           <button id="btn-share-summary" class="btn btn-primary">📤 分享今日卡片</button>
-          <button id="btn-invite" class="btn btn-ghost">📨 邀请好友</button>
         </div>
       </div>
       <div class="card">
@@ -671,14 +698,14 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- 实时查看云端（只读，不覆盖本机数据） -->
+  <!-- 实时查看云端（只读模态框） -->
   <div id="watch-modal" class="watch-modal" style="display:none">
     <div class="watch-backdrop" data-close="1"></div>
     <div class="watch-panel">
       <div class="watch-head">
-        <span class="watch-title">👁 实时查看云端数据</span>
+        <span class="watch-title">👁 实时查看云端</span>
         <span id="watch-meta" class="watch-meta"></span>
-        <button id="btn-watch-close" class="watch-close" title="关闭">✕</button>
+        <button id="btn-watch-close" class="watch-close" title="关闭">×</button>
       </div>
       <div id="watch-body" class="watch-body">
         <div class="watch-empty">正在加载…</div>
@@ -686,13 +713,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814e"></script>
-  <script src="words.js?v=20260814e"></script>
-  <script src="store.js?v=20260814e"></script>
-  <script src="charts.js?v=20260814e"></script>
-  <script src="share.js?v=20260814e"></script>
-  <script src="md5.js?v=20260814e"></script>
-  <script src="sentences.js?v=20260814e"></script>
-  <script src="app.js?v=20260814e"></script>
+  <script src="qrcode.min.js?v=20260814f"></script>
+  <script src="words.js?v=20260814f"></script>
+  <script src="store.js?v=20260814f"></script>
+  <script src="charts.js?v=20260814f"></script>
+  <script src="share.js?v=20260814f"></script>
+  <script src="md5.js?v=20260814f"></script>
+  <script src="sentences.js?v=20260814f"></script>
+  <script src="app.js?v=20260814f"></script>
 </body>
 </html>

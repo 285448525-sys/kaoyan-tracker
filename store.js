@@ -36,14 +36,16 @@
       moduleMastery: {},     // { 模块名: '已掌握'|'进行中'|'未开始' }
       subjectChapters: {},   // { 科目key: { chapters:[章名...], current: index } }
       mathChapters: [],      // 数学全部章节（字符串数组，初始化预填）
-      mathCurrent: -1,       // 数学当前学到章节 index
+      mathCurrent: -1,       // 数学当前学到章节 index（仅标记"正在学"位置，不代表前面全完成）
+      mathDone: [],          // 数学已完成章节 index 集合（支持跳跃式学习）
       planItems: [],         // 整体学习计划 [{id,text,note,done,subject,chapter}]
       mathMistakes: [],      // 数学错题 [{id,category,content,note,created,reviewed}]
       mathQuestions: [],     // 用户自定义选择题 [{id,category,q,options,answer,explain}]
       mathStats: {},         // { 分类: {total, correct} }
       // 408 专业课模块
       cs408Chapters: [],     // 408 全部章节（字符串数组，初始化预填）
-      cs408Current: -1,      // 408 当前学到章节 index
+      cs408Current: -1,      // 408 当前学到章节 index（仅标记"正在学"位置）
+      cs408Done: [],         // 408 已完成章节 index 集合（支持跳跃式学习）
       cs408Mistakes: [],     // 408 错题 [{id,category,content,note,created,reviewed,nextReview,reviewCount}]
       cs408Questions: [],    // 408 用户自定义选择题
       cs408Stats: {},        // 408 { 分类: {total, correct} }
@@ -78,12 +80,14 @@
         subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
         mathChapters: (p.mathChapters && Array.isArray(p.mathChapters)) ? p.mathChapters : [],
         mathCurrent: (typeof p.mathCurrent === 'number') ? p.mathCurrent : -1,
+        mathDone: Array.isArray(p.mathDone) ? p.mathDone.slice() : (function(){var c=typeof p.mathCurrent==='number'?p.mathCurrent:-1;var a=[];for(var i=0;i<=c;i++)a.push(i);return a;})(),
         planItems: (p.planItems && Array.isArray(p.planItems)) ? p.planItems : [],
         mathMistakes: (p.mathMistakes && Array.isArray(p.mathMistakes)) ? p.mathMistakes : [],
         mathQuestions: (p.mathQuestions && Array.isArray(p.mathQuestions)) ? p.mathQuestions : [],
         mathStats: (p.mathStats && typeof p.mathStats === 'object') ? p.mathStats : {},
         cs408Chapters: (p.cs408Chapters && Array.isArray(p.cs408Chapters)) ? p.cs408Chapters : [],
         cs408Current: (typeof p.cs408Current === 'number') ? p.cs408Current : -1,
+        cs408Done: Array.isArray(p.cs408Done) ? p.cs408Done.slice() : (function(){var c=typeof p.cs408Current==='number'?p.cs408Current:-1;var a=[];for(var i=0;i<=c;i++)a.push(i);return a;})(),
         cs408Mistakes: (p.cs408Mistakes && Array.isArray(p.cs408Mistakes)) ? p.cs408Mistakes : [],
         cs408Questions: (p.cs408Questions && Array.isArray(p.cs408Questions)) ? p.cs408Questions : [],
         cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
@@ -100,13 +104,11 @@
   }
 
   var saveHook = null;
-  function save() {
-    try { global.localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { console.error('[Store] 保存失败', e); return false; }
-    if (saveHook) { try { saveHook(); } catch (e) {} }
-    return true;
-  }
   function setOnSave(fn) { saveHook = fn; }
+  function save() {
+    try { global.localStorage.setItem(KEY, JSON.stringify(state)); if (saveHook) { try { saveHook(); } catch (e) {} } return true; }
+    catch (e) { console.error('[Store] 保存失败', e); return false; }
+  }
 
   function dateStr(d) {
     var y = d.getFullYear();
@@ -216,13 +218,31 @@
   function setModuleMastery(name, status) { if (!state.moduleMastery) state.moduleMastery = {}; state.moduleMastery[name] = status; save(); }
   function addModule(name) { if (!state.moduleMastery) state.moduleMastery = {}; if (!(name in state.moduleMastery)) state.moduleMastery[name] = '未开始'; save(); }
 
-  function getSubjectChapters(key) { return state.subjectChapters ? state.subjectChapters[key] || null : null; }
+  function getSubjectChapters(key) {
+    if (!state.subjectChapters) return null;
+    var obj = state.subjectChapters[key];
+    if (!obj) return null;
+    if (!Array.isArray(obj.done)) {
+      var c = (typeof obj.current === 'number') ? obj.current : -1;
+      obj.done = []; for (var i = 0; i <= c; i++) obj.done.push(i);
+      save();
+    }
+    return obj;
+  }
   function setSubjectChapters(key, obj) { if (!state.subjectChapters) state.subjectChapters = {}; state.subjectChapters[key] = obj; save(); }
 
   function getMathChapters() { return (state.mathChapters || []).slice(); }
   function setMathChapters(arr) { state.mathChapters = (arr || []).slice(); save(); }
   function getMathCurrent() { return (typeof state.mathCurrent === 'number') ? state.mathCurrent : -1; }
   function setMathCurrent(i) { state.mathCurrent = (typeof i === 'number') ? i : -1; save(); }
+  function getMathDone() { return Array.isArray(state.mathDone) ? state.mathDone.slice() : []; }
+  function setMathDone(arr) { state.mathDone = (arr || []).slice(); save(); }
+  function toggleMathDone(idx) {
+    if (!Array.isArray(state.mathDone)) state.mathDone = [];
+    var i = state.mathDone.indexOf(idx);
+    if (i >= 0) state.mathDone.splice(i, 1); else state.mathDone.push(idx);
+    save();
+  }
 
   function getPlanItems() { return (state.planItems || []).slice(); }
   function addPlanItem(it) { if (!state.planItems) state.planItems = []; it.id = 'pi_' + nextSeq(); state.planItems.push(it); save(); return it; }
@@ -362,12 +382,14 @@
       subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
       mathChapters: (p.mathChapters && Array.isArray(p.mathChapters)) ? p.mathChapters : [],
       mathCurrent: (typeof p.mathCurrent === 'number') ? p.mathCurrent : -1,
+      mathDone: Array.isArray(p.mathDone) ? p.mathDone.slice() : (function(){var c=typeof p.mathCurrent==='number'?p.mathCurrent:-1;var a=[];for(var i=0;i<=c;i++)a.push(i);return a;})(),
       planItems: (p.planItems && Array.isArray(p.planItems)) ? p.planItems : [],
       mathMistakes: (p.mathMistakes && Array.isArray(p.mathMistakes)) ? p.mathMistakes : [],
       mathQuestions: (p.mathQuestions && Array.isArray(p.mathQuestions)) ? p.mathQuestions : [],
       mathStats: (p.mathStats && typeof p.mathStats === 'object') ? p.mathStats : {},
         cs408Chapters: (p.cs408Chapters && Array.isArray(p.cs408Chapters)) ? p.cs408Chapters : [],
         cs408Current: (typeof p.cs408Current === 'number') ? p.cs408Current : -1,
+        cs408Done: Array.isArray(p.cs408Done) ? p.cs408Done.slice() : (function(){var c=typeof p.cs408Current==='number'?p.cs408Current:-1;var a=[];for(var i=0;i<=c;i++)a.push(i);return a;})(),
         cs408Mistakes: (p.cs408Mistakes && Array.isArray(p.cs408Mistakes)) ? p.cs408Mistakes : [],
         cs408Questions: (p.cs408Questions && Array.isArray(p.cs408Questions)) ? p.cs408Questions : [],
         cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
@@ -387,6 +409,14 @@
   function set408Chapters(arr) { state.cs408Chapters = (arr || []).slice(); save(); }
   function get408Current() { return (typeof state.cs408Current === 'number') ? state.cs408Current : -1; }
   function set408Current(i) { state.cs408Current = (typeof i === 'number') ? i : -1; save(); }
+  function get408Done() { return Array.isArray(state.cs408Done) ? state.cs408Done.slice() : []; }
+  function set408Done(arr) { state.cs408Done = (arr || []).slice(); save(); }
+  function toggle408Done(idx) {
+    if (!Array.isArray(state.cs408Done)) state.cs408Done = [];
+    var i = state.cs408Done.indexOf(idx);
+    if (i >= 0) state.cs408Done.splice(i, 1); else state.cs408Done.push(idx);
+    save();
+  }
 
   function get408Mistakes() {
     return (state.cs408Mistakes || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); });
@@ -516,12 +546,12 @@
     getUserWebsites: getUserWebsites, addWebsite: addWebsite, removeWebsite: removeWebsite,
     getModuleMastery: getModuleMastery, setModuleMastery: setModuleMastery, addModule: addModule,
     getSubjectChapters: getSubjectChapters, setSubjectChapters: setSubjectChapters,
-    getMathChapters: getMathChapters, setMathChapters: setMathChapters, getMathCurrent: getMathCurrent, setMathCurrent: setMathCurrent,
+    getMathChapters: getMathChapters, setMathChapters: setMathChapters, getMathCurrent: getMathCurrent, setMathCurrent: setMathCurrent, getMathDone: getMathDone, setMathDone: setMathDone, toggleMathDone: toggleMathDone,
     getPlanItems: getPlanItems, addPlanItem: addPlanItem, updatePlanItem: updatePlanItem, removePlanItem: removePlanItem, togglePlanItem: togglePlanItem,
     getMathMistakes: getMathMistakes, addMathMistake: addMathMistake, updateMathMistake: updateMathMistake, removeMathMistake: removeMathMistake,
     getMathQuestions: getMathQuestions, addMathQuestion: addMathQuestion, removeMathQuestion: removeMathQuestion,
     getMathStats: getMathStats, recordMathStat: recordMathStat,
-    get408Chapters: get408Chapters, set408Chapters: set408Chapters, get408Current: get408Current, set408Current: set408Current,
+    get408Chapters: get408Chapters, set408Chapters: set408Chapters, get408Current: get408Current, set408Current: set408Current, get408Done: get408Done, set408Done: set408Done, toggle408Done: toggle408Done,
     get408Mistakes: get408Mistakes, add408Mistake: add408Mistake, update408Mistake: update408Mistake, remove408Mistake: remove408Mistake, get408DueMistakes: get408DueMistakes,
     get408Questions: get408Questions, add408Question: add408Question, remove408Question: remove408Question,
     get408Stats: get408Stats, record408Stat: record408Stat,

@@ -546,10 +546,18 @@ textarea { resize: vertical; }
 .practice-box { margin-top: 10px; }
 .empty-hint { text-align: center; color: var(--muted); font-size: 13px; padding: 18px 0; }
 
-/* ============ 章节三态：已完成 / 进行中 / 未开始 ============ */
-.chapter-item.done { opacity: .65; }
-.chapter-item.done .chapter-name { text-decoration: line-through; color: var(--muted); }
-.chapter-item.done .chapter-idx { background: var(--ok); color: #fff; }
+/* ============ 章节勾选圆圈（独立完成标记，支持跳跃式学习） ============ */
+.chapter-check {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d1d5db;
+  background: #fff; color: transparent; cursor: pointer; flex: none;
+  display: grid; place-items: center; font-size: 13px; font-weight: 700;
+  transition: all .15s ease; padding: 0;
+}
+.chapter-check:hover { border-color: var(--primary); transform: scale(1.1); }
+.chapter-check.checked { background: var(--ok); border-color: var(--ok); color: #fff; }
+.chapter-item.done .chapter-name { color: var(--muted); }
+:root[data-theme="dark"] .chapter-check { background: #272a3d; border-color: #4b5563; }
+:root[data-theme="dark"] .chapter-check.checked { background: var(--ok); border-color: var(--ok); color: #fff; }
 
 /* ============ 深色主题 ============ */
 :root[data-theme="dark"] {
@@ -612,6 +620,111 @@ textarea { resize: vertical; }
 :root[data-theme="dark"] .syn-card { background: #3a3220; border-color: #5c4a26; }
 :root[data-theme="dark"] .method-text { background: #272a3d; border-color: var(--line); color: var(--ink); }
 :root[data-theme="dark"] .grid-line { stroke: #313548; }
+:root[data-theme="dark"] .mheat-cell.in.lv0 { background: #313548; }
+:root[data-theme="dark"] .toast { background: rgba(40,44,64,.96); }
+:root[data-theme="dark"] .fab-share { box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+
+/* ============ H1：科目进度聚合条 ============ */
+.agg-subject-progress { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.2); display: grid; gap: 10px; }
+.agg-sp-row { display: grid; grid-template-columns: 80px 1fr 60px; align-items: center; gap: 10px; }
+.agg-sp-name { font-size: 13px; opacity: .92; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agg-sp-bar { height: 8px; background: rgba(255,255,255,.2); border-radius: 4px; overflow: hidden; }
+.agg-sp-fill { height: 100%; border-radius: 4px; transition: width .4s ease; background: #fff; }
+.agg-sp-text { font-size: 12px; text-align: right; opacity: .85; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .agg-sp-row { grid-template-columns: 70px 1fr 56px; gap: 8px; }
+  .agg-sp-name { font-size: 12px; }
+}
+
+/* ============ H3：快速开始引导卡 ============ */
+.onboarding-card { border: 2px dashed #c7d2fe; background: linear-gradient(135deg, #eef2ff, #faf5ff); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 6px 24px rgba(79,70,229,.08); } 50% { box-shadow: 0 6px 28px rgba(79,70,229,.18); } }
+:root[data-theme="dark"] .onboarding-card { background: linear-gradient(135deg, #2a2d42, #2e2640); border-color: #4f46e5; }
+.onboarding-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.ob-step { background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center; position: relative; cursor: pointer; transition: all .18s ease; border: 1px solid var(--line); }
+:root[data-theme="dark"] .ob-step { background: #272a3d; }
+.ob-step:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 6px 16px rgba(79,70,229,.12); }
+.ob-step.done { opacity: .7; }
+.ob-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-weight: 800; margin: 0 auto 8px; font-size: 14px; }
+.ob-step.done .ob-step-num { background: var(--ok); }
+.ob-step-icon { font-size: 22px; margin-bottom: 4px; }
+.ob-step-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.ob-step-sub { font-size: 11px; color: var(--muted); }
+.ob-step-arr { position: absolute; right: -10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #c7d2fe; z-index: 2; }
+.ob-step:last-child .ob-step-arr { display: none; }
+@media (max-width: 720px) {
+  .onboarding-steps { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .ob-step-arr { display: none; }
+}
+
+/* ============ H4：各科目累计时长 横向条形图 ============ */
+.subject-bars { display: grid; gap: 10px; margin-bottom: 4px; }
+.sb-row { display: grid; grid-template-columns: 80px 1fr 88px; align-items: center; gap: 10px; }
+.sb-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+.sb-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.sb-bar { height: 10px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.sb-fill { height: 100%; border-radius: 6px; transition: width .5s ease; background: var(--primary); }
+.sb-text { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+@media (max-width: 560px) {
+  .sb-row { grid-template-columns: 72px 1fr 76px; gap: 8px; }
+  .sb-name { font-size: 12px; }
+}
+
+/* ============ 空状态增强 ============ */
+.empty-hint { text-align: center; padding: 24px 16px; color: var(--muted); font-size: 13px; }
+.empty-hint::before { content: '📭'; display: block; font-size: 32px; margin-bottom: 8px; opacity: .7; }
+
+/* ============ 回到顶部按钮 ============ */
+.back-top {
+  position: fixed; right: 20px; bottom: 24px; z-index: 80;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+  border: none; cursor: pointer; font-size: 18px; font-weight: 700;
+  box-shadow: 0 8px 20px rgba(79,70,229,.3);
+  opacity: 0; transform: translateY(20px); pointer-events: none;
+  transition: all .25s ease; display: grid; place-items: center;
+}
+.back-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.back-top:hover { transform: translateY(-2px); }
+
+/* ============ Toast 分层样式 ============ */
+.toast { font-weight: 600; padding: 10px 20px; }
+.toast.ok { background: rgba(16,185,129,.94); }
+.toast.err { background: rgba(239,68,68,.94); }
+.toast.warn { background: rgba(245,158,11,.94); }
+.toast.info { background: rgba(59,130,246,.94); }
+
+/* ============ D3：今日时长饼图容器 ============ */
+.pie-wrap { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; }
+.pie-svg { width: 100%; height: auto; }
+.pie-legend { display: grid; gap: 8px; }
+.pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.pie-legend-color { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.pie-legend-name { flex: 1; }
+.pie-legend-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pie-legend-pct { font-size: 12px; color: var(--muted); min-width: 48px; text-align: right; }
+@media (max-width: 560px) { .pie-wrap { grid-template-columns: 1fr; } .pie-svg { max-width: 220px; margin: 0 auto; } }
+
+/* ============ D3：雷达图容器 ============ */
+.radar-wrap { display: flex; justify-content: center; }
+.radar-svg { width: 100%; max-width: 420px; height: auto; }
+
+/* ============ 小屏卡边距微调 ============ */
+@media (max-width: 560px) {
+  .card { padding: 14px; border-radius: 14px; }
+  .app-main { padding: 64px 12px 24px; }
+}
+
+/* ---- 自动同步开关 ---- */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 999px; transition: .2s; }
+.switch .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.switch input:checked + .slider { background: var(--primary, #4f46e5); }
+.switch input:checked + .slider:before { transform: translateX(20px); }
+#auto-sync-status { margin-top: 6px; font-size: 13px; color: #6b7280; }
+#auto-sync-status.ok { color: #16a34a; }
+#auto-sync-status.error { color: #dc2626; }
 
 /* ---- 实时查看云端 模态框 ---- */
 .watch-modal { position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
@@ -642,17 +755,3 @@ textarea { resize: vertical; }
 :root[data-theme="dark"] .wk-stat { background: #272a3d; }
 :root[data-theme="dark"] .wk-day:nth-child(odd) { background: #252838; }
 :root[data-theme="dark"] .watch-empty, :root[data-theme="dark"] .wk-day .subj { color: #9ca3af; }
-
-/* ---- 自动同步开关 ---- */
-.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.switch .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 999px; transition: .2s; }
-.switch .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
-.switch input:checked + .slider { background: var(--primary, #4f46e5); }
-.switch input:checked + .slider:before { transform: translateX(20px); }
-#auto-sync-status { margin-top: 6px; font-size: 13px; color: #6b7280; }
-#auto-sync-status.ok { color: #16a34a; }
-#auto-sync-status.error { color: #dc2626; }
-:root[data-theme="dark"] .mheat-cell.in.lv0 { background: #313548; }
-:root[data-theme="dark"] .toast { background: rgba(40,44,64,.96); }
-:root[data-theme="dark"] .fab-share { box-shadow: 0 8px 20px rgba(0,0,0,.5); }
