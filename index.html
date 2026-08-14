@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814k" />
+  <link rel="stylesheet" href="styles.css?v=20260814l" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -203,13 +203,65 @@
     <!-- 今日：聚合 + 计划 + 总结分享 -->
     <section id="tab-today" class="tab-panel active">
       <div class="card today-aggregate" id="today-aggregate">
-        <div class="agg-grid">
-          <div class="agg-cell"><div class="agg-num" id="agg-countdown">--</div><div class="agg-label">距考研天数</div></div>
-          <div class="agg-cell"><div class="agg-num" id="agg-minutes">0</div><div class="agg-label">今日学习(分)</div></div>
-          <div class="agg-cell"><div class="agg-num" id="agg-score">0</div><div class="agg-label">今日得分</div></div>
-          <div class="agg-cell"><div class="agg-num" id="agg-plan">0/0</div><div class="agg-label">计划完成</div></div>
-          <div class="agg-cell"><div class="agg-num" id="agg-streak">0</div><div class="agg-label">连续打卡</div></div>
+        <!-- 头部：品牌 eyebrow + 日期 + 加油按钮 -->
+        <div class="today-head">
+          <div class="today-head-text">
+            <div class="today-eyebrow">考研学习记录 · 每日打卡</div>
+            <div class="today-date" id="today-date">--</div>
+          </div>
+          <button id="btn-cheer" class="today-cheer" type="button" title="点一下，给自己一点鼓励">💪 加油！</button>
         </div>
+
+        <!-- 三大主指标 + 行动按钮 -->
+        <div class="today-stats">
+          <div class="stat-block stat-focus" data-zero-toggle>
+            <div class="stat-value">
+              <span class="num" id="agg-minutes">0</span>
+              <span class="unit">min</span>
+            </div>
+            <div class="stat-label">今日专注时长</div>
+          </div>
+          <div class="stat-block stat-streak" data-zero-toggle>
+            <div class="stat-value">
+              <span class="num" id="agg-streak">0</span>
+              <span class="unit">天</span>
+            </div>
+            <div class="stat-label">连续打卡</div>
+          </div>
+          <div class="stat-block stat-plan" data-zero-toggle>
+            <div class="stat-value">
+              <span class="num" id="agg-plan-done">0</span>
+              <span class="sep">/</span>
+              <span class="num" id="agg-plan-total">0</span>
+            </div>
+            <div class="stat-label">计划项完成</div>
+          </div>
+          <button id="btn-quick-focus" class="today-action" type="button" title="切换到记录页开始计时">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path fill="currentColor" d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 次级指标：倒计时 / 今日得分 / 累计等级 -->
+        <div class="today-secondary">
+          <div class="sec-item">
+            <span class="sec-label">距考研</span>
+            <span class="sec-num" id="agg-countdown">--</span>
+            <span class="sec-unit">天</span>
+          </div>
+          <span class="sec-divider" aria-hidden="true"></span>
+          <div class="sec-item">
+            <span class="sec-label">今日得分</span>
+            <span class="sec-num" id="agg-score">0</span>
+          </div>
+          <span class="sec-divider" aria-hidden="true"></span>
+          <div class="sec-item">
+            <span class="sec-label">累计等级</span>
+            <span class="sec-num" id="agg-level">Lv.1</span>
+          </div>
+        </div>
+
         <div id="agg-phase" class="agg-phase"></div>
         <!-- 科目进度聚合条（H1 新增） -->
         <div id="agg-subject-progress" class="agg-subject-progress"></div>
@@ -750,13 +802,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814k"></script>
-  <script src="words.js?v=20260814k"></script>
-  <script src="store.js?v=20260814k"></script>
-  <script src="charts.js?v=20260814k"></script>
-  <script src="share.js?v=20260814k"></script>
-  <script src="md5.js?v=20260814k"></script>
-  <script src="sentences.js?v=20260814k"></script>
-  <script src="app.js?v=20260814k"></script>
+  <script src="qrcode.min.js?v=20260814l"></script>
+  <script src="words.js?v=20260814l"></script>
+  <script src="store.js?v=20260814l"></script>
+  <script src="charts.js?v=20260814l"></script>
+  <script src="share.js?v=20260814l"></script>
+  <script src="md5.js?v=20260814l"></script>
+  <script src="sentences.js?v=20260814l"></script>
+  <script src="app.js?v=20260814l"></script>
 </body>
 </html>

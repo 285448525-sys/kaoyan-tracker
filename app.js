@@ -2471,8 +2471,27 @@
   }
 
   /* ============ 今日聚合 + 主题 + 键盘快捷键 ============ */
+  // YYYY.MM.DD 星期X（如「2026.08.14 星期五」）
+  function fmtTodayWithWeekday(dateStr) {
+    var d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    var y = d.getFullYear();
+    var m = (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1);
+    var day = (d.getDate() < 10 ? '0' : '') + d.getDate();
+    var weeks = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    return y + '.' + m + '.' + day + ' ' + weeks[d.getDay()];
+  }
+  // 给数字 0 的 stat-block 打 is-zero，弱化全 0 的视觉冲击
+  function syncStatZero(selector, val) {
+    var el = document.querySelector('.today-stats ' + selector);
+    if (!el) return;
+    if (Number(val) === 0) el.classList.add('is-zero'); else el.classList.remove('is-zero');
+  }
+
   function renderTodayAggregate() {
     if (!refs.aggCountdown) return;
+    // 日期（顶部）
+    if (refs.todayDate) refs.todayDate.textContent = fmtTodayWithWeekday(Store.todayStr());
     // 倒计时
     var examDate = Store.getConfig().examDate;
     if (examDate) {
@@ -2481,15 +2500,29 @@
     } else { refs.aggCountdown.textContent = '未设置'; }
     // 今日学习时长
     var today = Store.getDay(Store.todayStr()) || {};
-    refs.aggMinutes.textContent = Store.totalMinutesForDay(today);
+    var minutes = Store.totalMinutesForDay(today);
+    refs.aggMinutes.textContent = minutes;
     // 今日学习得分
-    if (refs.aggScore) refs.aggScore.textContent = scoreForDay(Store.todayStr(), today);
-    // 计划完成
+    var todayScore = scoreForDay(Store.todayStr(), today);
+    if (refs.aggScore) refs.aggScore.textContent = todayScore;
+    // 计划完成（拆分为 done / total 两个 span）
     var plan = Store.getPlan(Store.todayStr()) || [];
     var done = plan.filter(function (p) { return p.done; }).length;
-    refs.aggPlan.textContent = done + '/' + plan.length;
+    if (refs.aggPlanDone) refs.aggPlanDone.textContent = done;
+    if (refs.aggPlanTotal) refs.aggPlanTotal.textContent = plan.length;
     // 连续打卡
     refs.aggStreak.textContent = Store.consecutiveStreak();
+    // 累计等级（次级指标条右侧）
+    if (refs.aggLevel) {
+      try {
+        var lvl = computeLevel(getStudyStats());
+        refs.aggLevel.textContent = 'Lv.' + lvl.level;
+      } catch (e) { refs.aggLevel.textContent = 'Lv.1'; }
+    }
+    // 零态视觉柔和化
+    syncStatZero('.stat-focus', minutes);
+    syncStatZero('.stat-streak', refs.aggStreak.textContent);
+    syncStatZero('.stat-plan', plan.length === 0 ? 0 : done);
     // 倒计时分阶段
     if (refs.aggPhase) {
       var ph = phaseInfo(examDate);
@@ -3383,9 +3416,42 @@
     refs.aggCountdown = $('agg-countdown');
     refs.aggMinutes = $('agg-minutes');
     refs.aggScore = $('agg-score');
-    refs.aggPlan = $('agg-plan');
+    refs.aggPlanDone = $('agg-plan-done');
+    refs.aggPlanTotal = $('agg-plan-total');
     refs.aggStreak = $('agg-streak');
     refs.aggPhase = $('agg-phase');
+    refs.aggLevel = $('agg-level');
+    refs.todayDate = $('today-date');
+
+    // 「加油！」按钮：脉冲动画 + 鼓励文案 toast
+    refs.btnCheer = $('btn-cheer');
+    if (refs.btnCheer) {
+      refs.btnCheer.addEventListener('click', function () {
+        // 防重入：脉冲动画期间不再重复触发
+        if (refs.btnCheer.classList.contains('is-pulsing')) return;
+        refs.btnCheer.classList.add('is-pulsing');
+        setTimeout(function () { refs.btnCheer.classList.remove('is-pulsing'); }, 1500);
+        var cheerPhrases = [
+          '你比自己想象的更强 ✨',
+          '今天也在为梦想努力 💪',
+          '保持节奏，稳步前行 🌱',
+          '每一步都算数，继续加油！',
+          '专注当下，未来可期 🌟',
+          '小积累，大改变 📈'
+        ];
+        var msg = cheerPhrases[Math.floor(Math.random() * cheerPhrases.length)];
+        if (typeof showToast === 'function') showToast('💪 ' + msg, 'ok');
+      });
+    }
+
+    // 「快速开始」圆形行动按钮 → 跳到记录页
+    refs.btnQuickFocus = $('btn-quick-focus');
+    if (refs.btnQuickFocus) {
+      refs.btnQuickFocus.addEventListener('click', function () {
+        switchTab('record');
+        if (typeof showToast === 'function') showToast('⏱ 进入记录页，挑一个科目开始计时吧', 'ok');
+      });
+    }
 
     // 翻译密钥（用户自带 key，仅存本机浏览器）
     refs.transAppid = $('trans-appid');
