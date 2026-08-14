@@ -755,3 +755,28 @@ textarea { resize: vertical; }
 :root[data-theme="dark"] .wk-stat { background: #272a3d; }
 :root[data-theme="dark"] .wk-day:nth-child(odd) { background: #252838; }
 :root[data-theme="dark"] .watch-empty, :root[data-theme="dark"] .wk-day .subj { color: #9ca3af; }
+
+/* ============ 通用小字（精简统计行，非教学说明） ============ */
+.card-sub { font-size: 13px; color: var(--muted); margin: 6px 0 10px; line-height: 1.5; }
+
+/* ============ 说明书模块 ============ */
+.manual-actions { margin: 10px 0 14px; }
+.manual-list { display: flex; flex-direction: column; gap: 10px; }
+.manual-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card); }
+.manual-item-title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.manual-item-body { font-size: 14px; line-height: 1.65; color: var(--muted); }
+
+/* ============ 引导卡底部按钮 ============ */
+.onboarding-foot { margin-top: 12px; }
+
+/* ============ 新手完整引导（全屏分步导览） ============ */
+.tour-mask { position: fixed; inset: 0; background: rgba(15,18,32,.55); display: flex; align-items: center; justify-content: center; z-index: 100000; padding: 20px; }
+.tour-box { width: min(520px, 100%); background: var(--card); border-radius: 18px; padding: 28px 26px; box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: tourPop .25s ease; }
+@keyframes tourPop { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.tour-progress { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 10px; letter-spacing: 1px; }
+.tour-icon { font-size: 46px; text-align: center; line-height: 1; }
+.tour-title { text-align: center; font-size: 18px; font-weight: 800; color: var(--ink); margin: 10px 0 8px; }
+.tour-text { font-size: 15px; line-height: 1.7; color: var(--muted); text-align: center; min-height: 84px; }
+.tour-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.tour-nav .btn { flex: 1; min-width: 84px; }
+.tour-nav #tour-goto { flex: 1.4; }

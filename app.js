@@ -42,6 +42,28 @@
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function nextReviewDate(box){ var days = LEITNER[Math.max(0, Math.min(4, (box||1)-1))]; return Store.dateStr(Store.addDays(new Date(), days)); }
 
+  // ===== 共享助手（用于消除重复实现，勿在各函数内再复制一份） =====
+  // 取某科目最近一次有记录的模考分：原先在 renderSubjectStats / renderRadarCard 内各写了一份
+  function latestScoreIn(exams, key) {
+    for (var i = exams.length - 1; i >= 0; i--) {
+      if (exams[i].scores && exams[i].scores[key] !== undefined) return exams[i].scores[key];
+    }
+    return null;
+  }
+  // 渲染「分类筛选 chips」：原先在数学错题 / 408 错题 / 408 知识点三处各写了一份
+  // container 容器节点；items 数据数组；keyOf 取分类字段的函数；active 当前选中项；onPick 点击回调
+  function renderFilterChips(container, items, keyOf, active, onPick) {
+    if (!container) return;
+    var cats = { '全部': items.length };
+    items.forEach(function (it) { var k = keyOf(it); cats[k] = (cats[k] || 0) + 1; });
+    container.innerHTML = '';
+    Object.keys(cats).forEach(function (c) {
+      var chip = el('div', 'chip' + (c === active ? ' active' : ''), escapeHtml(c) + ' (' + cats[c] + ')');
+      chip.addEventListener('click', function () { onPick(c); });
+      container.appendChild(chip);
+    });
+  }
+
   var MISTAKE_TYPES = ['今日感悟', '刷题时遇到的问题', '知识点盲区', '易错点', '其他'];
   // 错题本科目：固定丰富列表，并与用户配置的考试科目合并去重（修复「科目无法选择」缺陷）
   var MISTAKE_SUBJECTS = ['阅读', '完形', '翻译', '写作', '语法', '词汇', '听力', '口语', '政治', '数学', '专业课'];
@@ -388,9 +410,6 @@
   function renderPlan() {
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
-    refs.planHint.textContent = Store.getConfig().autoPlan
-      ? '已启用自动计划：每天打开会自动生成。'
-      : '未启用自动计划，可点「自动制定计划」生成。';
     refs.planList.innerHTML = '';
     if (!plan.length) { refs.planList.appendChild(el('div', 'empty-hint', '还没有计划，点上方按钮生成吧')); return; }
     var subs = Store.getSubjects();
@@ -436,9 +455,6 @@
     return d;
   }
   function renderToday() {
-    if (!refs.todayGuide) return;
-    var cfg = Store.getConfig();
-    refs.todayGuide.textContent = cfg.examDate ? '' : '请先在「配置」页填写考研日期与目标分。';
     renderTodayAggregate();
   }
   function buildShareCanvas(ds) {
@@ -671,13 +687,9 @@
     var subs = Store.getSubjects();
     var exams = Store.getExams();
     if (!subs.length) { refs.goalProgress.appendChild(el('div', 'empty-hint', '请先配置考试科目与目标分')); return; }
-    function latestScore(key) {
-      for (var i = exams.length - 1; i >= 0; i--) { if (exams[i].scores && exams[i].scores[key] !== undefined) return exams[i].scores[key]; }
-      return null;
-    }
     var totalCur = 0;
     subs.forEach(function (s) {
-      var cur = latestScore(s.key);
+      var cur = latestScoreIn(exams, s.key);
       var tgt = Number(s.target) || 0;
       var row = el('div', 'goal-row');
       if (cur != null && tgt > 0 && cur < tgt) row.classList.add('subject-line-miss');
@@ -759,10 +771,6 @@
     var subs = Store.getSubjects();
     var days = Store.getDays();
     var exams = Store.getExams();
-    function latestScore(key) {
-      for (var i = exams.length - 1; i >= 0; i--) { if (exams[i].scores && exams[i].scores[key] !== undefined) return exams[i].scores[key]; }
-      return null;
-    }
     var radarData = subs.map(function (s) {
       var v = 0;
       // 综合得分：章节进度 50% + 模考达成度 40% + 累计学习时长 10%
@@ -774,7 +782,7 @@
       var prog = total ? Math.max(0, doneCount / total) : 0;
       // 模考达成度
       var tgt = Number(s.target) || 0;
-      var ls = latestScore(s.key);
+      var ls = latestScoreIn(exams, s.key);
       var examScore = (tgt > 0 && ls != null) ? Math.max(0, Math.min(1, ls / tgt)) : 0;
       // 时长归一化（用所有科目的最大时长）
       var tMin = 0;
@@ -2119,6 +2127,107 @@
       stepCard(4, '⏱', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
   }
 
+  /* ============ 说明书模块（UI 散落说明集中处） ============ */
+  var MANUAL = [
+    { t: '📅 今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
+    { t: '🚀 今日 · 快速开始', b: '首次使用按 4 步走：① 基础配置（昵称/考研日期/目标分）② 勾选科目 ③ 制定今日计划 ④ 开始计时。4 步都完成后引导卡自动隐藏，之后靠自己探索。' },
+    { t: '🗺️ 计划', b: '点「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项。计划与「记录」页计时联动，完成会自动勾掉。' },
+    { t: '⏱ 记录 · 按模块计时', b: '每个科目一条独立计时器：点「开始」计时，「结束」停止并把时长记到今日。也可手动填分钟补记。' },
+    { t: '⏱ 记录 · 番茄钟', b: '默认 25 分钟学习 + 5 分钟休息循环，时长可改。开始时浏览器会请求通知权限，休息/结束会弹提醒。' },
+    { t: '⏱ 记录 · 倒计时', b: '设任意时长做限时训练，到点提醒。适合套卷限时、单项限时。' },
+    { t: '⏱ 记录 · 模考成绩', b: '录入每次模考各科分数，数据页会对比你的目标分，直观看到达成度与薄弱科目。' },
+    { t: '📋 总结', b: '写今日总结、生成打卡卡片分享到群里（带二维码，朋友扫码可一起打卡）。' },
+    { t: '📊 数据', b: '看板含：单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、每周周报。数据全来自你本地记录。' },
+    { t: '🧮 数学', b: '标记章节进度、整理数学错题、内置/自定义题刷题、查看题库。章节进度用「已完成章节数」而非简单序号。' },
+    { t: '💻 408', b: '数据结构/计组/操作系统/网络四科章节预填，标记进度；错题支持 Leitner 间隔复习；另有知识点速记与历年真题得分追踪。' },
+    { t: '📌 错题本', b: '跨科目整理错题（今日感悟/问题/盲区/易错点等），标记回顾后按间隔复习自动排期，到期提醒。' },
+    { t: '🎴 背单词', b: '输入单词点「记录」，自动查词并显示释义，存入生词本。' },
+    { t: '🔁 生词复习', b: '按记忆曲线（Leitner）每天推送待复习生词，4 选 1 测验，不认识自动回炉。' },
+    { t: '📚 高频词', b: '内置本地词库（阅读高频，离线可用），可搜索、筛选，勾选后一键加入生词本。' },
+    { t: '🧩 长难句', b: '粘贴真题/外刊长难句，自动拆解结构、标注考点词、归纳高频同义替换。' },
+    { t: '📝 生词记录', b: '管理你的生词本：编辑释义、标记掌握、移入复习或删除。' },
+    { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
+    { t: '⚙️ 配置', b: '填基础信息、勾选科目组合；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
+    { t: '☁️ 云端同步', b: '用 8 位「登录码」把数据存到 Cloudflare KV：相同登录码可在任意设备拉取同一套数据。支持上传/下载/删除；「邀请好友」分享登录码；「实时查看云端」只读看对方数据；开「自动同步」可双向实时同步。从云端下载会覆盖本机，下载前弹窗二次确认。' },
+    { t: '🌐 翻译', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到错词本。没填时翻译按钮不可用，其他功能不受影响。' },
+    { t: '📖 说明书', b: '就是本页——所有功能说明集中处。新手引导会带你看一遍，之后随时回来查。' }
+  ];
+  function renderHelpManual() {
+    var box = document.getElementById('manual-list');
+    if (!box || box.dataset.done) return;
+    var html = '';
+    MANUAL.forEach(function (m) {
+      html += '<div class="manual-item"><div class="manual-item-title">' + m.t + '</div>' +
+              '<div class="manual-item-body">' + m.b + '</div></div>';
+    });
+    box.innerHTML = html;
+    box.dataset.done = '1';
+  }
+
+  /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
+  var TOUR_STEPS = [
+    { icon: '📅', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
+    { icon: '🚀', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
+    { icon: '🗺️', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
+    { icon: '⏱', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
+    { icon: '📋', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
+    { icon: '📊', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
+    { icon: '🧮', title: '数学模块', tab: 'math', text: '章节进度、错题整理、刷题、题库，系统化学数学。' },
+    { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
+    { icon: '📌', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
+    { icon: '🎴', title: '背单词 / 复习', tab: 'practice', text: '查词记生词，按记忆曲线每天推送待复习词，4 选 1 测验。' },
+    { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换。' },
+    { icon: '☁️', title: '云端同步', tab: 'config', text: '用登录码在设备间同步数据；可邀请好友、实时查看、开自动同步。' },
+    { icon: '🌐', title: '翻译', tab: 'config', text: '在配置填自己的百度翻译密钥，即时翻译查过的词自动归档错词本。' },
+    { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
+  ];
+  var tourIdx = 0, tourEl = null;
+  function startTour() {
+    if (tourEl) return;
+    tourIdx = 0;
+    tourEl = document.createElement('div');
+    tourEl.className = 'tour-mask';
+    tourEl.innerHTML =
+      '<div class="tour-box" role="dialog" aria-modal="true">' +
+        '<div class="tour-progress"><span id="tour-dot"></span></div>' +
+        '<div class="tour-icon" id="tour-icon"></div>' +
+        '<div class="tour-title" id="tour-title"></div>' +
+        '<div class="tour-text" id="tour-text"></div>' +
+        '<div class="tour-nav">' +
+          '<button class="btn btn-ghost" id="tour-prev">上一步</button>' +
+          '<button class="btn btn-ghost" id="tour-goto">前往该功能 ›</button>' +
+          '<button class="btn btn-ghost" id="tour-skip">跳过</button>' +
+          '<button class="btn btn-primary" id="tour-next">下一步</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(tourEl);
+    tourEl.addEventListener('click', function (e) { if (e.target === tourEl) closeTour(false); });
+    document.getElementById('tour-prev').addEventListener('click', function () { if (tourIdx > 0) { tourIdx--; renderTourStep(); } });
+    document.getElementById('tour-next').addEventListener('click', function () {
+      if (tourIdx < TOUR_STEPS.length - 1) { tourIdx++; renderTourStep(); } else finishTour();
+    });
+    document.getElementById('tour-skip').addEventListener('click', function () { closeTour(true); });
+    document.getElementById('tour-goto').addEventListener('click', function () {
+      var step = TOUR_STEPS[tourIdx]; closeTour(false); switchTab(step.tab);
+    });
+    renderTourStep();
+  }
+  function renderTourStep() {
+    if (!tourEl) return;
+    var s = TOUR_STEPS[tourIdx];
+    document.getElementById('tour-icon').textContent = s.icon;
+    document.getElementById('tour-title').textContent = (tourIdx + 1) + '/' + TOUR_STEPS.length + ' · ' + s.title;
+    document.getElementById('tour-text').textContent = s.text;
+    document.getElementById('tour-dot').textContent = (tourIdx + 1) + ' / ' + TOUR_STEPS.length;
+    document.getElementById('tour-prev').disabled = (tourIdx === 0);
+    document.getElementById('tour-next').textContent = (tourIdx === TOUR_STEPS.length - 1) ? '完成' : '下一步';
+  }
+  function closeTour(markDone) {
+    if (markDone) { try { localStorage.setItem('kaoyan_tour_done', '1'); } catch (e) {} }
+    if (tourEl) { tourEl.remove(); tourEl = null; }
+  }
+  function finishTour() { closeTour(true); }
+
   /* ============ 通用：回到顶部按钮 ============ */
   function initBackTop() {
     var btn = document.getElementById('backTopBtn');
@@ -2610,6 +2719,7 @@
         if (target === 'math') { renderMathChapters(); renderMathMistakes(); renderMathQuestionList(); renderMathPractice(); }
         if (target === 'cs408') { render408Chapters(); render408Mistakes(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
         if (target === 'today') renderTodayAggregate();
+        if (target === 'manual') renderHelpManual();
         if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
       });
     });
@@ -2676,16 +2786,16 @@
     refs.subjectBars = $('subject-bars');
     refs.subjectStats = $('subject-stats');
 
-    refs.planHint = $('plan-hint');
     refs.btnAutoPlan = $('btn-auto-plan');
     refs.planList = $('plan-list');
     refs.planSubject = $('plan-subject');
     refs.planText = $('plan-text');
     refs.planMin = $('plan-min');
     refs.btnAddPlan = $('btn-add-plan');
-    refs.todayGuide = $('today-guide');
     refs.todayOnboarding = $('today-onboarding');
     refs.onboardingSteps = $('onboarding-steps');
+    refs.btnStartTour = $('btn-start-tour');
+    refs.btnRestartTour = $('btn-restart-tour');
     refs.aggSubjectProgress = $('agg-subject-progress');
 
     refs.mistakeTypes = $('mistake-types');
@@ -2897,6 +3007,8 @@
     if (refs.btnInvite) refs.btnInvite.addEventListener('click', onInvite);
     if (refs.btnSyncWatch) refs.btnSyncWatch.addEventListener('click', onWatchCloud);
     if (refs.autoSyncToggle) refs.autoSyncToggle.addEventListener('change', onToggleAutoSync);
+    if (refs.btnStartTour) refs.btnStartTour.addEventListener('click', startTour);
+    if (refs.btnRestartTour) refs.btnRestartTour.addEventListener('click', startTour);
     // 实时查看云端：关闭按钮 + 点击遮罩关闭
     if (refs.btnWatchClose) refs.btnWatchClose.addEventListener('click', closeWatch);
     var watchBackdrop = document.querySelector('#watch-modal .watch-backdrop');
@@ -3087,6 +3199,11 @@
     if (!Store.isCheckedIn(Store.todayStr()) && Store.totalMinutesForDay(Store.getDay(Store.todayStr()) || {}) === 0) {
       showToast('今天还没打卡，去学习一会儿吧 🔥');
     }
+
+    // 新手完整引导：首次访问自动弹出，过一遍所有功能；之后仅在「说明书」点「重看」时触发
+    try {
+      if (!localStorage.getItem('kaoyan_tour_done')) setTimeout(startTour, 700);
+    } catch (e) {}
 
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden && Store.getTimer().running) {

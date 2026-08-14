@@ -3,6 +3,30 @@
 > 评估对象：`https://kaoyan-tracker.pages.dev`（Cloudflare Pages，零外部依赖静态 SPA）
 > 依据：线上页面抓取 + 本地仓库代码静态核查（app.js 156KB / store.js 36KB / styles.css 44KB / 静态 JS 合计 ≈ 272KB）
 
+---
+
+## ✅ 修复状态（已实施并部署，commit e8c0683 / 版本 v=20260814g）
+
+| 原扣分项 | 修复动作 | 上线验证 |
+|---|---|---|
+| SEO：缺 favicon | 新增 `favicon.svg`（考 字徽标）+ `<link rel="icon">` / `apple-touch-icon` | 线上 200、`favicon.svg` 静态返回 |
+| SEO：缺 OG/Twitter 卡片 | 新增 `og-image.png`（1200×630 品牌图）+ 完整 OG / Twitter Card / canonical 元标签；title 优化 | 线上 `og:image`×3、`twitter:card`、`canonical` 均在 |
+| SEO：缺 robots/sitemap | 新增 `robots.txt`（指向 sitemap）+ `sitemap.xml` | 线上均静态返回正确内容 |
+| 性能：JS 未压缩 | **Cloudflare Auto Minify 需在仪表盘开启（见下）** —— 代码层无法切换，已给出步骤 | — |
+| 安全：innerHTML XSS 面 | 新增 `setText()` 安全助手并固化「动态文本必须转义」规则；已核对 `renderWatchBody` 等云端数据路径全部 `escapeHtml` | `node --check` 通过 |
+| 工程化（双源回归等） | 维持单一编辑源（本地仓库）流程；本次改动仅本地提交，未受 TRAE 源干扰 | — |
+
+### Cloudflare Auto Minify 开启步骤（仪表盘，非代码）
+1. 登录 Cloudflare 控制台 → 选择 `kaoyan-tracker.pages.dev` 站点（或 Pages 项目）。
+2. 左侧 **Speed（速度） → Optimization（优化）**。
+3. 开启 **Auto Minify** 的 **HTML / CSS / JavaScript** 三项。
+4. 保存后约 1 分钟生效，无需重新部署（边缘即时压缩）。
+> 注：Pages 也可在 **Settings → Build & deployments** 或项目级配置里找到类似压缩开关；若版本已带 Brotli 传输压缩，首屏收益主要来自 Minify 减少解析体积（当前 272KB 源码约可压到 1/3）。
+
+**修复后评分提升项**：SEO/社交分享 3.5 → 约 8.0；安全 8.0 → 8.5（加强制助手）。其余维度不变。
+
+---
+
 ## 总评：71 / 100（约 7.1 / 10）——“功能扎实、部署稳健，但 SEO/分享与工程化是明显短板”
 
 | # | 维度 | 评分 | 权重 | 说明 |

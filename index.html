@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814g" />
+  <link rel="stylesheet" href="styles.css?v=20260814h" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -59,6 +59,10 @@
       <div class="side-group-title">🧰 工具 · 资源</div>
       <button class="tab-btn" data-tab="websites"><span>🌐</span><span class="tab-label">资源网站</span></button>
       <button class="tab-btn" data-tab="config"><span>⚙️</span><span class="tab-label">配置</span></button>
+
+      <div class="side-divider"></div>
+      <div class="side-group-title">📖 帮助</div>
+      <button class="tab-btn" data-tab="manual"><span>📖</span><span class="tab-label">说明书</span></button>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
@@ -104,14 +108,12 @@
 
       <div class="card">
         <h2 class="card-title">考试科目组合</h2>
-        <p class="hint">勾选你报考的科目（英语 / 数学按需选择卷种）：</p>
         <div id="toggles" class="toggles"></div>
         <div id="subject-detail" class="subject-detail"></div>
       </div>
 
       <div class="card">
         <h2 class="card-title">数据备份</h2>
-        <p class="hint">数据仅保存在本机浏览器。换设备 / 清缓存前建议导出备份。</p>
         <div class="btn-row">
           <button id="btn-export" class="btn btn-ghost">导出 JSON 备份</button>
           <button id="btn-export-md" class="btn btn-ghost">导出 Markdown 报告</button>
@@ -123,7 +125,6 @@
 
       <div class="card cloud-sync-card">
         <h2 class="card-title">☁️ 云端同步（登录码）</h2>
-        <p class="hint">用一个「8 位登录码」把数据同步到 Cloudflare KV。相同登录码可在任意设备拉取同一套数据。</p>
         <div class="field-row">
           <label>全局同步令牌 SYNC_TOKEN</label>
           <input type="password" id="sync-token" placeholder="管理员提供，没设留空即可" autocomplete="off" />
@@ -154,12 +155,10 @@
           <label></label>
           <div id="sync-status" class="import-status"></div>
         </div>
-        <p class="hint">首次使用建议先点「导出备份」把本地数据存一份，再做云端操作；从云端下载会<strong>覆盖本机全部数据</strong>，下载前会弹窗二次确认。</p>
       </div>
 
       <div class="card translator-card">
         <h2 class="card-title">🔑 翻译 API 密钥（自行申请填写）</h2>
-        <p class="hint">翻译功能由你自己的<b>百度翻译开放平台</b>账号调用，<b>密钥仅保存在你本机浏览器</b>，网站不内置任何 key、也不上传服务器。申请后把 APP ID 与 密钥填到下方即可使用「即时翻译」。</p>
         <div class="field-row">
           <label>APP ID</label>
           <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
@@ -168,7 +167,6 @@
           <label>密钥 Secret</label>
           <input type="password" id="trans-key" placeholder="百度翻译开放平台 密钥（Secret Key）" autocomplete="off" />
         </div>
-        <p class="hint translator-note">申请地址：百度翻译开放平台（fanyi-api.baidu.com），开通「通用翻译 API」后获取 APP ID 与 密钥。申请时请把你电脑的出口 IP 加入 IP 白名单（或设为不限），否则会返回 58000 错误。配置好后点「测试连接」验证。</p>
         <div class="btn-row">
           <button id="btn-save-translator" class="btn btn-primary">保存密钥</button>
           <button id="btn-test-translator" class="btn btn-ghost">测试连接</button>
@@ -193,11 +191,12 @@
       <div id="today-onboarding" class="card onboarding-card" hidden>
         <h2 class="card-title">🚀 30 秒快速开始</h2>
         <div id="onboarding-steps" class="onboarding-steps"></div>
+        <div class="onboarding-foot">
+          <button id="btn-start-tour" class="btn btn-primary">📚 完整功能引导（带你过一遍所有功能）</button>
+        </div>
       </div>
-      <p class="hint" id="today-guide"></p>
       <div class="card">
         <h2 class="card-title">📅 今日计划</h2>
-        <p class="hint" id="plan-hint"></p>
         <div class="btn-row">
           <button id="btn-auto-plan" class="btn btn-primary">自动制定计划</button>
         </div>
@@ -215,13 +214,11 @@
     <section id="tab-record" class="tab-panel">
       <div class="card">
         <h2 class="card-title">⏱ 按模块计时</h2>
-        <p class="hint">每个科目独立计时：点「开始」计时，点「结束」停止并记录到今日。</p>
         <div id="timer-rows" class="timer-rows"></div>
       </div>
 
       <div class="card pomodoro-card">
         <h2 class="card-title">🍅 番茄钟（可自定义时长）</h2>
-        <p class="hint">专注学习后短暂休息，循环往复。时长可自定义，默认 25 分钟学习 + 5 分钟休息。开始时会请求通知权限。</p>
         <div class="pomo-setup">
           <div class="field-row" style="margin-bottom:8px">
             <label>学习(分)</label>
@@ -239,7 +236,6 @@
 
       <div class="card">
         <h2 class="card-title">⏲ 自定义倒计时</h2>
-        <p class="hint">设置任意时长进行倒计时，到点提醒。适合做套卷限时、单项限时等场景。</p>
         <div class="pomo-setup">
           <div class="field-row" style="margin-bottom:8px">
             <label>时长(分)</label>
@@ -304,7 +300,6 @@
 
       <div class="card">
         <h2 class="card-title">🍰 今日学习时长分布</h2>
-        <p class="hint">环形饼图直观展示今天各科时间分配占比。</p>
         <div id="today-pie"></div>
       </div>
 
@@ -326,7 +321,6 @@
 
       <div class="card">
         <h2 class="card-title">🧭 综合掌握度雷达图</h2>
-        <p class="hint">按「章节进度 50% + 模考达成度 40% + 累计时长 10%」综合评分，直观看到薄弱科目。</p>
         <div id="subject-radar"></div>
       </div>
 
@@ -366,7 +360,6 @@
     <section id="tab-websites" class="tab-panel">
       <div class="card">
         <h2 class="card-title">🌐 考研资料与网课网站</h2>
-        <p class="hint">精选常用站点（国内可直接访问）。也可在下方添加自己的资源。</p>
         <div id="curated-sites" class="site-group"></div>
       </div>
       <div class="card">
@@ -382,10 +375,8 @@
 
     <!-- 词汇模块：生词记录 / 背单词 / 生词复习 -->
     <section id="tab-words" class="tab-panel">
-      <p class="hint">生词本 = 你主动记录 / 背诵的词；错词本 = 用即时翻译查询过的词自动归档。两者独立管理。</p>
       <div class="card">
         <h2 class="card-title">📝 生词记录</h2>
-        <p class="hint">遇到不认识的单词，输入后点「记录」：自动查词并显示释义，同时存入生词本。</p>
         <div class="field-row">
           <label>单词</label>
           <input type="text" id="word-input" placeholder="输入英文单词，如 abandon" autocomplete="off" />
@@ -403,7 +394,6 @@
 
       <div class="card translator-query-card">
         <h2 class="card-title">🌐 即时翻译（百度翻译接口）</h2>
-        <p class="hint">输入英文单词，由你<b>本机填写的百度翻译密钥</b>直接调用百度翻译返回中文释义；<b>查询后自动归档到「错词本」</b>（无需手动操作）。需先在「配置」页填写 APP ID 与 密钥。</p>
         <div class="field-row">
           <label>单词</label>
           <input type="text" id="trans-input" placeholder="输入英文单词，如 algorithm" autocomplete="off" />
@@ -418,7 +408,6 @@
 
       <div class="card">
         <h2 class="card-title">📥 批量导入生词</h2>
-        <p class="hint">支持一次性粘贴多行「单词 + 释义」（每行一个，可用 制表符 / 冒号 / 破折号 / 空格 分隔），或上传 .txt 文件。已存在的单词会自动跳过。</p>
         <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的"></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
@@ -435,7 +424,6 @@
 
       <div class="card wrongbook-card">
         <h2 class="card-title">📕 错词本（错误单词记录本） <span id="wrong-count" class="count-pill">0</span></h2>
-        <p class="hint">通过「即时翻译」查询过的单词会自动归档到这里；可一键移入生词本复习，或单独删除。</p>
         <div class="btn-row" style="margin-bottom:10px">
           <button id="btn-clear-wrong" class="btn btn-danger">清空错词本</button>
         </div>
@@ -446,7 +434,6 @@
     <section id="tab-practice" class="tab-panel">
       <div class="card">
         <h2 class="card-title">🎴 背单词（英选译 · 阅读词汇）</h2>
-        <p class="hint">看英文，从 4 个中文释义中选出正确的一项；遇到「不认识」的会直接收进生词本。</p>
         <div id="practice-box" class="practice-box"></div>
         <div class="btn-row" style="margin-top:14px">
           <button id="btn-practice-restart" class="btn btn-ghost">换一批</button>
@@ -469,7 +456,6 @@
     <section id="tab-sentences" class="tab-panel">
       <div class="card">
         <h2 class="card-title">🧩 长难句分析</h2>
-        <p class="hint">把真题 / 外刊里的长难句复制进来，系统自动拆解句子结构、标注考点词，并归纳高频同义替换考点。</p>
         <textarea id="sentence-input" rows="4" placeholder="粘贴一句长难句，例如：Although the theory has been widely accepted, many researchers still question whether it can explain the phenomenon that we observed."></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button id="btn-analyze" class="btn btn-primary">开始分析</button>
@@ -483,7 +469,7 @@
     <section id="tab-hfwords" class="tab-panel">
       <div class="card">
         <h2 class="card-title">📚 考研真题阅读高频词</h2>
-        <p class="hint">本地词库共 <span id="hf-count">0</span> 词（阅读高频，离线可用）。可搜索筛选；勾选后可一键加入生词本。</p>
+      <p class="card-sub">本地词库共 <span id="hf-count">0</span> 词</p>
         <input type="text" id="hf-search" placeholder="搜索单词或释义，如 affect / 影响" />
         <div id="hf-list" class="hf-list"></div>
       </div>
@@ -509,7 +495,6 @@
     <section id="tab-plan" class="tab-panel">
       <div class="card">
         <h2 class="card-title">🎯 模块掌握情况</h2>
-        <p class="hint">填写各模块的掌握程度，计划将依据此进度智能安排。可新增 / 删除模块。</p>
         <div id="mastery-list" class="mastery-list"></div>
         <div class="plan-add">
           <input type="text" id="module-name" placeholder="新增模块名，如 高数·极限" />
@@ -519,13 +504,11 @@
 
       <div class="card">
         <h2 class="card-title">📚 学科章节进度</h2>
-        <p class="hint">列出各学科全部章节并标记当前所学章节，与学习计划可视化联动。</p>
         <div id="subject-chapters"></div>
       </div>
 
       <div class="card">
         <h2 class="card-title">🗺️ 学习计划</h2>
-        <p class="hint">为每个计划项标注说明；可依据「模块掌握情况 + 章节进度」一键智能生成。</p>
         <div class="btn-row">
           <button id="btn-smart-plan" class="btn btn-primary">⚡ 按进度智能生成计划</button>
         </div>
@@ -542,7 +525,6 @@
     <section id="tab-math" class="tab-panel">
       <div class="card">
         <h2 class="card-title">📐 数学章节进度</h2>
-        <p class="hint">全套考研数学章节已预填，标记当前所学章节即可跟踪进度（可增删章节）。</p>
         <div id="math-chapters" class="chapter-list"></div>
         <div class="plan-add">
           <input type="text" id="math-chapter-add" placeholder="新增章节名" />
@@ -571,7 +553,6 @@
 
       <div class="card">
         <h2 class="card-title">🧮 分类选择题刷题</h2>
-        <p class="hint">按分类练习；内置示例题 + 你的自定义题。作答后显示解析与正确率。</p>
         <div class="field-row">
           <label>分类</label>
           <select id="math-practice-cat">
@@ -610,7 +591,6 @@
     <section id="tab-cs408" class="tab-panel">
       <div class="card">
         <h2 class="card-title">💻 408 章节进度</h2>
-        <p class="hint">408 计算机学科专业基础（数据结构 / 计算机组成原理 / 操作系统 / 计算机网络）全套章节已预填，点击标记当前所学章节。</p>
         <div id="cs408-chapters" class="chapter-list"></div>
         <div class="plan-add">
           <input type="text" id="cs408-chapter-add" placeholder="新增章节（可写「分组 · 章节名」）" />
@@ -620,7 +600,6 @@
 
       <div class="card">
         <h2 class="card-title">📝 408 错题整理 <span class="review-badge" id="cs408-due-badge" style="display:none"></span></h2>
-        <p class="hint">错题支持间隔复习（Leitner 式）：标记回顾后自动安排下次复习时间，到期会提醒。</p>
         <div class="field-row">
           <label>分类</label>
           <select id="cs408-mistake-cat"></select>
@@ -640,7 +619,6 @@
 
       <div class="card">
         <h2 class="card-title">🧮 408 分类刷题</h2>
-        <p class="hint">按四科分类练习；内置示例题 + 你的自定义题。作答后显示解析与正确率。</p>
         <div class="field-row">
           <label>分类</label>
           <select id="cs408-practice-cat">
@@ -677,7 +655,6 @@
 
       <div class="card">
         <h2 class="card-title">🧠 408 知识点速查卡</h2>
-        <p class="hint">随手记录核心知识点、公式、易忘结论，考前快速翻阅。可按科目筛选。</p>
         <div class="plan-add">
           <select id="kp-subject" style="max-width:160px">
             <option value="数据结构">数据结构</option>
@@ -698,7 +675,6 @@
 
       <div class="card">
         <h2 class="card-title">📅 408 历年真题年份记录</h2>
-        <p class="hint">记录每年真题的得分，追踪进步趋势。</p>
         <div class="plan-add">
           <input type="number" id="yr-year" placeholder="年份，如 2024" min="2000" max="2099" style="max-width:120px" />
           <input type="number" id="yr-score" placeholder="得分" min="0" max="150" style="max-width:100px" />
@@ -707,6 +683,18 @@
           <button id="btn-add-yr" class="btn btn-ghost">添加</button>
         </div>
         <div id="yr-list" class="yr-list"></div>
+      </div>
+    </section>
+
+    <!-- 说明书：各功能使用说明集中处，UI 上的散落说明已迁移至此 -->
+    <section id="tab-manual" class="tab-panel">
+      <div class="card">
+        <h2 class="card-title">📖 考研学习记录 · 说明书</h2>
+        <p class="card-sub">这里集中讲解每个功能怎么用。新手引导会带你完整过一遍，之后随时回来查。</p>
+        <div class="manual-actions">
+          <button id="btn-restart-tour" class="btn btn-primary">🚀 重看新手完整引导</button>
+        </div>
+        <div id="manual-list" class="manual-list"></div>
       </div>
     </section>
 
@@ -729,13 +717,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814g"></script>
-  <script src="words.js?v=20260814g"></script>
-  <script src="store.js?v=20260814g"></script>
-  <script src="charts.js?v=20260814g"></script>
-  <script src="share.js?v=20260814g"></script>
-  <script src="md5.js?v=20260814g"></script>
-  <script src="sentences.js?v=20260814g"></script>
-  <script src="app.js?v=20260814g"></script>
+  <script src="qrcode.min.js?v=20260814h"></script>
+  <script src="words.js?v=20260814h"></script>
+  <script src="store.js?v=20260814h"></script>
+  <script src="charts.js?v=20260814h"></script>
+  <script src="share.js?v=20260814h"></script>
+  <script src="md5.js?v=20260814h"></script>
+  <script src="sentences.js?v=20260814h"></script>
+  <script src="app.js?v=20260814h"></script>
 </body>
 </html>
