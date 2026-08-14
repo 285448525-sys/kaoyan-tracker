@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814l" />
+  <link rel="stylesheet" href="styles.css?v=20260814m" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -422,6 +422,12 @@
         <div id="subject-bars" class="subject-bars"></div>
         <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
       </div>
+
+      <div class="card weakness-card">
+        <h2 class="card-title">📉 薄弱点分析报告（基于刷题正确率）</h2>
+        <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
+        <div id="weakness-report"></div>
+      </div>
     </section>
 
     <!-- 错题 -->
@@ -622,7 +628,7 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">📝 数学错题整理</h2>
+        <h2 class="card-title">📝 数学错题整理 <span class="review-badge" id="math-due-badge" style="display:none"></span></h2>
         <div class="field-row">
           <label>分类</label>
           <select id="math-mistake-cat"></select>
@@ -638,6 +644,15 @@
         <button id="btn-add-math-mistake" class="btn btn-primary full">保存错题</button>
         <div class="chip-row" id="math-mistake-filter" style="margin-top:12px"></div>
         <div id="math-mistake-list" class="mistake-list"></div>
+      </div>
+
+      <div class="card flashcard-card">
+        <h2 class="card-title">🃏 数学错题速查卡（记忆曲线复习）</h2>
+        <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。答对升一箱（间隔拉长），答错回到第 1 箱（最短间隔），到期自动提醒。</p>
+        <div class="btn-row">
+          <button id="btn-math-flash-start" class="btn btn-primary">🔄 抽取待复习</button>
+        </div>
+        <div id="math-flashcard-box" class="flashcard-wrap"></div>
       </div>
 
       <div class="card">
@@ -802,13 +817,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814l"></script>
-  <script src="words.js?v=20260814l"></script>
-  <script src="store.js?v=20260814l"></script>
-  <script src="charts.js?v=20260814l"></script>
-  <script src="share.js?v=20260814l"></script>
-  <script src="md5.js?v=20260814l"></script>
-  <script src="sentences.js?v=20260814l"></script>
-  <script src="app.js?v=20260814l"></script>
+  <script src="qrcode.min.js?v=20260814m"></script>
+  <script src="words.js?v=20260814m"></script>
+  <script src="store.js?v=20260814m"></script>
+  <script src="charts.js?v=20260814m"></script>
+  <script src="share.js?v=20260814m"></script>
+  <script src="md5.js?v=20260814m"></script>
+  <script src="sentences.js?v=20260814m"></script>
+  <script src="app.js?v=20260814m"></script>
 </body>
 </html>

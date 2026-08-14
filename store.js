@@ -389,10 +389,67 @@
   function removePlanItem(id) { state.planItems = (state.planItems || []).filter(function (x) { return x.id !== id; }); save(); }
   function togglePlanItem(id) { var arr = state.planItems || []; for (var i = 0; i < arr.length; i++) { if (arr[i].id === id) arr[i].done = !arr[i].done; } save(); }
 
-  function getMathMistakes() { return (state.mathMistakes || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); }); }
-  function addMathMistake(m) { if (!state.mathMistakes) state.mathMistakes = []; m.id = 'mm_' + nextSeq(); state.mathMistakes.push(m); save(); return m; }
+  // 数学错题：Leitner 记忆曲线复习（5 箱，间隔天数递增）
+  var MATH_REVIEW_INTERVALS = [1, 2, 4, 7, 15]; // 箱位 1..5 对应的复习间隔天数
+
+  // 旧数据补齐：补齐 box / nextReview / reviewCount / lastResult，避免缺字段导致到期逻辑异常
+  function normalizeMathMistake(m) {
+    if (!m || typeof m !== 'object') return m;
+    if (typeof m.box !== 'number' || m.box < 1 || m.box > MATH_REVIEW_INTERVALS.length) m.box = (m.reviewed === true) ? 2 : 1;
+    if (typeof m.reviewCount !== 'number') m.reviewCount = 0;
+    if (typeof m.nextReview !== 'string' || !m.nextReview) {
+      // 旧数据没有 nextReview：以创建日作为到期日，触发一次复习后进入正常曲线
+      m.nextReview = m.created || todayStr();
+    }
+    if (m.lastResult !== 'right' && m.lastResult !== 'wrong') m.lastResult = '';
+    return m;
+  }
+
+  function getMathMistakes() {
+    return (state.mathMistakes || []).slice().map(normalizeMathMistake).sort(function (a, b) {
+      return (a.created || '').localeCompare(b.created || '');
+    });
+  }
+  function addMathMistake(m) {
+    if (!state.mathMistakes) state.mathMistakes = [];
+    m.id = 'mm_' + nextSeq();
+    if (typeof m.box !== 'number') m.box = 1;
+    if (typeof m.reviewCount !== 'number') m.reviewCount = 0;
+    if (typeof m.reviewed !== 'boolean') m.reviewed = false;
+    if (typeof m.nextReview !== 'string' || !m.nextReview) m.nextReview = Store.dateStr(Store.addDays(new Date(), MATH_REVIEW_INTERVALS[0]));
+    if (m.lastResult !== 'right' && m.lastResult !== 'wrong') m.lastResult = '';
+    state.mathMistakes.push(m); save(); return m;
+  }
+  // 速查卡复习：答对则升一箱（间隔拉长），答错则回到第 1 箱（最短间隔），并更新下次复习日
+  function reviewMathMistake(id, correct) {
+    var arr = state.mathMistakes || [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].id === id) {
+        var it = arr[i];
+        normalizeMathMistake(it);
+        it.reviewCount = (it.reviewCount || 0) + 1;
+        if (correct) it.box = Math.min(MATH_REVIEW_INTERVALS.length, it.box + 1);
+        else it.box = 1;
+        it.lastResult = correct ? 'right' : 'wrong';
+        it.reviewed = true;
+        var idx = Math.min(MATH_REVIEW_INTERVALS.length - 1, it.box - 1);
+        it.nextReview = Store.dateStr(Store.addDays(new Date(), MATH_REVIEW_INTERVALS[idx]));
+        save();
+        return it;
+      }
+    }
+    return null;
+  }
   function updateMathMistake(id, patch) { var arr = state.mathMistakes || []; for (var i = 0; i < arr.length; i++) { if (arr[i].id === id) { for (var k in patch) { if (patch.hasOwnProperty(k)) arr[i][k] = patch[k]; } } } save(); }
   function removeMathMistake(id) { state.mathMistakes = (state.mathMistakes || []).filter(function (x) { return x.id !== id; }); save(); }
+  // 到期（待复习）数学错题：nextReview 为空或已 <= 今日
+  function getMathDueMistakes(today) {
+    today = today || todayStr();
+    return (state.mathMistakes || []).filter(function (m) {
+      var mm = normalizeMathMistake(m);
+      return !mm.nextReview || mm.nextReview <= today;
+    });
+  }
 
   function getMathQuestions() { return (state.mathQuestions || []).slice(); }
   function addMathQuestion(q) { if (!state.mathQuestions) state.mathQuestions = []; q.id = 'mq_' + nextSeq(); state.mathQuestions.push(q); save(); return q; }
@@ -703,6 +760,7 @@
     getScoreWeights: getScoreWeights, setScoreWeights: setScoreWeights,
     getPlanItems: getPlanItems, addPlanItem: addPlanItem, updatePlanItem: updatePlanItem, removePlanItem: removePlanItem, togglePlanItem: togglePlanItem,
     getMathMistakes: getMathMistakes, addMathMistake: addMathMistake, updateMathMistake: updateMathMistake, removeMathMistake: removeMathMistake,
+    reviewMathMistake: reviewMathMistake, getMathDueMistakes: getMathDueMistakes, getMathReviewIntervals: function () { return MATH_REVIEW_INTERVALS.slice(); },
     getMathQuestions: getMathQuestions, addMathQuestion: addMathQuestion, removeMathQuestion: removeMathQuestion,
     getMathStats: getMathStats, recordMathStat: recordMathStat,
     get408Chapters: get408Chapters, set408Chapters: set408Chapters, get408Current: get408Current, set408Current: set408Current, get408Done: get408Done, set408Done: set408Done, toggle408Done: toggle408Done,
