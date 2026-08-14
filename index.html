@@ -116,6 +116,7 @@
           <button id="btn-sync-upload" class="btn btn-primary">⬆️ 上传数据到云端</button>
           <button id="btn-sync-download" class="btn btn-ghost">⬇️ 从云端下载</button>
           <button id="btn-sync-delete" class="btn btn-danger">🗑 删除云端数据</button>
+          <button id="btn-sync-watch" class="btn btn-ghost">👁 实时查看云端</button>
         </div>
         <div class="field-row">
           <label></label>
@@ -661,6 +662,21 @@
   </main>
 
   <div id="toast" class="toast"></div>
+
+  <!-- 实时查看云端（只读，不覆盖本机数据） -->
+  <div id="watch-modal" class="watch-modal" style="display:none">
+    <div class="watch-backdrop" data-close="1"></div>
+    <div class="watch-panel">
+      <div class="watch-head">
+        <span class="watch-title">👁 实时查看云端数据</span>
+        <span id="watch-meta" class="watch-meta"></span>
+        <button id="btn-watch-close" class="watch-close" title="关闭">✕</button>
+      </div>
+      <div id="watch-body" class="watch-body">
+        <div class="watch-empty">正在加载…</div>
+      </div>
+    </div>
+  </div>
 
   <script src="qrcode.min.js?v=20260814c"></script>
   <script src="words.js?v=20260814c"></script>

@@ -2085,6 +2085,124 @@
     }
   }
 
+  /* ---------------- 实时查看云端（只读，不覆盖本机数据） ---------------- */
+  var watchTimer = null;
+  function computeStreakFromDays(days) {
+    if (!days) return 0;
+    var active = {};
+    Object.keys(days).forEach(function (ds) {
+      var d = days[ds]; if (!d) return;
+      var total = 0;
+      if (d.durations) Object.keys(d.durations).forEach(function (k) { total += Number(d.durations[k]) || 0; });
+      if (total > 0) active[ds] = true;
+    });
+    var streak = 0;
+    var cur = new Date();
+    // 如果今天还没学，从昨天算起，避免连续 0 天打断
+    if (!active[fmtDate(cur)]) cur.setDate(cur.getDate() - 1);
+    while (active[fmtDate(cur)]) { streak++; cur.setDate(cur.getDate() - 1); }
+    return streak;
+  }
+  function fmtDate(d) {
+    var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    return y + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+  function onWatchCloud() {
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) { syncSetStatus('请先输入要查看的登录码', 'error'); return; }
+    var modal = $('watch-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    fetchWatchOnce();
+    if (watchTimer) clearInterval(watchTimer);
+    watchTimer = setInterval(fetchWatchOnce, 15000); // 每 15 秒自动刷新
+  }
+  function fetchWatchOnce() {
+    var metaEl = $('watch-meta');
+    var bodyEl = $('watch-body');
+    if (!bodyEl) return;
+    syncApi('GET').then(function (res) {
+      if (!res || !res.data) {
+        if (bodyEl) bodyEl.innerHTML = '<div class="watch-empty">该登录码暂无云端数据</div>';
+        if (metaEl) metaEl.textContent = '';
+        return;
+      }
+      renderWatchBody(res.data, res.meta);
+      if (metaEl) {
+        var now = new Date();
+        var t = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()) + ':' + (now.getSeconds() < 10 ? '0' + now.getSeconds() : now.getSeconds());
+        metaEl.textContent = '最后刷新 ' + t + ' · 每 15 秒自动更新';
+      }
+    }).catch(function (err) {
+      if (bodyEl) bodyEl.innerHTML = '<div class="watch-err">加载失败：' + escapeHtml(err.message || err) + '<br>请确认登录码正确，且对方已上传过数据。</div>';
+    });
+  }
+  function renderWatchBody(data, meta) {
+    var bodyEl = $('watch-body');
+    if (!bodyEl) return;
+    var cfg = data.config || {};
+    var days = data.days || {};
+    var subjects = cfg.subjects || [];
+    var subMap = {}; subjects.forEach(function (s) { subMap[s.key] = s; });
+    var streak = computeStreakFromDays(days);
+    // 最近 7 天
+    var recent = Object.keys(days).sort().reverse().slice(0, 7);
+    var totalMin7 = 0;
+    recent.forEach(function (ds) {
+      var d = days[ds]; if (!d || !d.durations) return;
+      Object.keys(d.durations).forEach(function (k) { totalMin7 += Number(d.durations[k]) || 0; });
+    });
+    var avg = recent.length ? Math.round(totalMin7 / recent.length) : 0;
+    var html = '';
+    html += '<div class="wk-name">' + escapeHtml(cfg.nickname || '未命名') + '</div>';
+    html += '<div class="wk-sub">登录码 ' + escapeHtml((refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '') +
+            (cfg.major ? ' · 目标专业：' + escapeHtml(cfg.major) : '') + '</div>';
+    html += '<div class="wk-stat-row">';
+    html += '<div class="wk-stat"><div class="v">' + streak + '</div><div class="l">连续打卡(天)</div></div>';
+    html += '<div class="wk-stat"><div class="v">' + recent.length + '</div><div class="l">近7天学习(天)</div></div>';
+    html += '<div class="wk-stat"><div class="v">' + avg + '</div><div class="l">日均(分钟)</div></div>';
+    if (meta && meta.updatedAt) html += '<div class="wk-stat"><div class="v" style="font-size:13px;padding-top:4px">' + escapeHtml(String(meta.updatedAt).slice(0, 16).replace('T', ' ')) + '</div><div class="l">云端更新于</div></div>';
+    html += '</div>';
+
+    // 最近学习记录
+    if (recent.length) {
+      html += '<div class="wk-sec-title">📅 最近学习记录</div>';
+      recent.forEach(function (ds) {
+        var d = days[ds];
+        var total = 0; var parts = [];
+        if (d.durations) Object.keys(d.durations).forEach(function (k) {
+          var m = Number(d.durations[k]) || 0; if (m <= 0) return;
+          total += m;
+          var name = (subMap[k] && subMap[k].name) || k;
+          parts.push(name + ' ' + m + '分');
+        });
+        html += '<div class="wk-day"><span class="d">' + escapeHtml(ds) + '</span>' +
+                '<span class="mins">' + total + '分</span>' +
+                '<span class="subj">' + escapeHtml(parts.join('，') || '—') + '</span></div>';
+      });
+    } else {
+      html += '<div class="watch-empty">还没有学习记录</div>';
+    }
+
+    // 词汇 / 错题
+    var vocabN = (data.vocab || []).length;
+    var wrongN = (data.wrongWords || []).length;
+    var mathCur = data.mathCurrent, mathTotal = (data.mathChapters || []).length;
+    html += '<div class="wk-sec-title">📚 其他数据</div>';
+    html += '<div class="wk-stat-row">';
+    html += '<div class="wk-stat"><div class="v">' + vocabN + '</div><div class="l">生词本</div></div>';
+    html += '<div class="wk-stat"><div class="v">' + wrongN + '</div><div class="l">错词本</div></div>';
+    if (mathTotal) html += '<div class="wk-stat"><div class="v">' + (mathCur >= 0 ? mathCur + 1 : 0) + '/' + mathTotal + '</div><div class="l">数学章节</div></div>';
+    html += '</div>';
+
+    bodyEl.innerHTML = html;
+  }
+  function closeWatch() {
+    var modal = $('watch-modal');
+    if (modal) modal.style.display = 'none';
+    if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
+  }
+
   function renderAll() {
     renderConfig();
     renderTimerRows();
@@ -2166,6 +2284,8 @@
     refs.btnSyncUpload = $('btn-sync-upload');
     refs.btnSyncDownload = $('btn-sync-download');
     refs.btnSyncDelete = $('btn-sync-delete');
+    refs.btnWatch = $('btn-sync-watch');
+    refs.btnWatchClose = $('btn-watch-close');
     refs.syncStatus = $('sync-status');
 
     refs.timerRows = $('timer-rows');
@@ -2407,6 +2527,10 @@
     if (refs.btnSyncUpload) refs.btnSyncUpload.addEventListener('click', onSyncUpload);
     if (refs.btnSyncDownload) refs.btnSyncDownload.addEventListener('click', onSyncDownload);
     if (refs.btnSyncDelete) refs.btnSyncDelete.addEventListener('click', onSyncDelete);
+    if (refs.btnWatch) refs.btnWatch.addEventListener('click', onWatchCloud);
+    if (refs.btnWatchClose) refs.btnWatchClose.addEventListener('click', closeWatch);
+    var watchBackdrop = document.querySelector('#watch-modal .watch-backdrop');
+    if (watchBackdrop) watchBackdrop.addEventListener('click', closeWatch);
     if (refs.syncToken) refs.syncToken.addEventListener('change', function () { Store.setLastSyncToken(refs.syncToken.value || ''); });
     if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
 
