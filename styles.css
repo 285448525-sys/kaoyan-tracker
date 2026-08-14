@@ -779,4 +779,46 @@ textarea { resize: vertical; }
 .tour-text { font-size: 15px; line-height: 1.7; color: var(--muted); text-align: center; min-height: 84px; }
 .tour-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
 .tour-nav .btn { flex: 1; min-width: 84px; }
+
+/* ============ 倒计时分阶段（今日聚合卡） ============ */
+.agg-phase { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.phase-badge { font-weight: 800; font-size: 13px; padding: 3px 12px; border-radius: 999px; color: #fff; }
+.phase-badge.基础 { background: #3b82f6; }
+.phase-badge.强化 { background: #f59e0b; }
+.phase-badge.冲刺 { background: #ef4444; }
+.phase-badge.ended { background: var(--muted); }
+.phase-text { font-size: 13px; color: var(--muted); }
+.phase-text b { color: var(--ink); }
+.phase-bar { flex: 1; min-width: 120px; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.phase-fill { height: 100%; border-radius: 999px; }
+.phase-fill.基础 { background: #3b82f6; }
+.phase-fill.强化 { background: #f59e0b; }
+.phase-fill.冲刺 { background: #ef4444; }
+
+/* ============ 近 30 天学习得分 ============ */
+.score-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+.score-summary b { color: var(--ink); font-size: 18px; margin-left: 4px; }
+.score-bars { display: flex; align-items: flex-end; gap: 3px; height: 130px; padding-top: 8px; overflow-x: auto; }
+.sb-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; flex: 1 0 9px; min-width: 9px; }
+.sb-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 2px; transition: height .3s ease; }
+.sb-day { font-size: 10px; color: var(--muted); margin-top: 4px; white-space: nowrap; }
+
+/* ============ 成就与等级 ============ */
+.badges-level { margin-bottom: 4px; }
+.lv-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lv-badge { background: var(--primary); color: #fff; font-weight: 800; border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+.lv-title { font-weight: 800; font-size: 18px; color: var(--ink); }
+.lv-sub { color: var(--muted); font-size: 13px; }
+.lv-bar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+.lv-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--ok)); border-radius: 999px; transition: width .4s ease; }
+.lv-tip { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.badges-count { font-size: 13px; color: var(--muted); font-weight: 600; margin: 12px 0 0; }
+.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
+.badge-tile { border: 1px solid var(--line); border-radius: 12px; padding: 12px 10px; text-align: center; background: var(--bg); opacity: .72; transition: all .2s; }
+.badge-tile.earned { border-color: var(--primary); background: rgba(79, 70, 229, .08); opacity: 1; box-shadow: 0 2px 10px rgba(79, 70, 229, .12); }
+.badge-icon { font-size: 26px; line-height: 1; }
+.badge-name { font-weight: 700; font-size: 14px; margin-top: 4px; color: var(--ink); }
+.badge-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.badge-prog { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.badge-tile.earned .badge-prog { color: var(--ok); font-weight: 700; }
 .tour-nav #tour-goto { flex: 1.4; }

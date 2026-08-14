@@ -681,6 +681,11 @@
     // D3：掌握度雷达图
     renderRadarCard();
     renderSubjectStats();
+    // 学习得分 + 成就徽章
+    renderScoreCard();
+    renderBadgesCard();
+    // 里程碑检测（首次达成触发庆祝）
+    checkMilestones();
   }
   function renderGoalProgress() {
     refs.goalProgress.innerHTML = '';
@@ -2035,11 +2040,194 @@
   }
 
   /* ============ 通用 ============ */
-  function showToast(msg) {
-    var t = refs.toast; t.textContent = msg; t.classList.add('show');
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  /* ============ 学习统计 / 得分 / 成就 / 里程碑（纯计算，无新增存储字段） ============ */
+  function getStudyStats() {
+    var days = Store.getDays();
+    var keys = Object.keys(days);
+    var totalMin = 0, totalDays = 0, subjectsWithTime = {};
+    var subs = Store.getSubjects();
+    subs.forEach(function (s) { subjectsWithTime[s.key] = 0; });
+    keys.forEach(function (ds) {
+      var d = days[ds];
+      if (!d) return;
+      var m = Store.totalMinutesForDay(d);
+      if (m > 0) { totalMin += m; totalDays++; }
+      subs.forEach(function (s) { if (d.durations && d.durations[s.key] > 0) subjectsWithTime[s.key] += d.durations[s.key]; });
+    });
+    var subjWithTimeCount = 0;
+    subs.forEach(function (s) { if (subjectsWithTime[s.key] > 0) subjWithTimeCount++; });
+    var cfg = Store.getConfig();
+    var remaining = null;
+    if (cfg.examDate) {
+      remaining = Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000);
+    }
+    return {
+      totalMin: totalMin, totalDays: totalDays, hours: totalMin / 60,
+      streak: Store.consecutiveStreak(),
+      vocabCount: Store.getVocab().length,
+      examCount: Store.getExams().length,
+      mistakeCount: Store.getMistakes().length,
+      subjWithTimeCount: subjWithTimeCount,
+      remaining: remaining
+    };
   }
+
+  /* 单日学习得分：时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，封顶 100。
+     没学习的日子不给分，避免“虚假正反馈”。 */
+  function scoreForDay(ds, day) {
+    day = day || Store.getDay(ds) || { durations: {} };
+    var totalMin = Store.totalMinutesForDay(day);
+    if (totalMin <= 0) return 0;
+    var mScore = Math.min(totalMin, 480) / 480 * 50;
+    var plan = Store.getPlan(ds) || [];
+    var pScore;
+    if (plan.length) { var done = plan.filter(function (p) { return p.done; }).length; pScore = done / plan.length * 20; }
+    else pScore = 10;
+    var rev = Store.getVocab().filter(function (v) { return v.last === ds; }).length;
+    var rScore = Math.min(rev, 15) / 15 * 15;
+    var mToday = Store.getMistakes().filter(function (m) { return (m.date || '').slice(0, 10) === ds; }).length;
+    var eScore = Math.min(mToday, 15) / 15 * 15;
+    var score = mScore + pScore + rScore + eScore;
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  /* 等级：每累计 10 小时 +1 级，每连续 7 天 +1 级（两者叠加） */
+  function levelTitle(l) {
+    var t = ['萌新', '入门', '进阶', '扎实', '熟练', '高手', '学霸', '考研战神'];
+    return t[Math.min(t.length - 1, l)] || '考研战神';
+  }
+  function computeLevel(stats) {
+    var lvl = Math.floor(stats.hours / 10) + Math.floor(stats.streak / 7);
+    var hourPart = stats.hours - Math.floor(stats.hours / 10) * 10;
+    var pct = Math.min(100, Math.round(hourPart / 10 * 100));
+    return { level: lvl, title: levelTitle(lvl), pct: pct, hours: stats.hours };
+  }
+
+  var BADGES = [
+    { id: 'start', icon: '🌱', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
+    { id: 'streak7', icon: '🔥', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
+    { id: 'streak21', icon: '🏔', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
+    { id: 'hours100', icon: '⏳', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
+    { id: 'hours200', icon: '💯', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
+    { id: 'vocab1000', icon: '📚', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
+    { id: 'exam1', icon: '🎯', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
+    { id: 'exam3', icon: '🏆', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
+    { id: 'mistake50', icon: '🐞', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
+    { id: 'allSubjects', icon: '🧠', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
+    { id: 'days30', icon: '📝', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
+    { id: 'sprint', icon: '🚀', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
+  ];
+  function computeBadges(stats) {
+    return BADGES.map(function (b) {
+      return { id: b.id, icon: b.icon, name: b.name, desc: b.desc, earned: !!b.test(stats), prog: b.prog(stats) };
+    });
+  }
+
+  var MILESTONES = [
+    { id: 'streak7', name: '连续打卡 7 天' },
+    { id: 'streak21', name: '连续打卡 21 天' },
+    { id: 'streak30', name: '连续打卡 30 天' },
+    { id: 'hours50', name: '累计学习 50 小时' },
+    { id: 'hours100', name: '累计学习 100 小时' },
+    { id: 'hours200', name: '累计学习 200 小时' },
+    { id: 'vocab200', name: '生词本 200 词' },
+    { id: 'vocab500', name: '生词本 500 词' },
+    { id: 'vocab1000', name: '生词本 1000 词' },
+    { id: 'exam3', name: '录入 3 次模考' },
+    { id: 'exam5', name: '录入 5 次模考' },
+    { id: 'mistake50', name: '整理 50 条错题' },
+    { id: 'mistake200', name: '整理 200 条错题' }
+  ];
+  function milestoneTests(s) {
+    return {
+      streak7: s.streak >= 7, streak21: s.streak >= 21, streak30: s.streak >= 30,
+      hours50: s.hours >= 50, hours100: s.hours >= 100, hours200: s.hours >= 200,
+      vocab200: s.vocabCount >= 200, vocab500: s.vocabCount >= 500, vocab1000: s.vocabCount >= 1000,
+      exam3: s.examCount >= 3, exam5: s.examCount >= 5,
+      mistake50: s.mistakeCount >= 50, mistake200: s.mistakeCount >= 200
+    };
+  }
+  var _milestoneChecking = false;
+  function checkMilestones() {
+    if (_milestoneChecking) return;
+    _milestoneChecking = true;
+    try {
+      var s = getStudyStats();
+      var t = milestoneTests(s);
+      var have = Store.getMilestones();
+      var fresh = MILESTONES.filter(function (m) { return t[m.id] && have.indexOf(m.id) < 0; });
+      if (fresh.length) {
+        fresh.forEach(function (m) { Store.addMilestone(m.id); });
+        fireConfetti();
+        showToast('🎉 新里程碑：' + fresh.map(function (m) { return m.name; }).join('、'), 'ok');
+      }
+    } finally { _milestoneChecking = false; }
+  }
+
+  /* 倒计时分阶段：基础(>90天) / 强化(31~90天) / 冲刺(≤30天) */
+  function phaseInfo(examDate) {
+    if (!examDate) return null;
+    var diff = Math.ceil((new Date(examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000);
+    if (diff <= 0) return { phase: '已结束', remaining: 0, phaseRemain: 0, phaseTotal: 0, pct: 100, ended: true };
+    var phase, phaseTotal;
+    if (diff <= 30) { phase = '冲刺'; phaseTotal = 30; }
+    else if (diff <= 90) { phase = '强化'; phaseTotal = 60; }
+    else { phase = '基础'; phaseTotal = Math.max(diff, 1); }
+    var phaseRemain = phase === '冲刺' ? diff : (phase === '强化' ? diff - 30 : diff - 90);
+    phaseRemain = Math.max(0, phaseRemain);
+    return { phase: phase, remaining: diff, phaseRemain: phaseRemain, phaseTotal: phaseTotal, pct: phaseTotal > 0 ? Math.round(phaseRemain / phaseTotal * 100) : 100, ended: false };
+  }
+
+  function renderScoreCard() {
+    if (!refs.scoreBars) return;
+    var days = Store.getDays();
+    var today = Store.todayStr();
+    var items = [];
+    var todayScore = 0, sum = 0, best = 0, bestDs = '';
+    for (var i = 0; i < 30; i++) {
+      var ds = Store.dateStr(Store.addDays(new Date(), -i));
+      var sc = scoreForDay(ds, days[ds]);
+      items.push({ ds: ds, score: sc });
+      if (ds === today) todayScore = sc;
+      sum += sc;
+      if (sc > best) { best = sc; bestDs = ds; }
+    }
+    items.reverse();
+    var avg = Math.round(sum / 30);
+    refs.scoreSummary.innerHTML =
+      '<span class="ss-item">今日 <b>' + todayScore + '</b> 分</span>' +
+      '<span class="ss-item">近30天均分 <b>' + avg + '</b></span>' +
+      '<span class="ss-item">最高 <b>' + best + '</b>' + (bestDs ? '（' + bestDs.slice(5) + '）' : '') + '</span>';
+    Charts.renderScoreBars(refs.scoreBars, items);
+  }
+
+  function renderBadgesCard() {
+    if (!refs.badgesGrid) return;
+    var stats = getStudyStats();
+    var lvl = computeLevel(stats);
+    refs.badgesLevel.innerHTML =
+      '<div class="lv-head"><span class="lv-badge">Lv.' + lvl.level + '</span>' +
+      '<span class="lv-title">' + escapeHtml(lvl.title) + '</span>' +
+      '<span class="lv-sub">累计 ' + Math.floor(stats.hours) + ' 小时 · 连续 ' + stats.streak + ' 天</span></div>' +
+      '<div class="lv-bar"><div class="lv-fill" style="width:' + lvl.pct + '%"></div></div>' +
+      '<div class="lv-tip">再学 ' + (10 - Math.floor(stats.hours) % 10 || 10) + ' 小时升到下一级</div>';
+    var badges = computeBadges(stats);
+    var earned = 0;
+    var html = '';
+    badges.forEach(function (b) {
+      if (b.earned) earned++;
+      html += '<div class="badge-tile' + (b.earned ? ' earned' : '') + '">' +
+        '<div class="badge-icon">' + b.icon + '</div>' +
+        '<div class="badge-name">' + escapeHtml(b.name) + '</div>' +
+        '<div class="badge-desc">' + escapeHtml(b.desc) + '</div>' +
+        '<div class="badge-prog">' + (b.earned ? '✅ 已达成' : '进度 ' + escapeHtml(b.prog)) + '</div>' +
+        '</div>';
+    });
+    refs.badgesGrid.innerHTML = html;
+    var head = refs.badgesGrid.previousElementSibling;
+    if (head && head.classList.contains('badges-count')) head.textContent = '已点亮 ' + earned + ' / ' + badges.length + ' 枚徽章';
+  }
+
   /* ============ 今日聚合 + 主题 + 键盘快捷键 ============ */
   function renderTodayAggregate() {
     if (!refs.aggCountdown) return;
@@ -2052,12 +2240,26 @@
     // 今日学习时长
     var today = Store.getDay(Store.todayStr()) || {};
     refs.aggMinutes.textContent = Store.totalMinutesForDay(today);
+    // 今日学习得分
+    if (refs.aggScore) refs.aggScore.textContent = scoreForDay(Store.todayStr(), today);
     // 计划完成
     var plan = Store.getPlan(Store.todayStr()) || [];
     var done = plan.filter(function (p) { return p.done; }).length;
     refs.aggPlan.textContent = done + '/' + plan.length;
     // 连续打卡
     refs.aggStreak.textContent = Store.consecutiveStreak();
+    // 倒计时分阶段
+    if (refs.aggPhase) {
+      var ph = phaseInfo(examDate);
+      if (!ph) { refs.aggPhase.innerHTML = ''; }
+      else if (ph.ended) { refs.aggPhase.innerHTML = '<span class="phase-badge ended">已结束</span>'; }
+      else {
+        refs.aggPhase.innerHTML =
+          '<span class="phase-badge ' + ph.phase + '">' + ph.phase + '阶段</span>' +
+          '<span class="phase-text">本阶段剩余 <b>' + ph.phaseRemain + '</b> / ' + ph.phaseTotal + ' 天</span>' +
+          '<span class="phase-bar"><span class="phase-fill ' + ph.phase + '" style="width:' + ph.pct + '%"></span></span>';
+      }
+    }
     // H1：科目进度聚合条
     renderAggSubjectProgress();
     // H3：快速开始引导卡
@@ -2293,7 +2495,6 @@
   }
 
   /* ============ 通用：增强型 Toast（支持 ok/err/warn/info 四种视觉） ============ */
-  var _origShowToast = showToast;
   function showToast(msg, type) {
     var t = refs.toast;
     t.className = 'toast' + (type ? ' ' + type : '');
@@ -2769,6 +2970,10 @@
 
     refs.countdown = $('countdown');
     refs.goalProgress = $('goal-progress');
+    refs.scoreSummary = $('score-summary');
+    refs.scoreBars = $('score-bars');
+    refs.badgesLevel = $('badges-level');
+    refs.badgesGrid = $('badges-grid');
     refs.heatmap = $('heatmap');
     refs.heatLabel = $('heat-label');
     refs.heatPrev = $('heat-prev');
@@ -2935,8 +3140,10 @@
     refs.themeToggle = $('themeToggle');
     refs.aggCountdown = $('agg-countdown');
     refs.aggMinutes = $('agg-minutes');
+    refs.aggScore = $('agg-score');
     refs.aggPlan = $('agg-plan');
     refs.aggStreak = $('agg-streak');
+    refs.aggPhase = $('agg-phase');
 
     // 翻译密钥（用户自带 key，仅存本机浏览器）
     refs.transAppid = $('trans-appid');
@@ -3185,7 +3392,7 @@
     initBackTop();
 
     // 云同步自动推送钩子 + 自动同步偏好恢复（需在 init 末尾、refs 就绪后）
-    Store.setOnSave(scheduleAutoPush);
+    Store.setOnSave(function () { scheduleAutoPush(); checkMilestones(); });
     loadAutoSyncPref();
 
     // 每日打卡与连续学习提醒

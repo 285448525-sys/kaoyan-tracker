@@ -33,6 +33,7 @@
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
       wrongWords: [], // 错词本（独立）{id,word,cn,created,src}
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
+      milestones: [], // 已达成里程碑 id 列表（用于庆祝动画去重，避免重复触发）
       moduleMastery: {},     // { 模块名: '已掌握'|'进行中'|'未开始' }
       subjectChapters: {},   // { 科目key: { chapters:[章名...], current: index } }
       mathChapters: [],      // 数学全部章节（字符串数组，初始化预填）
@@ -76,6 +77,7 @@
         translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
         wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
         checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
+        milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
         moduleMastery: (p.moduleMastery && typeof p.moduleMastery === 'object') ? p.moduleMastery : {},
         subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
         mathChapters: (p.mathChapters && Array.isArray(p.mathChapters)) ? p.mathChapters : [],
@@ -362,6 +364,15 @@
     return streak;
   }
 
+  /* ---------- 里程碑（已达成记录，用于庆祝去重） ---------- */
+  function getMilestones() { return (state.milestones || []).slice(); }
+  function addMilestone(id) {
+    if (!state.milestones) state.milestones = [];
+    if (state.milestones.indexOf(id) >= 0) return false;
+    state.milestones.push(id); save();
+    return true;
+  }
+
   /* ---------- 备份 ---------- */
   function exportJSON() { return JSON.stringify(state, null, 2); }
   function importJSON(str) {
@@ -378,6 +389,7 @@
       translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
       wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
       checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
+      milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
       moduleMastery: (p.moduleMastery && typeof p.moduleMastery === 'object') ? p.moduleMastery : {},
       subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
       mathChapters: (p.mathChapters && Array.isArray(p.mathChapters)) ? p.mathChapters : [],
@@ -564,7 +576,7 @@
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
     getTimer: getTimer, setTimer: setTimer,
     consecutiveStreak: consecutiveStreak, isCheckedIn: isCheckedIn, getCheckins: getCheckins, checkin: checkin,
-    exportJSON: exportJSON, importJSON: importJSON,
+    getMilestones: getMilestones, addMilestone: addMilestone,
     save: save,
     setOnSave: setOnSave,
     // 云同步

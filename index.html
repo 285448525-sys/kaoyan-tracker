@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814i" />
+  <link rel="stylesheet" href="styles.css?v=20260814j" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -177,9 +177,11 @@
         <div class="agg-grid">
           <div class="agg-cell"><div class="agg-num" id="agg-countdown">--</div><div class="agg-label">距考研天数</div></div>
           <div class="agg-cell"><div class="agg-num" id="agg-minutes">0</div><div class="agg-label">今日学习(分)</div></div>
+          <div class="agg-cell"><div class="agg-num" id="agg-score">0</div><div class="agg-label">今日得分</div></div>
           <div class="agg-cell"><div class="agg-num" id="agg-plan">0/0</div><div class="agg-label">计划完成</div></div>
           <div class="agg-cell"><div class="agg-num" id="agg-streak">0</div><div class="agg-label">连续打卡</div></div>
         </div>
+        <div id="agg-phase" class="agg-phase"></div>
         <!-- 科目进度聚合条（H1 新增） -->
         <div id="agg-subject-progress" class="agg-subject-progress"></div>
       </div>
@@ -288,6 +290,20 @@
     <!-- 数据 -->
     <section id="tab-data" class="tab-panel">
       <div class="card countdown-card"><div id="countdown" class="countdown">未设置考研日期</div></div>
+
+      <div class="card">
+        <h2 class="card-title">📊 近 30 天学习得分</h2>
+        <div id="score-summary" class="score-summary"></div>
+        <div id="score-bars" class="score-bars"></div>
+        <p class="card-sub">得分 = 学习时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，满分 100；没学习的日子记为 0 分，不注水。</p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🏅 成就与等级</h2>
+        <div id="badges-level" class="badges-level"></div>
+        <div class="badges-count" id="badges-count"></div>
+        <div id="badges-grid" class="badges-grid"></div>
+      </div>
 
       <div class="card">
         <h2 class="card-title">🎯 目标进度与差距</h2>
@@ -713,13 +729,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814i"></script>
-  <script src="words.js?v=20260814i"></script>
-  <script src="store.js?v=20260814i"></script>
-  <script src="charts.js?v=20260814i"></script>
-  <script src="share.js?v=20260814i"></script>
-  <script src="md5.js?v=20260814i"></script>
-  <script src="sentences.js?v=20260814i"></script>
-  <script src="app.js?v=20260814i"></script>
+  <script src="qrcode.min.js?v=20260814j"></script>
+  <script src="words.js?v=20260814j"></script>
+  <script src="store.js?v=20260814j"></script>
+  <script src="charts.js?v=20260814j"></script>
+  <script src="share.js?v=20260814j"></script>
+  <script src="md5.js?v=20260814j"></script>
+  <script src="sentences.js?v=20260814j"></script>
+  <script src="app.js?v=20260814j"></script>
 </body>
 </html>

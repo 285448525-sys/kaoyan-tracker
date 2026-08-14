@@ -240,11 +240,40 @@
     container.appendChild(wrap);
   }
 
+  /* ---------- 近 N 天学习得分柱状图（纯 DIV，主题友好） ---------- */
+  function scoreColor(s) {
+    if (s >= 90) return '#10b981';
+    if (s >= 70) return '#4f46e5';
+    if (s >= 40) return '#f59e0b';
+    return '#94a3b8';
+  }
+  function renderScoreBars(container, items) {
+    container.innerHTML = '';
+    if (!items || !items.length) {
+      container.appendChild(el('div', 'empty-hint', '还没有学习记录，先去「记录」页计时吧'));
+      return;
+    }
+    var wrap = el('div', 'scorebars');
+    items.forEach(function (it) {
+      var col = el('div', 'sb-col');
+      var bar = el('div', 'sb-bar');
+      var h = Math.max(3, Math.round(it.score)); // score 0-100 直接当高度百分比
+      bar.style.height = h + '%';
+      bar.style.background = scoreColor(it.score);
+      bar.title = it.ds + '：' + it.score + ' 分';
+      var lbl = el('div', 'sb-day', it.ds.slice(5)); // MM-DD
+      col.appendChild(bar); col.appendChild(lbl);
+      wrap.appendChild(col);
+    });
+    container.appendChild(wrap);
+  }
+
   global.Charts = {
     renderMonthHeatmap: renderMonthHeatmap,
     renderTrend: renderTrend,
     renderSubjectBars: renderSubjectBars,
     renderTodayPie: renderTodayPie,
-    renderRadar: renderRadar
+    renderRadar: renderRadar,
+    renderScoreBars: renderScoreBars
   };
 })(typeof window !== 'undefined' ? window : this);
