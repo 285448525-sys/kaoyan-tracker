@@ -244,22 +244,24 @@
           sub.appendChild(el('div', 'subtree-hint', '选择卷种会按新大纲重置章节（同名已完成章保留）：'));
           var vols = Object.keys(Store.getMathVolumeTemplates());
           var curVol = Store.getMathVolume();
-          var rg = el('div', 'vol-radios');
+          var volRow = el('div', 'field-row');
+          volRow.appendChild(el('label', null, '数学卷种'));
+          var sel = el('select');
+          sel.className = 'mv-select';
           vols.forEach(function (v) {
-            var rb = el('label', 'vol-radio' + (v === curVol ? ' active' : ''));
-            var input = el('input'); input.type = 'radio'; input.name = 'cfg-math-vol'; input.value = v; input.checked = (v === curVol);
-            input.addEventListener('change', function () {
-              if (v === Store.getMathVolume()) return;
-              if (!confirm('切换为「' + v + '」会按新大纲重置数学章节：同名已完成章节保留，新大纲没有的章节进度丢弃。确定切换？')) { renderConfig(); return; }
-              Store.setMathVolume(v);
-              renderConfig(); renderMathChapters(); renderSubjectChapters(); renderAggSubjectProgress();
-              showToast('已切换卷种：' + v, 'ok');
-            });
-            rb.appendChild(input);
-            rb.appendChild(el('span', null, v));
-            rg.appendChild(rb);
+            var opt = el('option'); opt.value = v; opt.textContent = v; opt.selected = (v === curVol);
+            sel.appendChild(opt);
           });
-          sub.appendChild(rg);
+          sel.addEventListener('change', function () {
+            var v = sel.value;
+            if (v === Store.getMathVolume()) return;
+            if (!confirm('切换为「' + v + '」会按新大纲重置数学章节：同名已完成章节保留，新大纲没有的章节进度丢弃。确定切换？')) { renderConfig(); return; }
+            Store.setMathVolume(v);
+            renderConfig(); renderMathChapters(); renderSubjectChapters(); renderAggSubjectProgress();
+            showToast('已切换卷种：' + v, 'ok');
+          });
+          volRow.appendChild(sel);
+          sub.appendChild(volRow);
         } else {
           var groups = {};
           Store.get408Chapters().forEach(function (ch) { var g = parseChapter(ch).g; groups[g] = (groups[g] || 0) + 1; });
@@ -1055,14 +1057,50 @@
   }
 
   /* ============ 长难句分析 ============ */
+  var lastSentenceText = ''; // 供 AI 深度分析使用
   function onAnalyzeSentence() {
     var text = refs.sentenceInput.value.trim();
     if (!text) { alert('请粘贴一句长难句'); return; }
+    lastSentenceText = text;
     renderSentenceResult(window.SentenceAnalyzer.analyze(text));
   }
   function renderSentenceResult(r) {
     var box = refs.sentenceResult; box.innerHTML = '';
     if (!r.clauses.length) { box.appendChild(el('div', 'empty-hint', '没有可分析的内容')); return; }
+    // 统计概览
+    if (r.stats) {
+      var st = r.stats;
+      var statRow = el('div', 'sr-stats');
+      statRow.appendChild(el('span', 'sr-stat', '词数 ' + st.wordCount));
+      statRow.appendChild(el('span', 'sr-stat', '分句 ' + st.clauseCount));
+      statRow.appendChild(el('span', 'sr-stat sr-diff', '难度 ' + st.difficulty));
+      if (st.connectors.length) statRow.appendChild(el('span', 'sr-stat', '连接词 ' + st.connectors.join(' / ')));
+      box.appendChild(statRow);
+      // 逻辑信号词
+      if (st.signals.length) {
+        box.appendChild(el('div', 'sr-title', '⚡ 逻辑信号词（出题点常在此附近）'));
+        var sg = el('div', 'sg-grid');
+        st.signals.forEach(function (s) {
+          var chip = el('div', 'sg-chip');
+          chip.appendChild(el('b', null, s.name + '：'));
+          chip.appendChild(el('span', null, s.hits.join(' / ')));
+          sg.appendChild(chip);
+        });
+        box.appendChild(sg);
+      }
+      // 句式特征
+      if (st.features.length) {
+        box.appendChild(el('div', 'sr-title', '🧩 句式特征'));
+        var fg = el('div', 'feat-list');
+        st.features.forEach(function (f) { fg.appendChild(el('div', 'feat-chip', f)); });
+        box.appendChild(fg);
+      }
+      // 代词指代提醒
+      if (st.pronouns.length) {
+        box.appendChild(el('div', 'sr-title', '👁 代词指代（阅读题常问 it / they 指代谁）'));
+        box.appendChild(el('div', 'pron-row', '句中代词：' + st.pronouns.join('、') + ' —— 定位先行词是做题关键'));
+      }
+    }
     box.appendChild(el('div', 'sr-title', '🔍 句子结构拆解'));
     r.clauses.forEach(function (cl) {
       var tag = cl.type === 'main' ? '主句' : (cl.type === 'sub' ? '从句' : '并列分句');
@@ -1093,6 +1131,39 @@
     m.appendChild(el('div', 'sr-title', '🧠 分析方法讲解'));
     m.appendChild(el('div', 'method-text', r.method));
     box.appendChild(m);
+    // AI 深度分析入口（需在配置页填写 AI 配置）
+    var aiArea = el('div', 'sr-ai');
+    var aiBtn = el('button', 'btn btn-ghost sr-ai-btn', '🤖 AI 深度分析（成分+翻译+出题意图）');
+    var aiBox = el('div', 'ai-explain-box');
+    aiBox.style.display = 'none';
+    aiArea.appendChild(aiBtn); aiArea.appendChild(aiBox);
+    aiBtn.addEventListener('click', aiDeepAnalyzeSentence);
+    box.appendChild(aiArea);
+  }
+  function aiDeepAnalyzeSentence() {
+    var text = (lastSentenceText || '').trim();
+    var area = refs.sentenceResult.querySelector('.sr-ai');
+    if (!text || !area) { showToast('请先输入并分析一句长难句'); return; }
+    var btn = area.querySelector('.sr-ai-btn');
+    var aiBox = area.querySelector('.ai-explain-box');
+    if (!btn || !aiBox) return;
+    if (aiBox.style.display !== 'none') { aiBox.style.display = 'none'; btn.textContent = '🤖 AI 深度分析（成分+翻译+出题意图）'; return; }
+    aiBox.style.display = 'block';
+    aiBox.textContent = '';
+    aiBox.appendChild(el('div', 'ai-loading', '🤖 AI 分析中（约 10-30 秒）…'));
+    btn.textContent = '收起 AI 分析';
+    aiChat([
+      { role: 'system', content: '你是考研英语长难句讲解专家，面向词汇量约 4000 的考生。用简体中文，讲解具体、可操作，不说空话。' },
+      { role: 'user', content: '请对这句考研英语长难句做深度分析：\n「' + text + '」\n请按以下结构输出：\n1)【逐层拆解】按主干→修饰的顺序拆解句子结构；\n2)【全句翻译】通顺的中文翻译；\n3)【考点词】列出 3-5 个值得背的词/短语并给释义；\n4)【出题意图】若为阅读题句子，命题人可能在哪出题（细节/同义替换/推断）；\n5)【仿写思路】给出用该句式写一句中文思路（不写英文例句）。' }
+    ], { maxTokens: 1200 }).then(function (res) {
+      aiBox.textContent = '';
+      var pre = el('pre', 'ai-explain-text'); pre.textContent = res.content.trim();
+      aiBox.appendChild(pre);
+    }).catch(function (err) {
+      aiBox.textContent = '';
+      aiBox.appendChild(el('div', 'empty-hint', '✗ ' + (err.msg || 'AI 分析失败，请检查配置页 AI 设置')));
+      btn.textContent = '🤖 AI 深度分析（成分+翻译+出题意图）';
+    });
   }
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
@@ -1265,6 +1336,7 @@
 
   function renderChapterBlock(key, mount) {
     if (key === 'cs408') { renderCs408Grouped(mount); return; }
+    if (key === 'math') { renderMathGrouped(mount); return; }
     var subjectName, chapters, current, doneSet;
     if (key === 'math') { subjectName = '数学'; chapters = Store.getMathChapters(); current = Store.getMathCurrent(); doneSet = Store.getMathDone(); }
     else {
@@ -1340,16 +1412,16 @@
     mount.appendChild(block);
   }
 
-  // 408：按 4 本书分组，每本书可展开/收起（折叠态持久化到 localStorage）
-  function renderCs408Grouped(mount) {
-    var chapters = Store.get408Chapters();
-    var current = Store.get408Current();
-    var doneSet = Store.get408Done();
-    mount.innerHTML = '';
+  // 通用分组折叠渲染：408 四书 / 数学（高数·线代·概率）共用（折叠态持久化到 localStorage）
+  function renderGroupedChapters(o) {
+    var chapters = o.chapters;
+    var current = o.current;
+    var doneSet = o.doneSet;
+    o.mount.innerHTML = '';
     var block = el('div', 'chapter-block');
 
     var head = el('div', 'chapter-head');
-    head.appendChild(el('span', 'chapter-subject', '408 计算机专业基础'));
+    head.appendChild(el('span', 'chapter-subject', o.title));
     block.appendChild(head);
     var total = chapters.length;
     var doneCount = doneSet.length;
@@ -1373,18 +1445,18 @@
         groups[p.g].push({ ch: ch, idx: idx });
       });
       var groupKeys = Object.keys(groups);
-      var collapsed = Store.getCs408BooksCollapsed();
+      var collapsed = o.getCollapsed();
       // 全部展开 / 收起
       var ctrl = el('div', 'book-ctrl');
       var expandAll = el('button', 'btn btn-ghost btn-sm', '▾ 全部展开');
       expandAll.addEventListener('click', function () {
         var nc = {}; groupKeys.forEach(function (g) { nc[g] = false; });
-        Store.setCs408BooksCollapsed(nc); renderCs408Grouped(mount);
+        o.setCollapsed(nc); renderGroupedChapters(o);
       });
       var collapseAll = el('button', 'btn btn-ghost btn-sm', '▸ 全部收起');
       collapseAll.addEventListener('click', function () {
         var nc = {}; groupKeys.forEach(function (g) { nc[g] = true; });
-        Store.setCs408BooksCollapsed(nc); renderCs408Grouped(mount);
+        o.setCollapsed(nc); renderGroupedChapters(o);
       });
       ctrl.appendChild(expandAll); ctrl.appendChild(collapseAll);
       block.appendChild(ctrl);
@@ -1400,9 +1472,9 @@
         bhead.appendChild(el('span', 'book-name', g));
         bhead.appendChild(el('span', 'book-count', gDone + '/' + gTotal));
         bhead.addEventListener('click', function () {
-          var curState = Store.getCs408BooksCollapsed();
+          var curState = o.getCollapsed();
           curState[g] = !curState[g];
-          Store.setCs408BooksCollapsed(curState); renderCs408Grouped(mount);
+          o.setCollapsed(curState); renderGroupedChapters(o);
         });
         book.appendChild(bhead);
         if (!isCollapsed) {
@@ -1410,11 +1482,11 @@
           items.forEach(function (it) {
             var p = parseChapter(it.ch);
             list.appendChild(buildChapterItem({
-              key: 'cs408', ch: it.ch, idx: it.idx,
+              ch: it.ch, idx: it.idx,
               isDone: doneSet.indexOf(it.idx) >= 0, isCurrent: it.idx === current,
-              groupColor: CS408_GROUP_COLORS[p.g] || '#9ca3af',
-              onToggle: function (i) { Store.toggle408Done(i); renderCs408Grouped(mount); renderAggSubjectProgress(); },
-              onCurrent: function (i) { Store.set408Current(i); renderCs408Grouped(mount); }
+              groupColor: o.groupColors[p.g] || '#9ca3af',
+              onToggle: function (i) { o.onToggle(i); },
+              onCurrent: function (i) { o.onCurrent(i); }
             }));
           });
           book.appendChild(list);
@@ -1428,12 +1500,45 @@
     var btn = el('button', 'btn btn-ghost', '添加');
     btn.addEventListener('click', function () {
       var v = inp.value.trim(); if (!v) return;
-      var newChapters = chapters.slice(); newChapters.push(v);
-      Store.set408Chapters(newChapters); renderCs408Grouped(mount);
+      o.onAddChapter(v);
     });
     addRow.appendChild(inp); addRow.appendChild(btn);
     block.appendChild(addRow);
-    mount.appendChild(block);
+    o.mount.appendChild(block);
+  }
+
+  // 408：按 4 本书分组（折叠态持久化到 localStorage）
+  function renderCs408Grouped(mount) {
+    renderGroupedChapters({
+      mount: mount,
+      title: '408 计算机专业基础',
+      chapters: Store.get408Chapters(),
+      current: Store.get408Current(),
+      doneSet: Store.get408Done(),
+      groupColors: CS408_GROUP_COLORS,
+      getCollapsed: Store.getCs408BooksCollapsed,
+      setCollapsed: Store.setCs408BooksCollapsed,
+      onToggle: function (i) { Store.toggle408Done(i); renderCs408Grouped(mount); renderAggSubjectProgress(); },
+      onCurrent: function (i) { Store.set408Current(i); renderCs408Grouped(mount); },
+      onAddChapter: function (v) { var arr = Store.get408Chapters().slice(); arr.push(v); Store.set408Chapters(arr); renderCs408Grouped(mount); }
+    });
+  }
+
+  // 数学：按 高数 / 线代 / 概率 分组折叠（与 408 相同交互）
+  function renderMathGrouped(mount) {
+    renderGroupedChapters({
+      mount: mount,
+      title: '数学',
+      chapters: Store.getMathChapters(),
+      current: Store.getMathCurrent(),
+      doneSet: Store.getMathDone(),
+      groupColors: GROUP_COLORS,
+      getCollapsed: Store.getMathBooksCollapsed,
+      setCollapsed: Store.setMathBooksCollapsed,
+      onToggle: function (i) { Store.toggleMathDone(i); renderMathGrouped(mount); renderAggSubjectProgress(); },
+      onCurrent: function (i) { Store.setMathCurrent(i); renderMathGrouped(mount); },
+      onAddChapter: function (v) { var arr = Store.getMathChapters().slice(); arr.push(v); Store.setMathChapters(arr); renderMathGrouped(mount); }
+    });
   }
 
   function renderSubjectChapters() {
@@ -1509,23 +1614,27 @@
     // 卷种选择器（数一/数二/数三，章节按大纲区分；数二不含概率）
     var volWrap = el('div', 'math-volume');
     volWrap.appendChild(el('span', 'mv-label', '卷种：'));
+    var sel = el('select');
+    sel.className = 'mv-select';
     vols.forEach(function (v) {
-      var b = el('button', 'mv-btn' + (v === vol ? ' active' : ''), v);
-      b.addEventListener('click', function () {
-        if (v === Store.getMathVolume()) return;
-        if (!confirm('切换为「' + v + '」会按新大纲重置章节列表：同名已完成章节会保留，新大纲没有的章节进度将丢弃。确定切换？')) return;
-        Store.setMathVolume(v);
-        renderMathChapters();
-        renderSubjectChapters();
-        renderAggSubjectProgress();
-        showToast('已切换卷种：' + v, 'ok');
-      });
-      volWrap.appendChild(b);
+      var opt = el('option'); opt.value = v; opt.textContent = v; opt.selected = (v === vol);
+      sel.appendChild(opt);
     });
+    sel.addEventListener('change', function () {
+      var v = sel.value;
+      if (v === Store.getMathVolume()) return;
+      if (!confirm('切换为「' + v + '」会按新大纲重置章节列表：同名已完成章节会保留，新大纲没有的章节进度将丢弃。确定切换？')) { renderMathChapters(); return; }
+      Store.setMathVolume(v);
+      renderMathChapters();
+      renderSubjectChapters();
+      renderAggSubjectProgress();
+      showToast('已切换卷种：' + v, 'ok');
+    });
+    volWrap.appendChild(sel);
     box.appendChild(volWrap);
     var mount = el('div');
     box.appendChild(mount);
-    renderChapterBlock('math', mount);
+    renderMathGrouped(mount);
   }
 
   function renderMathMistakes() {
@@ -2129,6 +2238,75 @@
       refs.transStatus.textContent = '✓ 连接成功：' + escapeHtml(res.dst);
     });
   }
+
+  /* ============ AI 能力（OpenAI 兼容接口，key 经 /api/ai 中转） ============ */
+  function renderAiConfig() {
+    var c = Store.getAiConfig();
+    if (refs.aiBaseUrl) refs.aiBaseUrl.value = c.baseUrl || '';
+    if (refs.aiModel) refs.aiModel.value = c.model || '';
+    if (refs.aiKey) refs.aiKey.value = c.key || '';
+  }
+  function onSaveAi() {
+    var c = Store.setAiConfig({
+      baseUrl: (refs.aiBaseUrl.value || '').trim(),
+      model: (refs.aiModel.value || '').trim(),
+      key: (refs.aiKey.value || '').trim()
+    });
+    refs.aiStatus.textContent = (c.baseUrl && c.model && c.key) ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
+    showToast('AI 配置已保存 ✅');
+  }
+  function onTestAi() {
+    onSaveAi();
+    var c = Store.getAiConfig();
+    if (!c.baseUrl || !c.model || !c.key) { refs.aiStatus.textContent = '✗ 请先填写接口地址、模型与 Key'; return; }
+    refs.aiStatus.textContent = '测试中…';
+    aiChat([{ role: 'user', content: '你好，请只回复"连接成功"四个字' }], { maxTokens: 32 })
+      .then(function (res) {
+        refs.aiStatus.textContent = '✓ 连接成功：' + (res.content || '').slice(0, 30);
+      })
+      .catch(function (err) {
+        refs.aiStatus.textContent = '✗ ' + (err && err.msg || '测试失败');
+      });
+  }
+  // 通用 AI 对话：调本站 /api/ai 中转（key 走请求头，不出现在前端网络面板）
+  function aiChat(messages, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve, reject) {
+      var c = Store.getAiConfig();
+      if (!c.baseUrl || !c.model || !c.key) {
+        reject({ error: 'NO_CONFIG', msg: '请先在「配置」页填写 AI 接口地址、模型与 Key' }); return;
+      }
+      if (location.protocol === 'file:') {
+        reject({ error: 'OFFLINE', msg: '本地打开时 AI 功能不可用，请访问线上地址（kaoyan-tracker.pages.dev）使用' }); return;
+      }
+      fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-AI-Key': c.key },
+        body: JSON.stringify({
+          baseUrl: c.baseUrl, model: c.model, messages: messages,
+          max_tokens: opts.maxTokens || 1024,
+          temperature: (typeof opts.temperature === 'number') ? opts.temperature : undefined
+        })
+      })
+        .then(function (r) { return r.text().then(function (t) { return { status: r.status, text: t }; }); })
+        .then(function (res) {
+          if (res.status !== 200) {
+            var msg = '服务错误（' + res.status + '）';
+            try { var j = JSON.parse(res.text); if (j && j.error) msg = j.error; } catch (e) {}
+            reject({ error: 'HTTP_' + res.status, msg: msg }); return;
+          }
+          var data;
+          try { data = JSON.parse(res.text); } catch (e) { reject({ error: 'PARSE', msg: 'AI 返回格式异常' }); return; }
+          if (data && data.error) {
+            reject({ error: 'UPSTREAM', msg: (data.error.message || data.error.code || '上游返回错误') }); return;
+          }
+          var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!content) { reject({ error: 'EMPTY', msg: 'AI 未返回内容' }); return; }
+          resolve({ content: content, usage: data.usage || null });
+        })
+        .catch(function () { reject({ error: 'NET', msg: '网络错误，请检查是否在线（本地 file:// 打开时 AI 不可用）' }); });
+    });
+  }
   // 浏览器直连百度翻译开放平台：用户自带 APP ID + 密钥，前端本地用 md5 签名，JSONP 规避 CORS。无需任何后端。
   function translateWord(word, cb) {
     var t = Store.getTranslator();
@@ -2205,13 +2383,37 @@
       var top = el('div', 'mistake-top');
       var toVocab = el('button', 'plan-del vocab-move', '移入生词本');
       toVocab.addEventListener('click', function () { Store.addVocab(w.word, w.cn); renderWords(); showToast('已移入生词本 ✅'); });
+      var aiBtn = el('button', 'plan-del ai-explain-btn', '🤖 AI 讲解');
+      aiBtn.addEventListener('click', function () { explainWrongWord(w, aiBtn); });
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWrongBook(); showToast('已从错词本删除'); });
-      top.appendChild(toVocab); top.appendChild(del);
+      top.appendChild(aiBtn); top.appendChild(toVocab); top.appendChild(del);
       item.appendChild(top);
       item.appendChild(el('div', 'mistake-content', w.word + (w.cn ? '　' + w.cn : '')));
       item.appendChild(el('div', 'mistake-meta', '归档于 ' + w.created + (w.src === 'translate' ? ' · 翻译查询' : '')));
       refs.wrongList.appendChild(item);
+    });
+  }
+
+  // 错词本 AI 讲解（展开/收起式，AI 输出用 textContent 防 XSS）
+  function explainWrongWord(w, btn) {
+    var item = btn.closest('.mistake-item');
+    if (!item) return;
+    var box = item.querySelector('.ai-explain-box');
+    if (box) { box.remove(); return; }
+    box = el('div', 'ai-explain-box');
+    box.appendChild(el('div', 'ai-loading', '🤖 AI 讲解中…'));
+    item.appendChild(box);
+    aiChat([
+      { role: 'system', content: '你是英语学习助教，面向考研/雅思备考学生。用简体中文讲解，条理清晰，末尾给出一个英文例句（带中文翻译）。' },
+      { role: 'user', content: '请讲解单词「' + w.word + '」' + (w.cn ? '（词典释义：' + w.cn + '）' : '') + '。内容：1) 核心词义与词性；2) 常见搭配或用法；3) 记忆技巧/词根词缀；4) 一个例句。' }
+    ], { maxTokens: 600 }).then(function (res) {
+      box.textContent = '';
+      var pre = el('pre', 'ai-explain-text'); pre.textContent = res.content.trim();
+      box.appendChild(pre);
+    }).catch(function (err) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '✗ ' + (err.msg || 'AI 讲解失败，请检查配置页 AI 设置')));
     });
   }
 
@@ -2320,11 +2522,22 @@
     customTimer.total = total; customTimer.remain = total; customTimer.done = false; renderCustomTimer();
   }
 
+  function buildPracticePool(scope) {
+    if (scope === 'vocab') return Store.getVocab().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
+    if (scope === 'wrong') return Store.getWrongWords().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
+    return DICT.slice().filter(function (d) { return d.w && d.c; });
+  }
   function startPractice() {
-    if (!DICT.length) { refs.practiceBox.innerHTML = '<div class="empty-hint">词库为空</div>'; return; }
-    var pool = DICT.slice();
+    var ps = Store.getPracticeSettings();
+    var pool = buildPracticePool(ps.scope);
+    if (!pool.length) {
+      practiceSession = null;
+      var hint = ps.scope === 'vocab' ? '生词本为空，先记录几个生词再来练吧' : ps.scope === 'wrong' ? '错词本为空，练习中答错会自动归档' : '词库为空';
+      refs.practiceBox.innerHTML = '<div class="empty-hint">' + hint + '</div>';
+      return;
+    }
     shuffle(pool);
-    practiceSession = { items: pool.slice(0, Math.min(12, pool.length)), index: 0, answered: false };
+    practiceSession = { items: pool.slice(0, Math.min(ps.count, pool.length)), index: 0, answered: false, mode: ps.mode, autoSave: ps.autoSave, pool: pool };
     renderPractice();
   }
   function renderPractice() {
@@ -2335,16 +2548,29 @@
       return;
     }
     var cur = s.items[s.index];
-    var opts = [cur.c];
-    var others = DICT.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
+    var en2cn = s.mode !== 'cn2en';
+    var others = s.pool.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
     shuffle(others);
-    for (var i = 0; i < 3 && i < others.length; i++) opts.push(others[i].c);
+    // 干扰项：优先从词池取，不足 3 个时用本地词库补充
+    var fillers = DICT.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
+    var opts = [];
+    if (en2cn) {
+      opts.push(cur.c);
+      for (var i = 0; i < others.length && opts.length < 4; i++) if (opts.indexOf(others[i].c) < 0) opts.push(others[i].c);
+      for (var j = 0; j < fillers.length && opts.length < 4; j++) if (opts.indexOf(fillers[j].c) < 0) opts.push(fillers[j].c);
+    } else {
+      opts.push(cur.w);
+      for (var k = 0; k < others.length && opts.length < 4; k++) if (opts.indexOf(others[k].w) < 0) opts.push(others[k].w);
+      for (var m = 0; m < fillers.length && opts.length < 4; m++) if (opts.indexOf(fillers[m].w) < 0) opts.push(fillers[m].w);
+    }
     shuffle(opts);
-    var html = '<div class="practice-en">' + escapeHtml(cur.w) + '</div>';
-    html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个</div>';
+    var stem = en2cn ? cur.w : cur.c;
+    var answer = en2cn ? cur.c : cur.w;
+    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>';
+    html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个 · ' + (en2cn ? '英选译' : '中选英') + '</div>';
     html += '<div class="practice-options">';
     opts.forEach(function (o) {
-      html += '<button class="practice-opt" data-correct="' + (o === cur.c) + '">' + escapeHtml(o) + '</button>';
+      html += '<button class="practice-opt' + (en2cn ? '' : ' practice-opt-en') + '" data-correct="' + (o === answer) + '">' + escapeHtml(o) + '</button>';
     });
     html += '</div>';
     html += '<div class="practice-feedback" id="practice-feedback"></div>';
@@ -2361,19 +2587,19 @@
           if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
         });
         if (correct) { btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669'; }
-        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + cur.c; fb.style.color = '#dc2626'; }
+        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + answer; fb.style.color = '#dc2626'; }
         addNextButton();
       });
     });
     $('practice-dontknow').addEventListener('click', function () {
       if (s.answered) return;
       s.answered = true;
-      Store.addVocab(cur.w, cur.c);
+      if (s.autoSave) Store.addVocab(cur.w, cur.c);
       refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (b) {
         b.disabled = true;
         if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
       });
-      fb.textContent = '已收入生词本，正确答案：' + cur.c;
+      fb.textContent = (s.autoSave ? '已收入生词本，正确答案：' : '正确答案：') + answer;
       fb.style.color = '#4f46e5';
       addNextButton();
     });
@@ -2758,38 +2984,50 @@
       stepCard(4, '⏱', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
   }
 
-  /* ============ 说明书模块（UI 散落说明集中处） ============ */
-  var MANUAL = [
-    { t: '📅 今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
-    { t: '🚀 今日 · 快速开始', b: '首次使用按 4 步走：① 基础配置（昵称/考研日期/目标分）② 勾选科目 ③ 制定今日计划 ④ 开始计时。4 步都完成后引导卡自动隐藏，之后靠自己探索。' },
-    { t: '🗺️ 计划', b: '点「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项。计划与「记录」页计时联动，完成会自动勾掉。' },
-    { t: '⏱ 记录 · 按模块计时', b: '每个科目一条独立计时器：点「开始」计时，「结束」停止并把时长记到今日。也可手动填分钟补记。' },
-    { t: '⏱ 记录 · 番茄钟', b: '默认 25 分钟学习 + 5 分钟休息循环，时长可改。开始时浏览器会请求通知权限，休息/结束会弹提醒。' },
-    { t: '⏱ 记录 · 倒计时', b: '设任意时长做限时训练，到点提醒。适合套卷限时、单项限时。' },
-    { t: '⏱ 记录 · 模考成绩', b: '录入每次模考各科分数，数据页会对比你的目标分，直观看到达成度与薄弱科目。' },
-    { t: '📋 总结', b: '写今日总结、生成打卡卡片分享到群里（带二维码，朋友扫码可一起打卡）。' },
-    { t: '📊 数据', b: '看板含：单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、每周周报。数据全来自你本地记录。' },
-    { t: '🧮 数学', b: '标记章节进度、整理数学错题、内置/自定义题刷题、查看题库。章节进度用「已完成章节数」而非简单序号。' },
-    { t: '💻 408', b: '数据结构/计组/操作系统/网络四科章节预填，标记进度；错题支持 Leitner 间隔复习；另有知识点速记与历年真题得分追踪。' },
-    { t: '📌 错题本', b: '跨科目整理错题（今日感悟/问题/盲区/易错点等），标记回顾后按间隔复习自动排期，到期提醒。' },
-    { t: '🎴 背单词', b: '输入单词点「记录」，自动查词并显示释义，存入生词本。' },
-    { t: '🔁 生词复习', b: '按记忆曲线（Leitner）每天推送待复习生词，4 选 1 测验，不认识自动回炉。' },
-    { t: '📚 高频词', b: '内置本地词库（阅读高频，离线可用），可搜索、筛选，勾选后一键加入生词本。' },
-    { t: '🧩 长难句', b: '粘贴真题/外刊长难句，自动拆解结构、标注考点词、归纳高频同义替换。' },
-    { t: '📝 生词记录', b: '管理你的生词本：编辑释义、标记掌握、移入复习或删除。' },
-    { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
-    { t: '⚙️ 配置', b: '填基础信息、勾选科目组合；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
-    { t: '☁️ 云端同步', b: '用 8 位「登录码」把数据存到 Cloudflare KV：相同登录码可在任意设备拉取同一套数据。支持上传/下载/删除；「邀请好友」分享登录码；「实时查看云端」只读看对方数据；开「自动同步」可双向实时同步。从云端下载会覆盖本机，下载前弹窗二次确认。' },
-    { t: '🌐 翻译', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到错词本。没填时翻译按钮不可用，其他功能不受影响。' },
-    { t: '📖 说明书', b: '就是本页——所有功能说明集中处。新手引导会带你看一遍，之后随时回来查。' }
+  /* ============ 说明书模块（UI 散落说明集中处，分组卡片式） ============ */
+  var MANUAL_GROUPS = [
+    { cat: '🚀 快速上手', items: [
+      { t: '第一次使用', b: '点上方「🚀 重看新手完整引导」：引导会带你先配置考试科目、翻译 API 与 AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
+      { t: '每天的核心 4 步', b: '① 打开「今日」看总览 → ② 在「计划」安排任务 → ③ 在「记录」按模块计时 → ④ 睡前在「总结」打卡、在「数据」看趋势。' }
+    ]},
+    { cat: '📅 核心流程', items: [
+      { t: '📅 今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
+      { t: '🗺️ 计划', b: '「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项；计划与「记录」页计时联动，完成会自动勾掉。' },
+      { t: '⏱ 记录 · 计时 / 番茄钟 / 倒计时', b: '每科一条独立计时器，开始/结束把时长记到今日；番茄钟默认 25+5 分钟可调，休息/结束弹提醒；倒计时适合套卷限时训练。' },
+      { t: '📋 总结 · 打卡分享', b: '写今日总结、生成打卡卡片分享到群（带二维码，朋友扫码可一起打卡）。' },
+      { t: '📊 数据 · 看板', b: '含：近 30 天得分、单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、薄弱点分析报告。全部来自你的本地记录。' }
+    ]},
+    { cat: '📚 专项科目', items: [
+      { t: '🧮 数学', b: '顶部下拉选择卷种（数一/数二/数三，切换按新大纲重置章节）；章节按「高数/线代/概率」分组折叠。可整理错题（Leitner 间隔复习 + 速查卡自测）、分类刷题与自定义题库。' },
+      { t: '💻 408', b: '数据结构/计组/操作系统/网络四书章节分组折叠，标记进度；错题支持 Leitner 间隔复习；另有知识点速记卡与历年真题得分追踪。' },
+      { t: '📌 错题本', b: '跨科目整理错题（今日感悟/问题/盲区/易错点等），标记回顾后按间隔复习自动排期，到期提醒。' }
+    ]},
+    { cat: '🗣️ 英语 · 词汇', items: [
+      { t: '🎴 背单词', b: '「英选译」四选一测验，不认识自动归入复习队列；右上齿轮可自定义每次题量、出题范围与模式。' },
+      { t: '🔁 生词复习', b: '按记忆曲线（Leitner）每天推送待复习生词，「认识/不认识」决定下次间隔，不认识自动回炉。' },
+      { t: '📚 高频词', b: '内置本地词库（阅读高频，离线可用），可搜索、筛选，勾选后一键加入生词本。' },
+      { t: '🧩 长难句', b: '粘贴真题/外刊长难句，自动拆解结构、标注考点词、归纳同义替换；配置 AI 后可一键深度分析（成分拆解/全文翻译/出题意图）。' },
+      { t: '📝 生词记录', b: '管理你的生词本：编辑释义、标记掌握、移入复习或删除；支持批量导入与翻译自动归档。' }
+    ]},
+    { cat: '🧰 工具 · 资源', items: [
+      { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
+      { t: '⚙️ 配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
+      { t: '☁️ 云端同步', b: '用 8 位「登录码」把数据存到云端：相同登录码可在任意设备拉取同一套数据。支持上传/下载/删除；「邀请好友」分享登录码；「实时查看云端」只读看对方数据；开「自动同步」可双向实时同步。从云端下载会覆盖本机，下载前二次确认。' },
+      { t: '🌐 翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到错词本。' },
+      { t: '🤖 AI 助手', b: '在「配置」填你自己的大模型 API Key（OpenAI 兼容接口），即可启用长难句深度分析、错题智能归纳等能力。密钥仅存本机、经云端函数中转，不暴露到前端。' }
+    ]}
   ];
   function renderHelpManual() {
     var box = document.getElementById('manual-list');
     if (!box || box.dataset.done) return;
     var html = '';
-    MANUAL.forEach(function (m) {
-      html += '<div class="manual-item"><div class="manual-item-title">' + m.t + '</div>' +
-              '<div class="manual-item-body">' + m.b + '</div></div>';
+    MANUAL_GROUPS.forEach(function (g) {
+      html += '<div class="manual-group"><div class="manual-group-title">' + g.cat + '</div><div class="manual-grid">';
+      g.items.forEach(function (m) {
+        html += '<div class="manual-item"><div class="manual-item-title">' + m.t + '</div>' +
+                '<div class="manual-item-body">' + m.b + '</div></div>';
+      });
+      html += '</div></div>';
     });
     box.innerHTML = html;
     box.dataset.done = '1';
@@ -2797,19 +3035,21 @@
 
   /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
   var TOUR_STEPS = [
+    { icon: '👋', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
+    { icon: '🔑', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
+    { icon: '🤖', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
     { icon: '📅', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
     { icon: '🚀', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
     { icon: '🗺️', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
     { icon: '⏱', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
     { icon: '📋', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
     { icon: '📊', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
-    { icon: '🧮', title: '数学模块', tab: 'math', text: '章节进度、错题整理、刷题、题库，系统化学数学。' },
+    { icon: '🧮', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
     { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
     { icon: '📌', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
-    { icon: '🎴', title: '背单词 / 复习', tab: 'practice', text: '查词记生词，按记忆曲线每天推送待复习词，4 选 1 测验。' },
-    { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换。' },
+    { icon: '🎴', title: '背单词 / 复习', tab: 'practice', text: '查词记生词，按记忆曲线每天推送待复习词，4 选 1 测验（⚙️ 可自定义题量/范围/模式）。' },
+    { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
     { icon: '☁️', title: '云端同步', tab: 'config', text: '用登录码在设备间同步数据；可邀请好友、实时查看、开自动同步。' },
-    { icon: '🌐', title: '翻译', tab: 'config', text: '在配置填自己的百度翻译密钥，即时翻译查过的词自动归档错词本。' },
     { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
   ];
   var tourIdx = 0, tourEl = null;
@@ -2839,9 +3079,21 @@
     });
     document.getElementById('tour-skip').addEventListener('click', function () { closeTour(true); });
     document.getElementById('tour-goto').addEventListener('click', function () {
-      var step = TOUR_STEPS[tourIdx]; closeTour(false); switchTab(step.tab);
+      var step = TOUR_STEPS[tourIdx];
+      closeTour(false); switchTab(step.tab);
+      if (step.target) highlightTourTarget(step.target);
     });
     renderTourStep();
+  }
+  // 指向性指示：切换后高亮目标卡片/按钮，并带 👉 箭头说明
+  function highlightTourTarget(selector) {
+    var t = document.querySelector(selector);
+    if (!t) { showToast('该页面暂未找到对应设置项'); return; }
+    t.classList.add('tour-target');
+    if (typeof t.scrollIntoView === 'function') {
+      try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { try { t.scrollIntoView(); } catch (e2) {} }
+    }
+    setTimeout(function () { t.classList.remove('tour-target'); }, 5000);
   }
   function renderTourStep() {
     if (!tourEl) return;
@@ -2852,6 +3104,11 @@
     document.getElementById('tour-dot').textContent = (tourIdx + 1) + ' / ' + TOUR_STEPS.length;
     document.getElementById('tour-prev').disabled = (tourIdx === 0);
     document.getElementById('tour-next').textContent = (tourIdx === TOUR_STEPS.length - 1) ? '完成' : '下一步';
+    var goto = document.getElementById('tour-goto');
+    if (goto) {
+      goto.style.display = s.target ? '' : 'none';
+      if (s.target) goto.textContent = '👉 前往配置 ›';
+    }
   }
   function closeTour(markDone) {
     if (markDone) { try { localStorage.setItem('kaoyan_tour_done', '1'); } catch (e) {} }
@@ -3308,6 +3565,7 @@
     renderSummary();
     renderHfWords();
     renderTranslatorConfig();
+    renderAiConfig();
     renderSyncConfig();
     renderWrongBook();
     renderMastery();
@@ -3339,7 +3597,7 @@
         if (target === 'review' && !reviewQueue) startReview();
         if (target === 'summary') renderSummary();
         if (target === 'hfwords') renderHfWords();
-        if (target === 'config') renderTranslatorConfig();
+        if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
         if (target === 'words') renderWrongBook();
         if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
         if (target === 'math') { renderMathChapters(); renderMathMistakes(); startMathFlash(); renderMathQuestionList(); renderMathPractice(); }
@@ -3456,6 +3714,14 @@
     refs.vocabList = $('vocab-list');
     refs.practiceBox = $('practice-box');
     refs.btnPracticeRestart = $('btn-practice-restart');
+    refs.btnPracticeSettings = $('btn-practice-settings');
+    refs.practiceSettings = $('practice-settings');
+    refs.psCount = $('ps-count');
+    refs.psScope = $('ps-scope');
+    refs.psMode = $('ps-mode');
+    refs.psAutoSave = $('ps-autosave');
+    refs.btnPsSave = $('btn-ps-save');
+    refs.btnPsClose = $('btn-ps-close');
     refs.reviewHint = $('review-hint');
     refs.reviewBox = $('review-box');
     refs.btnReviewRestart = $('btn-review-restart');
@@ -3615,6 +3881,13 @@
     refs.btnSaveTranslator = $('btn-save-translator');
     refs.btnTestTranslator = $('btn-test-translator');
     refs.transStatus = $('trans-status');
+    // AI 配置（OpenAI 兼容，key 经 /api/ai 中转）
+    refs.aiBaseUrl = $('ai-baseurl');
+    refs.aiModel = $('ai-model');
+    refs.aiKey = $('ai-key');
+    refs.btnSaveAi = $('btn-save-ai');
+    refs.btnTestAi = $('btn-test-ai');
+    refs.aiStatus = $('ai-status');
     // 即时翻译 / 错词本
     refs.transInput = $('trans-input');
     refs.btnTranslate = $('btn-translate');
@@ -3727,6 +4000,8 @@
     // 翻译密钥
     refs.btnSaveTranslator.addEventListener('click', onSaveTranslator);
     refs.btnTestTranslator.addEventListener('click', onTestTranslator);
+    refs.btnSaveAi.addEventListener('click', onSaveAi);
+    refs.btnTestAi.addEventListener('click', onTestAi);
     // 即时翻译 / 错词本
     refs.btnTranslate.addEventListener('click', onTranslate);
     refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
@@ -3743,6 +4018,30 @@
     // 词汇：背单词 / 复习
     refs.btnPracticeRestart.addEventListener('click', startPractice);
     refs.btnReviewRestart.addEventListener('click', startReview);
+    // 背单词设置面板
+    function openPracticeSettings() {
+      var ps = Store.getPracticeSettings();
+      refs.psCount.value = ps.count;
+      refs.psScope.value = ps.scope;
+      refs.psMode.value = ps.mode;
+      refs.psAutoSave.checked = ps.autoSave;
+      refs.practiceSettings.hidden = false;
+    }
+    function closePracticeSettings() { refs.practiceSettings.hidden = true; }
+    function savePracticeSettings() {
+      var next = Store.setPracticeSettings({
+        count: Number(refs.psCount.value) || 12,
+        scope: refs.psScope.value,
+        mode: refs.psMode.value,
+        autoSave: refs.psAutoSave.checked
+      });
+      closePracticeSettings();
+      if (typeof showToast === 'function') showToast('已保存练习设置：每批 ' + next.count + ' 词');
+      startPractice();
+    }
+    refs.btnPracticeSettings.addEventListener('click', openPracticeSettings);
+    refs.btnPsSave.addEventListener('click', savePracticeSettings);
+    refs.btnPsClose.addEventListener('click', closePracticeSettings);
     // 移动端抽屉
     refs.navToggle.addEventListener('click', function () { document.body.classList.toggle('nav-open'); });
     refs.navBackdrop.addEventListener('click', function () { document.body.classList.remove('nav-open'); });

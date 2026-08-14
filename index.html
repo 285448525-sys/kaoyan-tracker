@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814n" />
+  <link rel="stylesheet" href="styles.css?v=20260814o" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -196,6 +196,28 @@
           <button id="btn-save-translator" class="btn btn-primary">保存密钥</button>
           <button id="btn-test-translator" class="btn btn-ghost">测试连接</button>
           <span id="trans-status" class="import-status"></span>
+        </div>
+      </div>
+
+      <div class="card ai-card">
+        <h2 class="card-title">🤖 AI 能力（错题讲解 / 长难句深度分析）</h2>
+        <p class="hint">填写 OpenAI 兼容接口的地址、模型与 Key，即可在错题本、长难句模块使用 AI 讲解。你的 Key 经本站服务器中转、不暴露在浏览器中，推荐使用 DeepSeek（deepseek-chat）等国内 API。</p>
+        <div class="field-row">
+          <label>接口地址</label>
+          <input type="text" id="ai-baseurl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
+        </div>
+        <div class="field-row">
+          <label>模型名称</label>
+          <input type="text" id="ai-model" placeholder="deepseek-chat" autocomplete="off" />
+        </div>
+        <div class="field-row">
+          <label>API Key</label>
+          <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
+        </div>
+        <div class="btn-row">
+          <button id="btn-save-ai" class="btn btn-primary">保存配置</button>
+          <button id="btn-test-ai" class="btn btn-ghost">测试连接</button>
+          <span id="ai-status" class="import-status"></span>
         </div>
       </div>
     </section>
@@ -532,7 +554,43 @@
 
     <section id="tab-practice" class="tab-panel">
       <div class="card">
-        <h2 class="card-title">🎴 背单词（英选译 · 阅读词汇）</h2>
+        <div class="card-head">
+          <h2 class="card-title">🎴 背单词（阅读词汇）</h2>
+          <button id="btn-practice-settings" class="icon-btn" title="练习设置" aria-label="练习设置">⚙️</button>
+        </div>
+        <div id="practice-settings" class="practice-settings" hidden>
+          <div class="field-row">
+            <label>每批题量</label>
+            <input type="number" id="ps-count" min="4" max="50" step="1" value="12">
+            <span class="hint" style="margin:0">每次抽取的词数（4-50）</span>
+          </div>
+          <div class="field-row">
+            <label>出题范围</label>
+            <select id="ps-scope" class="mv-select">
+              <option value="all">全部词库</option>
+              <option value="vocab">仅生词本</option>
+              <option value="wrong">仅错词本</option>
+            </select>
+            <span class="hint" style="margin:0">从哪个词池抽题</span>
+          </div>
+          <div class="field-row">
+            <label>答题模式</label>
+            <select id="ps-mode" class="mv-select">
+              <option value="en2cn">英选译 · 看英文选中文</option>
+              <option value="cn2en">中选英 · 看中文选英文</option>
+            </select>
+            <span class="hint" style="margin:0">中选英更适合考前自测</span>
+          </div>
+          <div class="field-row">
+            <label>不认识自动</label>
+            <label class="switch"><input type="checkbox" id="ps-autosave" checked><span class="slider"></span></label>
+            <span class="hint" style="margin:0">点「不认识」时自动加入生词本</span>
+          </div>
+          <div class="btn-row" style="margin-top:4px">
+            <button id="btn-ps-save" class="btn btn-primary">保存设置</button>
+            <button id="btn-ps-close" class="btn btn-ghost">收起</button>
+          </div>
+        </div>
         <div id="practice-box" class="practice-box"></div>
         <div class="btn-row" style="margin-top:14px">
           <button id="btn-practice-restart" class="btn btn-ghost">换一批</button>
@@ -789,8 +847,8 @@
     <!-- 说明书：各功能使用说明集中处，UI 上的散落说明已迁移至此 -->
     <section id="tab-manual" class="tab-panel">
       <div class="card">
-        <h2 class="card-title">📖 考研学习记录 · 说明书</h2>
-        <p class="card-sub">这里集中讲解每个功能怎么用。新手引导会带你完整过一遍，之后随时回来查。</p>
+        <h2 class="card-title">📖 考研学习记录 · 使用说明</h2>
+        <p class="card-sub">按「快速上手 / 核心流程 / 专项科目 / 英语词汇 / 工具资源」五部分组织。新手引导会带你完整过一遍，之后随时回来查。</p>
         <div class="manual-actions">
           <button id="btn-restart-tour" class="btn btn-primary">🚀 重看新手完整引导</button>
         </div>
@@ -817,13 +875,13 @@
     </div>
   </div>
 
-  <script src="qrcode.min.js?v=20260814n"></script>
-  <script src="words.js?v=20260814n"></script>
-  <script src="store.js?v=20260814n"></script>
-  <script src="charts.js?v=20260814n"></script>
-  <script src="share.js?v=20260814n"></script>
-  <script src="md5.js?v=20260814n"></script>
-  <script src="sentences.js?v=20260814n"></script>
-  <script src="app.js?v=20260814n"></script>
+  <script src="qrcode.min.js?v=20260814o"></script>
+  <script src="words.js?v=20260814o"></script>
+  <script src="store.js?v=20260814o"></script>
+  <script src="charts.js?v=20260814o"></script>
+  <script src="share.js?v=20260814o"></script>
+  <script src="md5.js?v=20260814o"></script>
+  <script src="sentences.js?v=20260814o"></script>
+  <script src="app.js?v=20260814o"></script>
 </body>
 </html>

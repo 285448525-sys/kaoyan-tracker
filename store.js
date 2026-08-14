@@ -99,6 +99,7 @@
       },
       mathVolume: '', // 当前数学卷种：'数学一'|'数学二'|'数学三'，空时按默认（数学一）处理
       cs408BooksCollapsed: {}, // { 书名: true } 408 各书折叠态（true=折叠）
+      mathBooksCollapsed: {}, // { 分组名: true } 数学各分组（高数/线代/概率）折叠态（true=折叠）
       days: {},   // 'YYYY-MM-DD' -> {durations:{key:min}, completed:'', summary:'', note:''}
       exams: [],  // {id,name,date,scores:{key:score},total}
       plans: {},  // 'YYYY-MM-DD' -> [{id,text,minutes,done}]
@@ -106,6 +107,8 @@
       websites: [], // {id,name,url,cat}
       vocab: [],    // {id,word,cn,box,next,added,wrong,last}
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
+      aiConfig: { baseUrl: '', model: '', key: '' }, // AI 中转配置（OpenAI 兼容：接口地址/模型/Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
+      practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
       wrongWords: [], // 错词本（独立）{id,word,cn,created,src}
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
       milestones: [], // 已达成里程碑 id 列表（用于庆祝动画去重，避免重复触发）
@@ -162,6 +165,10 @@
         websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
         vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
         translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
+        aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
+        practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
+          ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
+          : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
         wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
         checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
         milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
@@ -186,6 +193,7 @@
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
+        mathBooksCollapsed: (p.mathBooksCollapsed && typeof p.mathBooksCollapsed === 'object') ? p.mathBooksCollapsed : {},
         _seq: p._seq || d._seq
       };
     } catch (e) {
@@ -360,6 +368,8 @@
   // 408 各书折叠态（持久化到 localStorage）
   function getCs408BooksCollapsed() { return (state.cs408BooksCollapsed && typeof state.cs408BooksCollapsed === 'object') ? state.cs408BooksCollapsed : {}; }
   function setCs408BooksCollapsed(obj) { state.cs408BooksCollapsed = (obj && typeof obj === 'object') ? obj : {}; save(); }
+  function getMathBooksCollapsed() { return (state.mathBooksCollapsed && typeof state.mathBooksCollapsed === 'object') ? state.mathBooksCollapsed : {}; }
+  function setMathBooksCollapsed(obj) { state.mathBooksCollapsed = (obj && typeof obj === 'object') ? obj : {}; save(); }
 
   // 单日得分权重（默认复刻原公式：时长50 + 计划20 + 生词15 + 错题15）
   function getScoreWeights() {
@@ -501,6 +511,24 @@
     save();
   }
 
+  /* ---------- AI 配置（OpenAI 兼容：接口地址/模型/Key；仅存本机浏览器，key 经 /api/ai 中转不暴露） ---------- */
+  function getAiConfig() {
+    return {
+      baseUrl: (state.aiConfig && state.aiConfig.baseUrl) || '',
+      model: (state.aiConfig && state.aiConfig.model) || '',
+      key: (state.aiConfig && state.aiConfig.key) || ''
+    };
+  }
+  function setAiConfig(cfg) {
+    cfg = cfg || {};
+    state.aiConfig = {
+      baseUrl: (typeof cfg.baseUrl === 'string') ? cfg.baseUrl.trim() : '',
+      model: (typeof cfg.model === 'string') ? cfg.model.trim() : '',
+      key: (typeof cfg.key === 'string') ? cfg.key.trim() : ''
+    };
+    save();
+  }
+
   /* ---------- 错词本（独立，与 vocab 分开） ---------- */
   function getWrongWords() {
     return (state.wrongWords || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); });
@@ -520,6 +548,24 @@
   }
   function removeWrongWord(id) { state.wrongWords = (state.wrongWords || []).filter(function (x) { return x.id !== id; }); save(); }
   function clearWrongWords() { state.wrongWords = []; save(); }
+
+  /* ---------- 背单词设置 ---------- */
+  function getPracticeSettings() {
+    return Object.assign({ count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, state.practiceSettings || {});
+  }
+  function setPracticeSettings(p) {
+    p = p || {};
+    var cur = getPracticeSettings();
+    var next = {
+      count: Math.min(Math.max(Number(p.count) || cur.count, 4), 50),
+      scope: (p.scope === 'all' || p.scope === 'vocab' || p.scope === 'wrong') ? p.scope : cur.scope,
+      mode: (p.mode === 'en2cn' || p.mode === 'cn2en') ? p.mode : cur.mode,
+      autoSave: (typeof p.autoSave === 'boolean') ? p.autoSave : cur.autoSave
+    };
+    state.practiceSettings = next;
+    save();
+    return next;
+  }
 
 
   /* ---------- 计时器 ---------- */
@@ -581,6 +627,10 @@
       websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
       vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
       translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
+      aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
+      practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
+        ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
+        : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
       wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
       checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
       milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
@@ -605,6 +655,7 @@
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
+        mathBooksCollapsed: (p.mathBooksCollapsed && typeof p.mathBooksCollapsed === 'object') ? p.mathBooksCollapsed : {},
         _seq: p._seq || d._seq
       };
       save();
@@ -757,6 +808,7 @@
     getMathChapters: getMathChapters, setMathChapters: setMathChapters, getMathCurrent: getMathCurrent, setMathCurrent: setMathCurrent, getMathDone: getMathDone, setMathDone: setMathDone, toggleMathDone: toggleMathDone,
     getMathVolume: getMathVolume, setMathVolume: setMathVolume, getMathVolumeTemplates: getMathVolumeTemplates,
     getCs408BooksCollapsed: getCs408BooksCollapsed, setCs408BooksCollapsed: setCs408BooksCollapsed,
+    getMathBooksCollapsed: getMathBooksCollapsed, setMathBooksCollapsed: setMathBooksCollapsed,
     getScoreWeights: getScoreWeights, setScoreWeights: setScoreWeights,
     getPlanItems: getPlanItems, addPlanItem: addPlanItem, updatePlanItem: updatePlanItem, removePlanItem: removePlanItem, togglePlanItem: togglePlanItem,
     getMathMistakes: getMathMistakes, addMathMistake: addMathMistake, updateMathMistake: updateMathMistake, removeMathMistake: removeMathMistake,
@@ -773,7 +825,9 @@
     exportJSON: exportJSON, importJSON: importJSON,
     getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab,
     getTranslator: getTranslator, setTranslator: setTranslator,
+    getAiConfig: getAiConfig, setAiConfig: setAiConfig,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
+    getPracticeSettings: getPracticeSettings, setPracticeSettings: setPracticeSettings,
     getTimer: getTimer, setTimer: setTimer,
     consecutiveStreak: consecutiveStreak, isCheckedIn: isCheckedIn, getCheckins: getCheckins, checkin: checkin,
     getMilestones: getMilestones, addMilestone: addMilestone,

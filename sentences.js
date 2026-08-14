@@ -3,6 +3,7 @@
  *   clauses:   [{text, type:'main'|'sub'|'coord', intro: 连接词|null}],
  *   testWords: [{word, c}],            // 句中出现的本地词库「考点词」及释义
  *   synonyms:  [{group, hits, note}],  // 命中「高频同义替换考点组」的归纳
+ *   stats:     { wordCount, clauseCount, difficulty, connectors, signals, features, pronouns },
  *   method:    string                  // 分析方法讲解
  * }
  */
@@ -24,6 +25,17 @@
     { w: 'yet', t: 'coord' }, { w: 'for', t: 'coord' }, { w: 'so', t: 'coord' },
     { w: 'nor', t: 'coord' }
   ];
+
+  // 逻辑信号词：阅读出题点常紧跟在这些词附近（同义替换 / 转折 / 因果）
+  var SIGNAL_GROUPS = [
+    { name: '转折对比', words: ['although', 'though', 'but', 'however', 'yet', 'nevertheless', 'while', 'whereas', 'in contrast', 'on the other hand', 'instead', 'rather'] },
+    { name: '因果', words: ['because', 'since', 'as', 'for', 'therefore', 'thus', 'hence', 'so', 'consequently', 'as a result', 'due to', 'lead to', 'result in'] },
+    { name: '递进补充', words: ['moreover', 'furthermore', 'in addition', 'besides', 'also', 'what is more'] },
+    { name: '举例', words: ['for example', 'for instance', 'such as', 'like'] },
+    { name: '顺序', words: ['first', 'second', 'third', 'finally', 'then', 'next'] },
+    { name: '总结', words: ['in conclusion', 'in summary', 'overall', 'to sum up'] }
+  ];
+  var PRONOUNS = ['it', 'its', 'this', 'that', 'these', 'those', 'they', 'them', 'their', 'he', 'she', 'his', 'her', 'we', 'our', 'you', 'your'];
 
   // 高频同义替换考点组：考研阅读中常互相替换表达，看到组里一个词要联想到整组
   var SYNONYM_GROUPS = [
@@ -76,7 +88,7 @@
 
   function analyze(text) {
     text = (text || '').replace(/\s+/g, ' ').trim();
-    var result = { clauses: [], testWords: [], synonyms: [], method: '' };
+    var result = { clauses: [], testWords: [], synonyms: [], stats: null, method: '' };
     if (!text) return result;
 
     var DICT_MAP = (global.DICTIONARY || []).reduce(function (m, d) { m[d.w.toLowerCase()] = d; return m; }, {});
@@ -143,7 +155,49 @@
       }
     });
 
-    // 3) 分析方法讲解
+    // 4) 句子统计：难度 / 连接词清单 / 逻辑信号 / 句式特征 / 代词
+    var stats = { wordCount: 0, clauseCount: result.clauses.length, difficulty: '', connectors: [], signals: [], features: [], pronouns: [] };
+    var rawTokens = text.split(/\s+/).filter(Boolean);
+    stats.wordCount = rawTokens.length;
+    // 连接词清单（去重）
+    var connSeen = {};
+    (result.clauses || []).forEach(function (cl) { if (cl.intro && !connSeen[cl.intro]) { connSeen[cl.intro] = true; stats.connectors.push(cl.intro); } });
+    // 逻辑信号词（去重，按组归纳）
+    var lowText = ' ' + text.toLowerCase().replace(/[^a-z\s]/g, ' ') + ' ';
+    SIGNAL_GROUPS.forEach(function (g) {
+      var hits = [];
+      g.words.forEach(function (w) {
+        var re = new RegExp('\\b' + escapeRegExp(w) + '\\b', 'i');
+        if (re.test(lowText) && hits.indexOf(w) < 0) hits.push(w);
+      });
+      if (hits.length) stats.signals.push({ name: g.name, hits: hits });
+    });
+    // 句式特征
+    var feats = [];
+    if (/,\s*[^,.;]+,\s+/.test(text)) feats.push('含插入语（双逗号间成分可先跳过）');
+    if (/^\s*(never|seldom|rarely|hardly|scarcely|not only|not until|no sooner|only)\b/i.test(text)) feats.push('倒装结构（句首否定/限定词）');
+    if (/it\s+is\s+[^.,;]{1,40}?\bthat\b/i.test(text)) feats.push('强调句 It is … that（强调对象是考点）');
+    if (/\b(is|are|was|were|been|being)\s+\w{3,}ed\b/i.test(text)) feats.push('含被动语态（注意动作承受者）');
+    if (/\b(if|wish|would rather)\b/i.test(text) && /\b(would|could|had|were)\b/i.test(text)) feats.push('疑似虚拟语气（表假设/非现实）');
+    if (/\b(not only|both|either|neither|whether)\b/i.test(text)) feats.push('含并列结构（not only…but also / both…and 类）');
+    if (/,\s*(such as|including|especially|particularly)\b/i.test(text)) feats.push('含举例/特指插入（such as / including）');
+    if (/\b(i|we|you)\b/i.test(text)) feats.push('含第一/二人称（作者观点或读者引导）');
+    stats.features = feats.slice(0, 4);
+    // 代词
+    var proSeen = {};
+    rawTokens.forEach(function (tok) {
+      var s = cleanToken(tok);
+      if (s && PRONOUNS.indexOf(s) >= 0 && !proSeen[s]) { proSeen[s] = true; stats.pronouns.push(s); }
+    });
+    // 难度评估
+    var score = 0;
+    if (stats.wordCount > 30) score += 2; else if (stats.wordCount > 18) score += 1;
+    if (result.clauses.length >= 3) score += 2; else if (result.clauses.length === 2) score += 1;
+    if (stats.features.length >= 2) score += 1;
+    stats.difficulty = score >= 4 ? '困难' : (score >= 2 ? '中等' : '简单');
+    result.stats = stats;
+
+    // 5) 分析方法讲解
     result.method =
       '长难句拆解四步法：\n' +
       '① 找主干：先抓「主句」(不被从属连词引出的部分) 的主谓宾，忽略修饰，把握句子核心意思。\n' +
@@ -154,5 +208,5 @@
     return result;
   }
 
-  global.SentenceAnalyzer = { analyze: analyze, CONNECTORS: CONNECTORS, SYNONYM_GROUPS: SYNONYM_GROUPS };
+  global.SentenceAnalyzer = { analyze: analyze, CONNECTORS: CONNECTORS, SYNONYM_GROUPS: SYNONYM_GROUPS, SIGNAL_GROUPS: SIGNAL_GROUPS };
 })(typeof window !== 'undefined' ? window : this);

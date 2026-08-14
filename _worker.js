@@ -1,10 +1,11 @@
 /* =========================================================================
- * 考研学习 Hub —— Cloudflare Pages Worker（云同步后端）
+ * 考研学习 Hub —— Cloudflare Pages Worker（云同步后端 + AI 中转）
  *
  * 路由：
  *   GET    /api/sync      → 读取登录码对应的云端备份
  *   PUT    /api/sync      → 写入该登录码的云端备份
  *   DELETE /api/sync      → 删除该登录码的云端备份
+ *   POST   /api/ai        → AI 中转（OpenAI 兼容接口，key 由前端放 X-AI-Key 头）
  *   OPTIONS *             → 预检
  *   其他                  → Pages 静态资源（由 Pages 处理，这里兜底 404）
  *
@@ -16,6 +17,11 @@
  *             前端生成并保管，放在请求头 X-Sync-Key: <用户登录码>
  *             KV 里实际存储键 = "kyds:" + Sanitize(登录码)
  *             用户用同一登录码跨设备访问时，能取到同一个数据快照。
+ *
+ * AI 中转说明：
+ *   POST /api/ai：body = { baseUrl, model, messages, max_tokens?, temperature? }
+ *   用户 key 放在请求头 X-AI-Key，服务端转发给 OpenAI 兼容的 /chat/completions，
+ *   key 不落盘、不出现在浏览器网络面板（浏览器只会看到对本站的请求）。
  *
  * 绑定：
  *   KV 命名空间默认 HUB_SYNC（在 wrangler.toml 里绑定 binding=HUB_SYNC）
@@ -45,8 +51,8 @@ function baseCorsHeaders(env, reqOrigin) {
   return {
     'Access-Control-Allow-Origin': pickCorsOrigin(env, reqOrigin),
     'Vary': 'Origin',
-    'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Token, X-Sync-Key, X-Sync-Device',
+    'Access-Control-Allow-Methods': 'GET, PUT, DELETE, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Token, X-Sync-Key, X-Sync-Device, X-AI-Key',
     'Access-Control-Expose-Headers': 'X-Sync-Version'
   };
 }
@@ -174,6 +180,52 @@ async function handleSyncDelete(env, req) {
   return jsonResponse(200, { ok: true });
 }
 
+/* ---------- POST /api/ai：AI 中转（OpenAI 兼容，key 从 X-AI-Key 头读取） ---------- */
+const AI_MAX_TOKENS = 4096;
+async function handleAiProxy(env, req) {
+  const key = (req.headers.get('X-AI-Key') || '').trim();
+  if (!key) return jsonResponse(400, { error: '缺少 X-AI-Key 请求头（AI Key 未配置）' });
+
+  const len = Number(req.headers.get('Content-Length') || 0);
+  if (len > MAX_BODY_BYTES) return jsonResponse(413, { error: '请求体过大（限 2MB）' });
+
+  let r;
+  try {
+    const ab = await req.arrayBuffer();
+    if (ab.byteLength > MAX_BODY_BYTES) return jsonResponse(413, { error: '请求体过大（限 2MB）' });
+    r = JSON.parse(new TextDecoder('utf-8').decode(ab) || '{}');
+  } catch (_) {
+    return jsonResponse(400, { error: '请求体 JSON 解析失败' });
+  }
+
+  const baseUrl = String(r.baseUrl || '').trim().replace(/\/+$/, '');
+  const model = String(r.model || '').trim();
+  const messages = Array.isArray(r.messages) ? r.messages : null;
+  if (!/^https?:\/\//i.test(baseUrl)) return jsonResponse(400, { error: 'baseUrl 必须是 http(s) 地址' });
+  if (!model) return jsonResponse(400, { error: '缺少 model' });
+  if (!messages || !messages.length) return jsonResponse(400, { error: '缺少 messages' });
+
+  const body = { model: model, messages: messages };
+  if (r.max_tokens) body.max_tokens = Math.max(1, Math.min(Number(r.max_tokens) || 1024, AI_MAX_TOKENS));
+  if (typeof r.temperature === 'number') body.temperature = r.temperature;
+
+  try {
+    const upstream = await fetch(baseUrl + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify(body)
+    });
+    const text = await upstream.text();
+    const ctype = upstream.headers.get('Content-Type') || 'application/json';
+    return new Response(text, { status: upstream.status, headers: { 'Content-Type': ctype } });
+  } catch (e) {
+    return jsonResponse(502, { error: '上游请求失败：' + (e && e.message || String(e)) });
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const reqOrigin = request.headers.get('origin') || '';
@@ -199,6 +251,15 @@ export default {
       return resp;
     }
 
+    // AI 中转
+    if (path === '/api/ai' && request.method === 'POST') {
+      const resp = await handleAiProxy(env, request);
+      for (const [k, v] of Object.entries(cors)) {
+        if (!resp.headers.has(k)) resp.headers.set(k, v);
+      }
+      return resp;
+    }
+
     // 静态路径由 Pages 处理；这里兜底一个健康检查
     if (path === '/api/health') {
       return jsonResponse(200, { ok: true, service: 'kaoyan-study-hub', time: new Date().toISOString() }, cors);
@@ -208,6 +269,6 @@ export default {
       return env.ASSETS.fetch(request);
     }
     // 兜底：没有 ASSETS 绑定时返回 404 JSON
-    return jsonResponse(404, { error: 'Not Found. Endpoints: GET/PUT/DELETE /api/sync, GET /api/health' }, cors);
+    return jsonResponse(404, { error: 'Not Found. Endpoints: GET/PUT/DELETE /api/sync, POST /api/ai, GET /api/health' }, cors);
   }
 };
