@@ -99,10 +99,14 @@
     }
   }
 
+  var saveHook = null;
   function save() {
-    try { global.localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+    try { global.localStorage.setItem(KEY, JSON.stringify(state)); }
     catch (e) { console.error('[Store] 保存失败', e); return false; }
+    if (saveHook) { try { saveHook(); } catch (e) {} }
+    return true;
   }
+  function setOnSave(fn) { saveHook = fn; }
 
   function dateStr(d) {
     var y = d.getFullYear();
@@ -532,6 +536,7 @@
     consecutiveStreak: consecutiveStreak, isCheckedIn: isCheckedIn, getCheckins: getCheckins, checkin: checkin,
     exportJSON: exportJSON, importJSON: importJSON,
     save: save,
+    setOnSave: setOnSave,
     // 云同步
     snapshot: snapshot, restoreSnapshot: restoreSnapshot,
     generateSyncCode: generateSyncCode,

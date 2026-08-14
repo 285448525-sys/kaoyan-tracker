@@ -642,6 +642,17 @@ textarea { resize: vertical; }
 :root[data-theme="dark"] .wk-stat { background: #272a3d; }
 :root[data-theme="dark"] .wk-day:nth-child(odd) { background: #252838; }
 :root[data-theme="dark"] .watch-empty, :root[data-theme="dark"] .wk-day .subj { color: #9ca3af; }
+
+/* ---- 自动同步开关 ---- */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 999px; transition: .2s; }
+.switch .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.switch input:checked + .slider { background: var(--primary, #4f46e5); }
+.switch input:checked + .slider:before { transform: translateX(20px); }
+#auto-sync-status { margin-top: 6px; font-size: 13px; color: #6b7280; }
+#auto-sync-status.ok { color: #16a34a; }
+#auto-sync-status.error { color: #dc2626; }
 :root[data-theme="dark"] .mheat-cell.in.lv0 { background: #313548; }
 :root[data-theme="dark"] .toast { background: rgba(40,44,64,.96); }
 :root[data-theme="dark"] .fab-share { box-shadow: 0 8px 20px rgba(0,0,0,.5); }

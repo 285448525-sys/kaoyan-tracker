@@ -118,6 +118,14 @@
           <button id="btn-sync-delete" class="btn btn-danger">🗑 删除云端数据</button>
           <button id="btn-sync-watch" class="btn btn-ghost">👁 实时查看云端</button>
         </div>
+        <div class="field-row" style="margin-top:12px;align-items:center">
+          <label for="auto-sync-toggle" style="margin:0">🔄 自动同步（实时双向）</label>
+          <label class="switch" style="margin:0">
+            <input type="checkbox" id="auto-sync-toggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="auto-sync-status" class="import-status"></div>
         <div class="field-row">
           <label></label>
           <div id="sync-status" class="import-status"></div>

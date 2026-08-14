@@ -2060,6 +2060,103 @@
       syncSetStatus('❌ 删除失败：' + (err.message || err), 'error');
     });
   }
+
+  /* ---------------- 自动双向同步（实时） ---------------- */
+  var autoSyncEnabled = false;
+  var lastPushAt = 0;        // 上次成功推送到云端的时间戳
+  var lastLocalEditAt = 0;   // 上次本地有改动的时间戳（用于冲突检测）
+  var autoSyncTimer = null;
+  var autoPushTimer = null;
+  var isApplyingRemote = false; // 正在应用云端拉取时，抑制 save 钩子触发推送
+
+  function setAutoSyncStatus(msg, cls) {
+    var el = $('auto-sync-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'import-status' + (cls ? ' ' + cls : '');
+  }
+  function autoSyncTimeStr(d) {
+    var h = d.getHours(), m = d.getMinutes();
+    return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+  }
+  function loadAutoSyncPref() {
+    try { autoSyncEnabled = localStorage.getItem('kaoyan_tracker_v1:auto_sync') === '1'; } catch (e) { autoSyncEnabled = false; }
+    var p = '0';
+    try { p = localStorage.getItem('kaoyan_tracker_v1:auto_sync_push_at') || '0'; } catch (e) {}
+    lastPushAt = Number(p) || 0;
+    if (refs.autoSyncToggle) refs.autoSyncToggle.checked = autoSyncEnabled;
+    if (autoSyncEnabled) startAutoSyncPolling();
+    setAutoSyncStatus(autoSyncEnabled ? '自动同步已开启' : '', autoSyncEnabled ? 'ok' : '');
+  }
+  function scheduleAutoPush() {
+    if (!autoSyncEnabled || isApplyingRemote) return;
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code) return;
+    lastLocalEditAt = Date.now();
+    if (autoPushTimer) clearTimeout(autoPushTimer);
+    autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
+  }
+  function doAutoPush(code) {
+    if (!autoSyncEnabled || isApplyingRemote) return;
+    var payload = Store.snapshot();
+    syncApi('PUT', payload).then(function () {
+      lastPushAt = Date.now();
+      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+      setAutoSyncStatus('已自动同步 ' + autoSyncTimeStr(new Date()), 'ok');
+    }).catch(function (err) {
+      setAutoSyncStatus('自动同步失败：' + (err.message || err), 'error');
+    });
+  }
+  function startAutoSyncPolling() {
+    if (autoSyncTimer) clearInterval(autoSyncTimer);
+    autoSyncTimer = setInterval(function () {
+      if (!autoSyncEnabled) return;
+      doAutoPullCheck();
+    }, 15000);
+  }
+  function doAutoPullCheck() {
+    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+    if (!code || isApplyingRemote) return;
+    syncApi('GET').then(function (res) {
+      // 云端还没有数据 → 把本机作为基线推上去
+      if (!res || !res.data) {
+        if (autoSyncEnabled && lastPushAt === 0) doAutoPush(code);
+        return;
+      }
+      var cloudUpdated = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : 0;
+      // 云端比我们上次推送新 → 别人在其他设备改了 → 拉取
+      if (cloudUpdated > lastPushAt) {
+        var localDirty = lastLocalEditAt > lastPushAt;
+        isApplyingRemote = true;
+        var ok = Store.restoreSnapshot(res.data);
+        isApplyingRemote = false;
+        if (ok) {
+          lastPushAt = cloudUpdated;
+          try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+          if (typeof renderAll === 'function') renderAll();
+          setAutoSyncStatus((localDirty ? '⚠️ 云端有更新已同步（本机未上传改动可能已覆盖） ' : '已从云端更新 ') + autoSyncTimeStr(new Date()), localDirty ? 'error' : 'ok');
+        }
+      } else if (lastPushAt === 0) {
+        // 云端没比我们新，但我们还没推过 → 推一次确保基线
+        doAutoPush(code);
+      }
+    }).catch(function () {});
+  }
+  function onToggleAutoSync() {
+    autoSyncEnabled = !!(refs.autoSyncToggle && refs.autoSyncToggle.checked);
+    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', autoSyncEnabled ? '1' : '0'); } catch (e) {}
+    if (autoSyncEnabled) {
+      var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
+      if (!code) { syncSetStatus('请先输入登录码再开启自动同步', 'error'); refs.autoSyncToggle.checked = false; autoSyncEnabled = false; try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '0'); } catch (e) {} return; }
+      startAutoSyncPolling();
+      doAutoPullCheck(); // 先拉取云端基线（云端有数据则不覆盖），云端空则推本机基线
+      setAutoSyncStatus('自动同步已开启，正在同步…', 'ok');
+    } else {
+      if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+      setAutoSyncStatus('自动同步已关闭', '');
+    }
+  }
+
   function onGenSyncCode() {
     var c = Store.generateSyncCode();
     if (refs.syncCode) refs.syncCode.value = c;
@@ -2286,6 +2383,7 @@
     refs.btnSyncDelete = $('btn-sync-delete');
     refs.btnWatch = $('btn-sync-watch');
     refs.btnWatchClose = $('btn-watch-close');
+    refs.autoSyncToggle = $('auto-sync-toggle');
     refs.syncStatus = $('sync-status');
 
     refs.timerRows = $('timer-rows');
@@ -2531,6 +2629,9 @@
     if (refs.btnWatchClose) refs.btnWatchClose.addEventListener('click', closeWatch);
     var watchBackdrop = document.querySelector('#watch-modal .watch-backdrop');
     if (watchBackdrop) watchBackdrop.addEventListener('click', closeWatch);
+    if (refs.autoSyncToggle) refs.autoSyncToggle.addEventListener('change', onToggleAutoSync);
+    Store.setOnSave(scheduleAutoPush);
+    loadAutoSyncPref();
     if (refs.syncToken) refs.syncToken.addEventListener('change', function () { Store.setLastSyncToken(refs.syncToken.value || ''); });
     if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
 
