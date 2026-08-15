@@ -2521,7 +2521,7 @@
     var c = Store.getAiConfig();
     if (!c.baseUrl || !c.model || !c.key) {
       box.textContent = '';
-      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 AI 接口地址、模型与 Key'));
+      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 DeepSeek API Key'));
       return;
     }
     box.textContent = '';
@@ -2548,7 +2548,7 @@
     var c = Store.getAiConfig();
     if (!c.baseUrl || !c.model || !c.key) {
       box.textContent = '';
-      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 AI 接口地址、模型与 Key'));
+      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 DeepSeek API Key'));
       return;
     }
     var ds = Store.todayStr();
@@ -2577,11 +2577,11 @@
     var cfg = Store.getConfig();
     var daysLeft = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000) : null;
     var userMsg = '以下是我今天的学习数据：\n' + dayText + (daysLeft !== null ? ('\n距考研还有 ' + daysLeft + ' 天。') : '') +
-      '\n请帮我用简体中文写一段温暖、有鼓励性的「今日学习总结」，并指出 1-2 个明天可以改进或重点突破的方向。不要使用 markdown 代码块，用自然段落即可。';
+      '\n根据以上数据生成每日总结。要求：1) 精确列举今日完成的具体事项；2) 指出哪些是有效步骤及其价值；3) 附一两句肯定性评语。控制在一小段内（不超过150字），删除所有铺垫、解释性废话与重复表述。不要用markdown。';
     aiChat([
-      { role: 'system', content: '你是考研学习教练，擅长用简体中文给出有温度、具体、可执行的每日学习反馈。' },
+      { role: 'system', content: '你是考研学习助手。生成每日任务总结时保持内容精简、直击重点，避免冗长与无关信息。严格控制在150字以内。' },
       { role: 'user', content: userMsg }
-    ], { maxTokens: 800 }).then(function (res) {
+    ], { maxTokens: 300 }).then(function (res) {
       box.textContent = '';
       var pre = el('pre', 'ai-explain-text'); pre.textContent = (res.content || '').trim();
       box.appendChild(pre);
