@@ -2,44 +2,38 @@
  * 考研学习 Hub —— Cloudflare Pages Worker（云同步后端 + AI 中转）
  *
  * 路由：
- *   GET    /api/sync      → 读取登录码对应的云端备份
+ *   GET    /api/sync      → 读取登录码（手机号）对应的云端备份
  *   PUT    /api/sync      → 写入该登录码的云端备份
  *   DELETE /api/sync      → 删除该登录码的云端备份
  *   POST   /api/ai        → AI 中转（OpenAI 兼容接口，key 由前端放 X-AI-Key 头）
  *   OPTIONS *             → 预检
  *   其他                  → Pages 静态资源（由 Pages 处理，这里兜底 404）
  *
+ * 存储后端：JSONBin（https://jsonbin.io）
+ *   - 不再依赖 Cloudflare KV（在 Git 部署模式下 KV 绑定无法生效）。
+ *   - 主密钥存在环境变量 JSONBIN_KEY 中（机密，绝不明文写进代码 / 仓库）。
+ *   - 目录 bin（META_BIN_ID）保存 { phones: { "<手机号>": "<数据binId>" } }。
+ *   - 每个手机号一个独立数据 bin，内容为 { data, version, meta:{device,updatedAt} }。
+ *
  * 安全（两级鉴权）：
- *   第一级 —— 全局令牌 SYNC_TOKEN（环境变量）：防止未授权用户随意读写 KV。
- *             前端在请求头携带：X-Sync-Token: <SYNC_TOKEN> 或 Authorization: Bearer <SYNC_TOKEN>
- *             没设置环境变量时，仅用登录码区分存储 Key（纯自用可接受，部署后强烈建议设置）。
- *   第二级 —— 用户级登录码 Sync Key：
- *             前端生成并保管，放在请求头 X-Sync-Key: <用户登录码>
- *             KV 里实际存储键 = "kyds:" + Sanitize(登录码)
- *             用户用同一登录码跨设备访问时，能取到同一个数据快照。
+ *   第一级 —— 全局令牌 SYNC_TOKEN（环境变量，可选）：未设置则跳过。
+ *   第二级 —— 用户级登录码（手机号）：放在请求头 X-Sync-Key。
  *
- * AI 中转说明：
- *   POST /api/ai：body = { baseUrl, model, messages, max_tokens?, temperature? }
- *   用户 key 放在请求头 X-AI-Key，服务端转发给 OpenAI 兼容的 /chat/completions，
- *   key 不落盘、不出现在浏览器网络面板（浏览器只会看到对本站的请求）。
- *
- * 绑定：
- *   KV 命名空间默认 HUB_SYNC（在 wrangler.toml 里绑定 binding=HUB_SYNC）
- *
- * 存值结构（KV）：
- *   kyds:<safeKey>            = JSON.stringify(DATA) —— 实际快照
- *   kyds:<safeKey>:version    = string  —— 写时递增版本（设备冲突对比用）
- *   kyds:<safeKey>:meta       = JSON.stringify({ device, updatedAt })
+ * 前端协议（与 app.js syncApi 保持一致）：
+ *   GET  /api/sync  (头 X-Sync-Key:手机号)  → { data, version, meta }
+ *   PUT  /api/sync  (头 X-Sync-Key + body {syncCode,deviceId,data}) → { ok, version }
  * ========================================================================= */
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
-const KV_PREFIX = 'kyds';
+const JSONBIN_API = 'https://api.jsonbin.io/v3';
+const META_BIN_ID = '6a801b84f5f4af5e29192747'; // kaoyan-dir：手机号→数据binId 映射
 
 function getEnvStr(env, name, fallback) {
   if (env && typeof env[name] === 'string' && env[name]) return env[name];
   const g = globalThis && globalThis[name];
   return (typeof g === 'string' && g) ? g : (fallback || '');
 }
+function getJsonbinKey(env) { return getEnvStr(env, 'JSONBIN_KEY', ''); }
 function splitOrigins(s) { return (s || '').split(',').map(x => x.trim()).filter(Boolean); }
 function pickCorsOrigin(env, reqOrigin) {
   const list = splitOrigins(getEnvStr(env, 'CORS_ORIGINS', '*'));
@@ -61,7 +55,7 @@ function jsonResponse(status, obj, extraHeaders) {
   return new Response(JSON.stringify(obj), { status, headers: h });
 }
 
-/* ---------- 第一级：SYNC_TOKEN 鉴权 ---------- */
+/* ---------- 第一级：SYNC_TOKEN 鉴权（可选） ---------- */
 function checkGlobalToken(env, req) {
   const expected = getEnvStr(env, 'SYNC_TOKEN', '');
   if (!expected) return null;
@@ -75,40 +69,63 @@ function checkGlobalToken(env, req) {
   return null;
 }
 
-/* ---------- 第二级：Sync Key（用户登录码）→ KV 键 ---------- */
+/* ---------- 第二级：Sync Key（手机号）→ 目录键 ---------- */
 function readSafeSyncKey(req) {
   const raw = (req.headers.get('X-Sync-Key') || '').trim();
   if (!raw) return '';
   const safe = String(raw).slice(0, 96).replace(/[^A-Za-z0-9_\-]/g, '_');
   return safe;
 }
-function getKv(env) {
-  const binding = getEnvStr(env, 'KV_BINDING_NAME', 'HUB_SYNC');
-  return env && env[binding] ? env[binding] : null;
+
+/* ---------- JSONBin 封装 ---------- */
+async function jsonbinGet(binId, key) {
+  const r = await fetch(JSONBIN_API + '/b/' + binId, { headers: { 'X-Master-Key': key } });
+  if (!r.ok) throw new Error('JSONBin GET /b/' + binId + ' -> ' + r.status);
+  const j = await r.json();
+  return (j && j.record) || null;
+}
+async function jsonbinPut(binId, data, key) {
+  const r = await fetch(JSONBIN_API + '/b/' + binId, {
+    method: 'PUT',
+    headers: { 'X-Master-Key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('JSONBin PUT /b/' + binId + ' -> ' + r.status);
+  return r.json();
+}
+async function jsonbinCreate(data, key, name) {
+  const r = await fetch(JSONBIN_API + '/b', {
+    method: 'POST',
+    headers: { 'X-Master-Key': key, 'Content-Type': 'application/json', 'X-Bin-Name': name || 'kaoyan-data' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('JSONBin POST /b -> ' + r.status);
+  const j = await r.json();
+  return j.metadata && j.metadata.id;
+}
+async function jsonbinDelete(binId, key) {
+  const r = await fetch(JSONBIN_API + '/b/' + binId, { method: 'DELETE', headers: { 'X-Master-Key': key } });
+  if (!r.ok) throw new Error('JSONBin DELETE /b/' + binId + ' -> ' + r.status);
+  return r.json();
 }
 
 /* ---------- GET /api/sync ---------- */
 async function handleSyncGet(env, req) {
   const denied = checkGlobalToken(env, req);
   if (denied) return denied;
-  const kv = getKv(env);
-  if (!kv) return jsonResponse(500, { error: 'KV 命名空间未绑定。请先在 wrangler.toml 配 binding: HUB_SYNC 的 id。' });
+  const key = getJsonbinKey(env);
+  if (!key) return jsonResponse(500, { error: 'JSONBIN_KEY 环境变量未配置。请在 Cloudflare Pages 后台 Settings → 变量与密钥（Variables and Secrets）添加名为 JSONBIN_KEY 的「机密（Secret）」。' });
   const safe = readSafeSyncKey(req);
-  if (!safe) return jsonResponse(400, { error: '缺少登录码。请携带 X-Sync-Key 头。' });
+  if (!safe) return jsonResponse(400, { error: '缺少登录码 X-Sync-Key。' });
 
-  const key = KV_PREFIX + ':' + safe;
   try {
-    const [payload, version, meta] = await Promise.all([
-      kv.get(key, 'text'),
-      kv.get(key + ':version', 'text'),
-      kv.get(key + ':meta', 'text')
-    ]);
-    const metaObj = (() => { try { return meta ? JSON.parse(meta) : null; } catch (_) { return null; } })();
-    const body = {
-      data: payload ? JSON.parse(payload) : null,
-      version: version || '',
-      meta: metaObj
-    };
+    const meta = await jsonbinGet(META_BIN_ID, key);
+    const phones = (meta && meta.phones) || {};
+    const dataBinId = phones[safe];
+    if (!dataBinId) return jsonResponse(200, { data: null, version: '', meta: null });
+    const rec = await jsonbinGet(dataBinId, key);
+    const version = (rec && rec.version) || '';
+    const body = { data: (rec && rec.data) || null, version, meta: (rec && rec.meta) || null };
     const headers = {};
     if (version) headers['X-Sync-Version'] = version;
     return jsonResponse(200, body, headers);
@@ -121,8 +138,8 @@ async function handleSyncGet(env, req) {
 async function handleSyncPut(env, req) {
   const denied = checkGlobalToken(env, req);
   if (denied) return denied;
-  const kv = getKv(env);
-  if (!kv) return jsonResponse(500, { error: 'KV 命名空间未绑定。' });
+  const key = getJsonbinKey(env);
+  if (!key) return jsonResponse(500, { error: 'JSONBIN_KEY 环境变量未配置。' });
   const len = Number(req.headers.get('Content-Length') || 0);
   if (len > MAX_BODY_BYTES) return jsonResponse(413, { error: '请求体过大（限 2MB）' });
 
@@ -141,43 +158,51 @@ async function handleSyncPut(env, req) {
   const safe = readSafeSyncKey(req);
   if (!safe) return jsonResponse(400, { error: '缺少登录码 X-Sync-Key。' });
 
-  const version = String(r.version || Date.now() + ':' + Math.random().toString(36).slice(2, 8));
-  const device = String(r.device || req.headers.get('X-Sync-Device') || 'browser');
-  const key = KV_PREFIX + ':' + safe;
-  const meta = JSON.stringify({ device, updatedAt: new Date().toISOString() });
+  const version = String(r.version || (Date.now() + ':' + Math.random().toString(36).slice(2, 8)));
+  const device = String(r.deviceId || r.device || req.headers.get('X-Sync-Device') || 'browser');
+  const updatedAt = new Date().toISOString();
+  const record = { data: r.data, version, meta: { device, updatedAt } };
 
   try {
-    await Promise.all([
-      kv.put(key, JSON.stringify(r.data)),
-      kv.put(key + ':version', version),
-      kv.put(key + ':meta', meta)
-    ]);
+    let meta = await jsonbinGet(META_BIN_ID, key);
+    if (!meta || typeof meta !== 'object') meta = { phones: {} };
+    if (!meta.phones) meta.phones = {};
+    let dataBinId = meta.phones[safe];
+    if (!dataBinId) {
+      dataBinId = await jsonbinCreate(record, key, 'kaoyan-' + safe);
+      meta.phones[safe] = dataBinId;
+      await jsonbinPut(META_BIN_ID, meta, key);
+    } else {
+      await jsonbinPut(dataBinId, record, key);
+    }
+    return jsonResponse(200, { ok: true, version }, { 'X-Sync-Version': version });
   } catch (e) {
-    return jsonResponse(500, { error: '写入 KV 失败：' + (e && e.message || String(e)) });
+    return jsonResponse(500, { error: '写入失败：' + (e && e.message || String(e)) });
   }
-  return jsonResponse(200, { ok: true, version }, { 'X-Sync-Version': version });
 }
 
 /* ---------- DELETE /api/sync ---------- */
 async function handleSyncDelete(env, req) {
   const denied = checkGlobalToken(env, req);
   if (denied) return denied;
-  const kv = getKv(env);
-  if (!kv) return jsonResponse(500, { error: 'KV 命名空间未绑定。' });
+  const key = getJsonbinKey(env);
+  if (!key) return jsonResponse(500, { error: 'JSONBIN_KEY 环境变量未配置。' });
   const safe = readSafeSyncKey(req);
   if (!safe) return jsonResponse(400, { error: '缺少登录码 X-Sync-Key。' });
 
-  const key = KV_PREFIX + ':' + safe;
   try {
-    await Promise.all([
-      kv.delete(key),
-      kv.delete(key + ':version'),
-      kv.delete(key + ':meta')
-    ]);
+    const meta = await jsonbinGet(META_BIN_ID, key);
+    const phones = (meta && meta.phones) || {};
+    const dataBinId = phones[safe];
+    if (dataBinId) {
+      await jsonbinDelete(dataBinId, key);
+      delete phones[safe];
+      await jsonbinPut(META_BIN_ID, meta, key);
+    }
+    return jsonResponse(200, { ok: true });
   } catch (e) {
     return jsonResponse(500, { error: '删除失败：' + (e && e.message || String(e)) });
   }
-  return jsonResponse(200, { ok: true });
 }
 
 /* ---------- POST /api/ai：AI 中转（OpenAI 兼容，key 从 X-AI-Key 头读取） ---------- */
@@ -262,7 +287,7 @@ export default {
 
     // 静态路径由 Pages 处理；这里兜底一个健康检查
     if (path === '/api/health') {
-      return jsonResponse(200, { ok: true, service: 'kaoyan-study-hub', time: new Date().toISOString() }, cors);
+      return jsonResponse(200, { ok: true, service: 'kaoyan-study-hub', storage: 'jsonbin', time: new Date().toISOString() }, cors);
     }
     // 静态路径交给 Pages 静态资源处理器
     if (env && env.ASSETS) {
