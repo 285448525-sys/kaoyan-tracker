@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260814v" />
+  <link rel="stylesheet" href="styles.css?v=20260815a" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -333,6 +333,19 @@
         <!-- 科目进度聚合条（H1 新增） -->
         <div id="agg-subject-progress" class="agg-subject-progress"></div>
       </div>
+      <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
+      <div class="card checkin-card" id="checkinCard">
+        <h2 class="card-title">✅ 今日打卡</h2>
+        <div class="checkin-inner">
+          <div class="checkin-streak">🔥 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
+          <button class="checkin-btn" id="btn-checkin-today" type="button" aria-label="今日打卡">
+            <span class="ci-ring"></span>
+            <span class="ci-label" id="ci-label">今日打卡</span>
+          </button>
+          <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
+        </div>
+      </div>
+
       <!-- 快速开始引导卡（H3 新增） -->
       <div id="today-onboarding" class="card onboarding-card" hidden>
         <h2 class="card-title">🚀 30 秒快速开始</h2>
@@ -931,13 +944,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260814v"></script>
-  <script src="words.js?v=20260814v"></script>
-  <script src="store.js?v=20260814v"></script>
-  <script src="charts.js?v=20260814v"></script>
-  <script src="share.js?v=20260814v"></script>
-  <script src="md5.js?v=20260814v"></script>
-  <script src="sentences.js?v=20260814v"></script>
-  <script src="app.js?v=20260814v"></script>
+  <script src="qrcode.min.js?v=20260815a"></script>
+  <script src="words.js?v=20260815a"></script>
+  <script src="store.js?v=20260815a"></script>
+  <script src="charts.js?v=20260815a"></script>
+  <script src="share.js?v=20260815a"></script>
+  <script src="md5.js?v=20260815a"></script>
+  <script src="sentences.js?v=20260815a"></script>
+  <script src="app.js?v=20260815a"></script>
 </body>
 </html>

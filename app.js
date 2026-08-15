@@ -1239,8 +1239,53 @@
     refs.btnCheckin.textContent = checkedIn ? '✅ 今日已打卡' : '✅ 今日打卡';
     refs.btnCheckin.disabled = checkedIn;
     renderReminders();
+    renderCheckinCard();
   }
-  function onCheckin() { Store.checkin(Store.todayStr()); showToast('已打卡 ' + Store.todayStr() + ' ✅', 'ok'); fireConfetti(); renderSummary(); }
+  /* 统一的打卡逻辑：今日页大按钮 + 总结页按钮共用 */
+  function doCheckin() {
+    var ds = Store.todayStr();
+    if (Store.isCheckedIn(ds)) { showToast('今天已经打卡啦 ✅', 'ok'); renderCheckinCard(); return; }
+    Store.checkin(ds);
+    showToast('已打卡 ' + ds + ' ✅', 'ok');
+    fireConfetti();
+    renderCheckinCard();
+    renderSummary();
+    renderTodayAggregate();
+  }
+  /* 今日页打卡卡片渲染：连续天数 + 大按钮状态 + 最近 14 天打卡时间轴 */
+  function renderCheckinCard() {
+    var ds = Store.todayStr();
+    var checked = Store.isCheckedIn(ds);
+    var streak = Store.consecutiveStreak();
+    if (refs.ciStreak) refs.ciStreak.textContent = streak;
+    if (refs.ciLabel) refs.ciLabel.textContent = checked ? '今日已打卡 ✓' : '今日打卡';
+    if (refs.btnCheckinToday) {
+      refs.btnCheckinToday.classList.toggle('done', checked);
+      refs.btnCheckinToday.disabled = checked;
+      if (checked) { refs.btnCheckinToday.classList.remove('pop'); void refs.btnCheckinToday.offsetWidth; refs.btnCheckinToday.classList.add('pop'); }
+    }
+    // 最近 14 天打卡点（时间轴）
+    if (refs.checkinDots) {
+      var active = {}; (Store.getCheckins() || []).forEach(function (d) { active[d] = true; });
+      var html = '';
+      for (var i = 13; i >= 0; i--) {
+        var d = new Date(); d.setDate(d.getDate() - i);
+        var key = d.toISOString().slice(0, 10);
+        var cls = 'ci-dot' + (active[key] ? ' done' : '') + (key === ds ? ' today' : '');
+        html += '<span class="' + cls + '" title="' + key + '"></span>';
+      }
+      refs.checkinDots.innerHTML = html;
+    }
+  }
+  /* 绑定点击 + 触摸：安卓浏览器同时触发 touchstart/click 时用标记防重复，
+     彻底规避部分机型 click 不触发或 300ms 延迟导致“点了没反应” */
+  function bindTap(el, fn) {
+    if (!el) return;
+    var fired = false;
+    function run(e) { if (fired) return; fired = true; setTimeout(function () { fired = false; }, 600); fn(e); }
+    el.addEventListener('click', run);
+    el.addEventListener('touchstart', function (e) { e.preventDefault(); run(e); }, { passive: false });
+  }
 
   /* ============ 考研真题高频词 ============ */
   function renderHfWords() {
@@ -3664,6 +3709,7 @@
     populatePlanSubjects();
     renderPlan();
     renderToday();
+    renderCheckinCard();
     renderMistakeTypes();
     populateMistakeSubjects();
     renderTranslatorConfig();
@@ -3894,6 +3940,12 @@
     refs.btnCheckin = $('btn-checkin');
     refs.btnShareSummary = $('btn-share-summary');
     refs.summaryReminders = $('summary-reminders');
+
+    // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）
+    refs.btnCheckinToday = $('btn-checkin-today');
+    refs.ciStreak = $('ci-streak');
+    refs.ciLabel = $('ci-label');
+    refs.checkinDots = $('checkinDots');
 
     // 学习计划
     refs.masteryList = $('mastery-list');
@@ -4229,7 +4281,8 @@
     // 高频词搜索
     refs.hfSearch.addEventListener('input', renderHfWords);
     // 今日总结：打卡 + 分享
-    refs.btnCheckin.addEventListener('click', onCheckin);
+    refs.btnCheckin.addEventListener('click', doCheckin);
+    bindTap(refs.btnCheckinToday, doCheckin);
     refs.btnShareSummary.addEventListener('click', onShareToday);
 
     // 学习计划：模块掌握
@@ -4300,6 +4353,7 @@
     renderAll();
     applySidebar();
     renderTodayAggregate();
+    renderCheckinCard();
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
