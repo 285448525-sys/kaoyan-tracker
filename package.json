@@ -1,0 +1,15 @@
+{
+  "name": "kaoyan-tracker",
+  "version": "20260815f",
+  "private": true,
+  "description": "考研学习记录网站 - 静态站点，发布前由 minify.js 压缩到 _cf_deploy/",
+  "scripts": {
+    "build": "node minify.js",
+    "minify": "node minify.js"
+  },
+  "dependencies": {
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
+    "terser": "^5.50.0"
+  }
+}
