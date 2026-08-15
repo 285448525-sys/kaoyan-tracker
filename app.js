@@ -3,14 +3,18 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260815e';
+  var APP_VERSION = '20260815f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
   //  - el(tag, cls, text)          → 第 3 参一律走 textContent（绝不解析为 HTML），覆盖所有叶子节点（模块名/计划/错词/生词…）。
   //  - setText(node, text)         → 显式文本写入（textContent）。
   //  - mountSafe(node, c, opts)    → 统一安全挂载：默认 textContent（强制转义）；仅当 opts.raw===true 且内容已 escapeHtml/来自可信静态模板时才走 innerHTML。
-  // 任何 innerHTML 写入现在都必须显式 mountSafe(..., {raw:true})，形成可审计边界。
+  // ⚠️ 现状（勿误读）：叶子节点已由 el() 全量收口为 textContent；但 app.js 内仍存在直接 `.innerHTML =` 的
+  //    列表级渲染（清空 '' / 可信静态模板 / 已 escapeHtml 的拼接串），这些经审计均安全，尚未逐处改写为 mountSafe。
+  //    新增代码请遵守：拼接用户数据的 innerHTML 必须先 escapeHtml；能用 el()/setText 就不要用 innerHTML。
+  // ⚠️ 反向陷阱：既然 el()/setText/mountSafe(默认) 走 textContent，传入前【不要】再 escapeHtml，
+  //    否则实体会被字面显示（曾致数学闪卡把 x>0 显示成 x&gt;0）。escapeHtml 只用于 innerHTML 拼接场景。
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -1793,15 +1797,16 @@
     var cur = s.items[s.index];
     var card = el('div', 'flashcard');
     card.appendChild(el('div', 'flash-progress', '第 ' + (s.index + 1) + ' / ' + s.items.length + ' 张 · 箱位 ' + (cur.box || 1) + '/5'));
-    card.appendChild(el('div', 'flash-cat', escapeHtml(cur.category || '其他')));
+    // ⚠️ 此处勿加 escapeHtml：el() 已走 textContent 天然防 XSS，再转义会让 x>0 字面显示成 x&gt;0（数学题高频字符）
+    card.appendChild(el('div', 'flash-cat', cur.category || '其他'));
     var front = el('div', 'flash-front');
     front.appendChild(el('div', 'flash-label', '题目 / 错因'));
-    front.appendChild(el('div', 'flash-q', escapeHtml(cur.content || '')));
+    front.appendChild(el('div', 'flash-q', cur.content || ''));
     card.appendChild(front);
     if (s.revealed) {
       var back = el('div', 'flash-back');
       back.appendChild(el('div', 'flash-label', '答案 / 正确解法 / 备注'));
-      back.appendChild(el('div', 'flash-a', escapeHtml(cur.note || (cur.created ? '（无备注，原题记录于 ' + cur.created + '）' : '（无备注）'))));
+      back.appendChild(el('div', 'flash-a', cur.note || (cur.created ? '（无备注，原题记录于 ' + cur.created + '）' : '（无备注）')));
       card.appendChild(back);
       var act = el('div', 'flash-actions');
       var rightBtn = el('button', 'btn btn-ok', '✓ 我答对了');

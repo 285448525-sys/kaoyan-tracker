@@ -110,6 +110,36 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
   ok(window.__pwned3 === undefined, '错词本渲染不触发 onerror 脚本');
 })();
 
+// 7) 反向陷阱回归：el() 走 textContent 后，调用方不得再 escapeHtml，否则实体被字面显示
+//    （曾致数学错题闪卡把 "x>0" 显示成 "x&gt;0"，数学题中 < > & " 为高频字符）
+(function () {
+  const S = window.Store;
+  const raw = '当 x>0 且 a<b 时，求 "极限" & 导数';
+  const rawNote = '注意 x>0 边界 & 定义域';
+  S.addMathMistake({ category: '高数', content: raw, note: rawNote, nextReview: S.todayStr() });
+  window.__switchTab('math');
+  const q = document.querySelector('.flash-q');
+  ok(!!q, '数学闪卡正面已渲染');
+  ok(!!q && q.textContent === raw,
+    '闪卡题面原样显示不含转义实体（期望 "' + raw + '"，实际 "' + (q ? q.textContent : '(未渲染)') + '"）');
+  ok(!!q && !/&gt;|&lt;|&amp;|&quot;|&#39;/.test(q.textContent), '闪卡题面无双重转义实体');
+  // 翻到背面校验备注
+  const showBtn = Array.prototype.filter.call(
+    document.querySelectorAll('.flashcard button'),
+    function (b) { return /显示|答案/.test(b.textContent || ''); }
+  )[0];
+  if (showBtn) showBtn.dispatchEvent(new window.Event('click', { bubbles: true }));
+  const a = document.querySelector('.flash-a');
+  ok(!!a && a.textContent === rawNote,
+    '闪卡备注原样显示不含转义实体（期望 "' + rawNote + '"，实际 "' + (a ? a.textContent : '(未渲染)') + '"）');
+  // 同时确认「不转义」没有反过来引入 XSS（textContent 天然安全）
+  S.addMathMistake({ category: 'xss', content: '<img src=x onerror="window.__pwned4=1">', note: 'n', nextReview: S.todayStr() });
+  window.__switchTab('today'); window.__switchTab('math');
+  const box = document.getElementById('math-flashcard-box') || document.querySelector('.flashcard');
+  ok(!box || box.querySelectorAll('img').length === 0, '闪卡渲染 HTML 载荷不创建 img 元素（textContent 仍防 XSS）');
+  ok(window.__pwned4 === undefined, '闪卡渲染未触发 onerror 脚本');
+})();
+
 ok(runtimeErrors.length === 0, '运行时错误数 = 0（实际 ' + runtimeErrors.length + '）');
 ok(jsdomErrors.length === 0, 'jsdom 内部错误数 = 0（实际 ' + jsdomErrors.length + '）');
 
