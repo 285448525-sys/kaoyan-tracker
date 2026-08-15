@@ -3122,7 +3122,7 @@
     { cat: '🧰 工具 · 资源', items: [
       { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
       { t: '⚙️ 配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
-      { t: '☁️ 云端同步', b: '用 8 位「登录码」把数据存到云端：相同登录码可在任意设备拉取同一套数据。支持上传/下载/删除；「邀请好友」分享登录码；「实时查看云端」只读看对方数据；开「自动同步」可双向实时同步。从云端下载会覆盖本机，下载前二次确认。' },
+      { t: '☁️ 云端同步', b: '用手机号作为唯一账号：首次填写即注册并把数据上传到云端；换设备登录只需输入同一手机号即可同步，无需记密码。注册/登录二合一，下方状态会提示成功与否。' },
       { t: '🌐 翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到错词本。' },
       { t: '🤖 AI 助手', b: '在「配置」填你自己的大模型 API Key（OpenAI 兼容接口），即可启用长难句深度分析、错题智能归纳等能力。密钥仅存本机、经云端函数中转，不暴露到前端。' }
     ]}
@@ -3159,7 +3159,7 @@
     { icon: '📌', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
     { icon: '🎴', title: '背单词 / 复习', tab: 'practice', text: '查词记生词，按记忆曲线每天推送待复习词，4 选 1 测验（⚙️ 可自定义题量/范围/模式）。' },
     { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
-    { icon: '☁️', title: '云端同步', tab: 'config', text: '用登录码在设备间同步数据；可邀请好友、实时查看、开自动同步。' },
+    { icon: '☁️', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
     { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
   ];
   var tourIdx = 0, tourEl = null;
@@ -3378,46 +3378,76 @@
     });
   }
 
-  /* 确定：保存登录码 + 上传数据 + 启动自动同步 */
+  /* 注册 / 登录（手机号即唯一账号，无需密码） */
   function onSyncConfirm() {
-    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入登录码', 'error'); return; }
-    if (code.length < 3) { syncSetStatus('登录码至少需要 3 个字符', 'error'); return; }
-    // 保存到本地
-    Store.setLastSyncCode(code);
-    syncSetStatus('正在上传…', '');
-    var payload = Store.snapshot();
-    syncApi('PUT', payload).then(function (res) {
-      syncSetStatus('✅ 已连接云端（版本 ' + (res && res.version ? res.version : '?') + '）', 'ok');
-      showToast('云端同步已开启 ☁️');
-      // 启动自动同步
-      autoSyncEnabled = true;
-      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '1'); } catch (e) {}
-      lastPushAt = Date.now();
-      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
-      startAutoSyncPolling();
+    var raw = (refs.syncCode ? refs.syncCode.value : '') || '';
+    var phone = raw.replace(/\D/g, ''); // 仅保留数字
+    if (!phone) { syncSetStatus('请先输入手机号', 'error'); return; }
+    if (phone !== raw) { syncSetStatus('手机号只能包含数字', 'error'); return; }
+    if (phone.length < 6 || phone.length > 15) { syncSetStatus('手机号格式不正确（应为 6-15 位数字）', 'error'); return; }
+    if (refs.syncCode) refs.syncCode.value = phone; // 清理非数字字符
+    syncSetStatus('正在连接云端…', '');
+    // 先查云端是否已有该手机号的数据：有=登录，无=注册
+    syncApi('GET').then(function (res) {
+      if (res && res.data) doLogin(phone);
+      else doRegister(phone);
     }).catch(function (err) {
       syncSetStatus('❌ 连接失败：' + (err.message || err), 'error');
     });
   }
-  function onSyncDownload() {
-    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入登录码', 'error'); return; }
-    if (!confirm('从云端下载「' + code + '」的数据会覆盖本机全部数据，确定继续？')) return;
-    if (!confirm('二次确认：本机学习记录、计划、错题、词汇等都将被云端数据替换，建议先「导出备份」留一份。确定下载？')) return;
-    syncSetStatus('正在下载…', '');
+  function doRegister(phone) {
+    Store.setLastSyncCode(phone);
+    syncSetStatus('正在注册并上传…', '');
+    var payload = Store.snapshot();
+    syncApi('PUT', payload).then(function (res) {
+      syncSetStatus('✅ 注册成功，数据已上传云端（版本 ' + (res && res.version ? res.version : '?') + '）', 'ok');
+      showToast('账号已创建，云端同步已开启 ☁️');
+      enableAutoSyncAfterLogin(phone);
+    }).catch(function (err) {
+      syncSetStatus('❌ 注册失败：' + (err.message || err), 'error');
+    });
+  }
+  function doLogin(phone) {
+    // 本机若有数据，登录会覆盖，先确认
+    if (localHasData()) {
+      if (!confirm('云端已有手机号「' + phone + '」的账号数据。\n登录将用云端数据覆盖本机现有数据，确定继续？\n（点取消可保留本机数据、不登录）')) {
+        syncSetStatus('⚠️ 已取消登录，本机数据保留', 'error');
+        return;
+      }
+    }
+    syncSetStatus('正在登录并下载…', '');
     syncApi('GET').then(function (res) {
-      if (!res || !res.data) { syncSetStatus('⚠️ 该登录码暂无云端数据', 'error'); return; }
+      if (!res || !res.data) { doRegister(phone); return; } // 竞态：查到有时已被清，转为注册
       isApplyingRemote = true;
       var ok = Store.restoreSnapshot(res.data);
       isApplyingRemote = false;
       if (!ok) { syncSetStatus('❌ 数据恢复失败，格式不兼容', 'error'); return; }
-      Store.setLastSyncCode(code);
-      syncSetStatus('✅ 下载成功，正在刷新…', 'ok');
+      Store.setLastSyncCode(phone);
+      syncSetStatus('✅ 登录成功，已同步云端数据', 'ok');
+      showToast('登录成功，数据已同步 ☁️');
+      enableAutoSyncAfterLogin(phone);
       setTimeout(function () { location.reload(); }, 900);
     }).catch(function (err) {
-      syncSetStatus('❌ 下载失败：' + (err.message || err), 'error');
+      syncSetStatus('❌ 登录失败：' + (err.message || err), 'error');
     });
+  }
+  function enableAutoSyncAfterLogin(phone) {
+    autoSyncEnabled = true;
+    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '1'); } catch (e) {}
+    lastPushAt = Date.now();
+    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+    startAutoSyncPolling();
+  }
+  function localHasData() {
+    try {
+      var snap = Store.snapshot();
+      return (snap.vocab && snap.vocab.length) ||
+             (snap.wrongWords && snap.wrongWords.length) ||
+             (snap.days && Object.keys(snap.days).length) ||
+             (snap.mathChapters && snap.mathChapters.length) ||
+             (snap.plans && snap.plans.length) ||
+             (snap.subjects && snap.subjects.length);
+    } catch (e) { return false; }
   }
 
   /* ---- 自动同步（默认开启，用户无感） ---- */
@@ -3600,7 +3630,6 @@
     // 云同步（简化版）
     refs.syncCode = $('sync-code');
     refs.btnSyncConfirm = $('btn-sync-confirm');
-    refs.btnSyncDownload = $('btn-sync-download');
     refs.syncStatus = $('sync-status');
 
     refs.timerRows = $('timer-rows');
@@ -3923,10 +3952,9 @@
       renderPlan(); renderToday();
     });
 
-    // 云同步（简化版）
+    // 云同步（手机号账号：注册/登录合一）
     if (refs.btnSyncConfirm) refs.btnSyncConfirm.addEventListener('click', onSyncConfirm);
-    if (refs.btnSyncDownload) refs.btnSyncDownload.addEventListener('click', onSyncDownload);
-    if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
+    if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').replace(/\D/g, '')); });
     // 自动同步（默认开启，确定后自动启动）
     loadAutoSyncPref();
     if (refs.btnStartTour) refs.btnStartTour.addEventListener('click', startTour);

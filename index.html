@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260815b" />
+  <link rel="stylesheet" href="styles.css?v=20260815c" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -153,16 +153,15 @@
       </div>
 
       <div class="card cloud-sync-card">
-        <h2 class="card-title">☁️ 云端同步</h2>
-        <p class="card-sub">输入自定义登录码后点击「确定」，数据自动上传至云端，此后所有设备用同一登录码即可同步。</p>
+        <h2 class="card-title">☁️ 云端账号（手机号）</h2>
+        <p class="card-sub">用手机号作为唯一账号：首次填写即注册并上传数据；换设备登录只需输入同一手机号即可同步。无需记密码。</p>
         <div class="field-row">
-          <label>我的登录码</label>
-          <input type="text" id="sync-code" placeholder="自己设定一个登录码，如：mykaoyan2026" autocomplete="off" style="width:100%;box-sizing:border-box;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',consolas,monospace" />
+          <label>手机号码</label>
+          <input type="tel" id="sync-code" inputmode="numeric" placeholder="请输入你的手机号，如：13800138000" autocomplete="off" style="width:100%;box-sizing:border-box;letter-spacing:1px;font-family:'JetBrains Mono',consolas,monospace" />
         </div>
-        <p class="sync-hint">💡 我的登录码是自定义的，以后要记住这个登录码。</p>
+        <p class="sync-hint">💡 手机号即账号，无需密码。换设备登录时输入同一手机号即可访问你的数据。</p>
         <div class="btn-row">
-          <button id="btn-sync-confirm" class="btn btn-primary">✓ 确定（保存并上传）</button>
-          <button id="btn-sync-download" class="btn btn-ghost">⬇️ 从云端下载</button>
+          <button id="btn-sync-confirm" class="btn btn-primary">📱 注册 / 登录</button>
         </div>
         <div id="sync-status" class="import-status"></div>
       </div>
@@ -914,13 +913,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260815b"></script>
-  <script src="words.js?v=20260815b"></script>
-  <script src="store.js?v=20260815b"></script>
-  <script src="charts.js?v=20260815b"></script>
-  <script src="share.js?v=20260815b"></script>
-  <script src="md5.js?v=20260815b"></script>
-  <script src="sentences.js?v=20260815b"></script>
-  <script src="app.js?v=20260815b"></script>
+  <script src="qrcode.min.js?v=20260815c"></script>
+  <script src="words.js?v=20260815c"></script>
+  <script src="store.js?v=20260815c"></script>
+  <script src="charts.js?v=20260815c"></script>
+  <script src="share.js?v=20260815c"></script>
+  <script src="md5.js?v=20260815c"></script>
+  <script src="sentences.js?v=20260815c"></script>
+  <script src="app.js?v=20260815c"></script>
 </body>
 </html>
