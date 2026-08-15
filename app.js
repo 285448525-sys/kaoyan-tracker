@@ -2,20 +2,33 @@
 (function () {
   'use strict';
 
-  function el(tag, cls, html) {
+  // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
+  var APP_VERSION = '20260815e';
+
+  // ===== XSS 防护助手（B6 收敛）=====
+  // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
+  //  - el(tag, cls, text)          → 第 3 参一律走 textContent（绝不解析为 HTML），覆盖所有叶子节点（模块名/计划/错词/生词…）。
+  //  - setText(node, text)         → 显式文本写入（textContent）。
+  //  - mountSafe(node, c, opts)    → 统一安全挂载：默认 textContent（强制转义）；仅当 opts.raw===true 且内容已 escapeHtml/来自可信静态模板时才走 innerHTML。
+  // 任何 innerHTML 写入现在都必须显式 mountSafe(..., {raw:true})，形成可审计边界。
+  function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
-    if (html !== undefined) e.innerHTML = html;
+    if (text !== undefined && text !== null) e.textContent = String(text);
     return e;
   }
-  // ===== XSS 防护助手 =====
-  // 规则：渲染任何「用户或云端他人输入」的文本时，二选一：
-  //  1) 纯文本 → 用 setText(node, text)（走 textContent，绝不会被当 HTML 解析，最安全）；
-  //  2) 需要拼接 HTML → 对其中每一段动态内容先 escapeHtml() 再拼。
-  // 已核对：所有动态写入 DOM 的用户/云端内容均已 escapeHtml 或走 textContent。
   function setText(node, text) {
     if (!node) return;
     node.textContent = (text === undefined || text === null) ? '' : String(text);
+  }
+  // 统一安全挂载：默认把内容当纯文本（textContent，防 XSS）；raw:true 才走 innerHTML（调用方须保证已 escapeHtml）。
+  function mountSafe(node, content, opts) {
+    if (!node) return node;
+    opts = opts || {};
+    var val = (content === undefined || content === null) ? '' : String(content);
+    if (opts.raw) node.innerHTML = val;
+    else node.textContent = val;
+    return node;
   }
   function $(id) { return document.getElementById(id); }
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -2538,6 +2551,59 @@
     });
   }
 
+  /* ============ §2.4 今日学习总结 AI 增强 ============ */
+  // 增强现有「今日学习总结」卡：把今日学习数据聚合成自然语言，交给 AI 生成温暖、有鼓励性的日报 + 明日建议。
+  function onAiSummary() {
+    var box = refs.aiSummaryOut;
+    if (!box) return;
+    var c = Store.getAiConfig();
+    if (!c.baseUrl || !c.model || !c.key) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 AI 接口地址、模型与 Key'));
+      return;
+    }
+    var ds = Store.todayStr();
+    var day = Store.getDay(ds) || { durations: {} };
+    var subs = Store.getSubjects();
+    var total = Store.totalMinutesForDay(day);
+    var lines = [];
+    lines.push('今天（' + ds + '）累计学习 ' + (Math.floor(total / 60) > 0 ? Math.floor(total / 60) + ' 小时 ' : '') + (total % 60) + ' 分钟。');
+    subs.forEach(function (s) {
+      var m = (day.durations && day.durations[s.key]) || 0;
+      if (m > 0) lines.push('· ' + s.name + '：' + m + ' 分钟');
+    });
+    var plan = Store.getPlan(ds) || [];
+    var done = plan.filter(function (i) { return i.done; }).length;
+    lines.push('计划完成：' + (plan.length ? (done + '/' + plan.length) : '未制定') + '。');
+    var mistakes = Store.getMistakes().filter(function (m) { return m.date === ds; }).length;
+    lines.push('今日整理错题/感悟：' + mistakes + ' 条。');
+    var vocabAdded = Store.getVocab().filter(function (v) { return v.added === ds; }).length;
+    lines.push('今日新增生词：' + vocabAdded + ' 个；待复习生词：' + Store.getDueVocab(ds).length + ' 个。');
+    lines.push('连续打卡：' + Store.consecutiveStreak() + ' 天。');
+    var dayText = lines.join('\n');
+    box.textContent = '';
+    box.appendChild(el('div', 'ai-loading', '🤖 AI 生成学习总结中…'));
+    var btn = refs.btnAiSummary;
+    if (btn) { btn.disabled = true; btn.textContent = '🤖 生成中…'; }
+    var cfg = Store.getConfig();
+    var daysLeft = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000) : null;
+    var userMsg = '以下是我今天的学习数据：\n' + dayText + (daysLeft !== null ? ('\n距考研还有 ' + daysLeft + ' 天。') : '') +
+      '\n请帮我用简体中文写一段温暖、有鼓励性的「今日学习总结」，并指出 1-2 个明天可以改进或重点突破的方向。不要使用 markdown 代码块，用自然段落即可。';
+    aiChat([
+      { role: 'system', content: '你是考研学习教练，擅长用简体中文给出有温度、具体、可执行的每日学习反馈。' },
+      { role: 'user', content: userMsg }
+    ], { maxTokens: 800 }).then(function (res) {
+      box.textContent = '';
+      var pre = el('pre', 'ai-explain-text'); pre.textContent = (res.content || '').trim();
+      box.appendChild(pre);
+    }).catch(function (err) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '✗ ' + (err.msg || 'AI 生成失败，请检查配置页 AI 设置')));
+    }).then(function () {
+      if (btn) { btn.disabled = false; btn.textContent = '🤖 AI 生成学习总结'; }
+    });
+  }
+
   function updateTranslateButton() {
     if (!refs.btnTranslate) return;
     var t = Store.getTranslator();
@@ -3823,6 +3889,8 @@
     refs.btnCheckin = $('btn-checkin');
     refs.btnShareSummary = $('btn-share-summary');
     refs.summaryReminders = $('summary-reminders');
+    refs.btnAiSummary = $('btn-ai-summary');
+    refs.aiSummaryOut = $('ai-summary-out');
 
     // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）
     refs.btnCheckinToday = $('btn-checkin-today');
@@ -4152,6 +4220,7 @@
     refs.btnCheckin.addEventListener('click', doCheckin);
     bindTap(refs.btnCheckinToday, doCheckin);
     refs.btnShareSummary.addEventListener('click', onShareToday);
+    if (refs.btnAiSummary) refs.btnAiSummary.addEventListener('click', onAiSummary);
 
     // 学习计划：模块掌握
     refs.btnAddModule.addEventListener('click', function () {
@@ -4226,6 +4295,8 @@
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
+    // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
+    window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
     // 回到顶部按钮
     initBackTop();
 
