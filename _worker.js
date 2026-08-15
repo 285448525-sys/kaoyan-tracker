@@ -77,15 +77,30 @@ function readSafeSyncKey(req) {
   return safe;
 }
 
-/* ---------- JSONBin 封装 ---------- */
+/* ---------- JSONBin 封装（带 429 重试+退避） ---------- */
+async function jsonbinFetch(path, init) {
+  init = init || {};
+  let attempt = 0;
+  const maxAttempt = 3;
+  while (true) {
+    const r = await fetch(JSONBIN_API + path, init);
+    // JSONBin 免费额度偶发 429，退避重试（1s/2s/3s）后自愈
+    if (r.status === 429 && attempt < maxAttempt) {
+      attempt++;
+      await new Promise(function (res) { setTimeout(res, 1000 * attempt); });
+      continue;
+    }
+    return r;
+  }
+}
 async function jsonbinGet(binId, key) {
-  const r = await fetch(JSONBIN_API + '/b/' + binId, { headers: { 'X-Master-Key': key } });
+  const r = await jsonbinFetch('/b/' + binId, { headers: { 'X-Master-Key': key } });
   if (!r.ok) throw new Error('JSONBin GET /b/' + binId + ' -> ' + r.status);
   const j = await r.json();
   return (j && j.record) || null;
 }
 async function jsonbinPut(binId, data, key) {
-  const r = await fetch(JSONBIN_API + '/b/' + binId, {
+  const r = await jsonbinFetch('/b/' + binId, {
     method: 'PUT',
     headers: { 'X-Master-Key': key, 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -94,7 +109,7 @@ async function jsonbinPut(binId, data, key) {
   return r.json();
 }
 async function jsonbinCreate(data, key, name) {
-  const r = await fetch(JSONBIN_API + '/b', {
+  const r = await jsonbinFetch('/b', {
     method: 'POST',
     headers: { 'X-Master-Key': key, 'Content-Type': 'application/json', 'X-Bin-Name': name || 'kaoyan-data' },
     body: JSON.stringify(data)
@@ -104,7 +119,7 @@ async function jsonbinCreate(data, key, name) {
   return j.metadata && j.metadata.id;
 }
 async function jsonbinDelete(binId, key) {
-  const r = await fetch(JSONBIN_API + '/b/' + binId, { method: 'DELETE', headers: { 'X-Master-Key': key } });
+  const r = await jsonbinFetch('/b/' + binId, { method: 'DELETE', headers: { 'X-Master-Key': key } });
   if (!r.ok) throw new Error('JSONBin DELETE /b/' + binId + ' -> ' + r.status);
   return r.json();
 }

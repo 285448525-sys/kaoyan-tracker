@@ -775,13 +775,6 @@
   function setLastSyncCode(code) {
     try { global.localStorage.setItem(KEY + ':last_sync_code', code || ''); } catch (_) {}
   }
-  function getLastSyncToken() {
-    try { return global.localStorage.getItem(KEY + ':last_sync_token') || ''; }
-    catch (_) { return ''; }
-  }
-  function setLastSyncToken(tok) {
-    try { global.localStorage.setItem(KEY + ':last_sync_token', tok || ''); } catch (_) {}
-  }
   function getLastDeviceId() {
     try {
       var id = global.localStorage.getItem(KEY + ':device_id');
@@ -837,7 +830,6 @@
     snapshot: snapshot, restoreSnapshot: restoreSnapshot,
     generateSyncCode: generateSyncCode,
     getLastSyncCode: getLastSyncCode, setLastSyncCode: setLastSyncCode,
-    getLastSyncToken: getLastSyncToken, setLastSyncToken: setLastSyncToken,
     getLastDeviceId: getLastDeviceId
   };
 })(typeof window !== 'undefined' ? window : this);

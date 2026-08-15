@@ -1607,6 +1607,52 @@
     renderPlanItems(); showToast('已按进度生成 ' + items.length + ' 项计划 ⚡');
   }
 
+  // 解析 AI 返回的 JSON 数组（兼容 ```json 围栏 / 前后多余文字）
+  function parseJsonArray(str) {
+    if (!str) return null;
+    var s = String(str).trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+    var a = s.indexOf('['), b = s.lastIndexOf(']');
+    if (a < 0 || b < 0 || b < a) return null;
+    try { var arr = JSON.parse(s.slice(a, b + 1)); return Array.isArray(arr) ? arr : null; } catch (e) { return null; }
+  }
+
+  // AI 生成个性化学习计划（基于模块掌握情况 + 章节进度 + 距考研倒计时）
+  function onAiPlan() {
+    var c = Store.getAiConfig();
+    if (!c.baseUrl || !c.model || !c.key) { showToast('请先在「配置」页填写 AI 接口地址、模型与 Key', 'err'); return; }
+    var days = refs.aggCountdown ? refs.aggCountdown.textContent : '';
+    var mastery = Store.getModuleMastery();
+    var masLines = Object.keys(mastery).map(function (n) { return '- ' + n + '：' + mastery[n]; });
+    var subLines = [];
+    Store.getSubjects().forEach(function (s) {
+      var ch, doneArr, total, doneCount;
+      if (s.key === 'math') { ch = Store.getMathChapters(); doneArr = Store.getMathDone(); }
+      else if (s.key === 'cs408') { ch = Store.get408Chapters(); doneArr = Store.get408Done(); }
+      else { var obj = Store.getSubjectChapters(s.key) || {}; ch = obj.chapters || []; doneArr = Array.isArray(obj.done) ? obj.done : []; }
+      total = ch.length; doneCount = doneArr.length;
+      subLines.push('- 《' + s.name + '》已完成 ' + doneCount + '/' + total + ' 章');
+    });
+    var userMsg = '我是考研备考学生。当前情况：\n模块掌握：\n' + masLines.join('\n') + '\n各科进度：\n' + subLines.join('\n') + '\n距考研约 ' + (days || '未知') + ' 天。\n请为我生成接下来一周的个性化学习计划，按优先级排序。只返回一个 JSON 数组，每个元素形如 {"text":"计划内容","note":"为什么/怎么做","priority":"高|中|低"}，不要任何解释文字。';
+    var btn = refs.btnAiPlan;
+    if (btn) { btn.disabled = true; btn.textContent = '🤖 AI 生成中…'; }
+    aiChat([
+      { role: 'system', content: '你是考研规划助手。只输出可被 JSON.parse 解析的 JSON 数组，不要 markdown、不要多余文字。' },
+      { role: 'user', content: userMsg }
+    ], { maxTokens: 1500 }).then(function (res) {
+      var arr = parseJsonArray(res.content);
+      if (!arr || !arr.length) { showToast('AI 未返回有效计划，请重试', 'err'); return; }
+      arr.forEach(function (it) {
+        if (it && it.text) Store.addPlanItem({ text: String(it.text), note: it.note ? String(it.note) : '', done: false });
+      });
+      renderPlanItems();
+      showToast('🤖 AI 已生成 ' + arr.length + ' 项计划', 'ok');
+    }).catch(function (err) {
+      showToast('AI 生成失败：' + (err.msg || '未知错误'), 'err');
+    }).then(function () {
+      if (btn) { btn.disabled = false; btn.textContent = '🤖 AI 生成计划'; }
+    });
+  }
+
   /* ============ 数学模块：章节 + 错题 + 分类刷题 ============ */
   var mathMistakeFilter = '全部';
   var mathPractice = null;
@@ -2457,6 +2503,38 @@
     }).catch(function (err) {
       box.textContent = '';
       box.appendChild(el('div', 'empty-hint', '✗ ' + (err.msg || 'AI 讲解失败，请检查配置页 AI 设置')));
+    });
+  }
+
+  // 错词本 AI 归纳（全书错词聚类 + 共性薄弱点 + 复习建议；输出 textContent 防 XSS）
+  function summarizeWrongBook() {
+    var box = refs.wrongAiSummary;
+    if (!box) return;
+    var list = Store.getWrongWords();
+    if (!list.length) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '暂无错词，先去翻译查询或刷题积累错词吧'));
+      return;
+    }
+    var c = Store.getAiConfig();
+    if (!c.baseUrl || !c.model || !c.key) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '✗ 请先在「配置」页填写 AI 接口地址、模型与 Key'));
+      return;
+    }
+    box.textContent = '';
+    box.appendChild(el('div', 'ai-loading', '🤖 AI 归纳全书错词中…'));
+    var words = list.map(function (w) { return (w.word || '') + (w.cn ? '（' + w.cn + '）' : ''); }).join('、');
+    aiChat([
+      { role: 'system', content: '你是英语学习助教，面向考研/雅思备考学生。用简体中文，条理清晰，按要点输出。' },
+      { role: 'user', content: '以下是我的错词本全部单词：' + words + '。请帮我归纳：1) 高频/易混词聚类；2) 共性薄弱点（如词性、拼写、搭配）；3) 接下来一周的复习节奏建议。' }
+    ], { maxTokens: 1200 }).then(function (res) {
+      box.textContent = '';
+      var pre = el('pre', 'ai-explain-text'); pre.textContent = res.content.trim();
+      box.appendChild(pre);
+    }).catch(function (err) {
+      box.textContent = '';
+      box.appendChild(el('div', 'empty-hint', '✗ ' + (err.msg || 'AI 归纳失败，请检查配置页 AI 设置')));
     });
   }
 
@@ -3333,7 +3411,7 @@
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
       if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
       /* N：新建任务 → 跳到计划页并聚焦添加框 */
-      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('plan'); setTimeout(function () { var pi = document.getElementById('plan-input'); if (pi) pi.focus(); }, 200); }
+      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('plan'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
       if (k === '/') { e.preventDefault(); var si = document.querySelector('.tab-panel.active input[type="text"], .tab-panel.active input[type="search"]'); if (si) si.focus(); }
     });
@@ -3758,6 +3836,7 @@
     refs.btnAddModule = $('btn-add-module');
     refs.subjectChapters = $('subject-chapters');
     refs.btnSmartPlan = $('btn-smart-plan');
+    refs.btnAiPlan = $('btn-ai-plan');
     refs.planItems = $('plan-items');
     refs.planItemText = $('plan-item-text');
     refs.planNote = $('plan-note');
@@ -3866,15 +3945,6 @@
       });
     }
 
-    // 「快速开始」圆形行动按钮 → 跳到记录页
-    refs.btnQuickFocus = $('btn-quick-focus');
-    if (refs.btnQuickFocus) {
-      refs.btnQuickFocus.addEventListener('click', function () {
-        switchTab('record');
-        if (typeof showToast === 'function') showToast('⏱ 进入记录页，挑一个科目开始计时吧', 'ok');
-      });
-    }
-
     // 翻译密钥（用户自带 key，仅存本机浏览器）
     refs.transAppid = $('trans-appid');
     refs.transKey = $('trans-key');
@@ -3896,6 +3966,7 @@
     refs.transResult = $('trans-result');
     refs.wrongCount = $('wrong-count');
     refs.wrongList = $('wrong-list');
+    refs.wrongAiSummary = $('wrong-ai-summary');
     refs.btnClearWrong = $('btn-clear-wrong');
 
     // 配置
@@ -4005,6 +4076,8 @@
         showToast('已清空错词本', 'ok');
       });
     });
+    refs.btnAiSummarizeWrong = $('btn-ai-summarize-wrong');
+    if (refs.btnAiSummarizeWrong) refs.btnAiSummarizeWrong.addEventListener('click', summarizeWrongBook);
     // 词汇：背单词 / 复习
     refs.btnPracticeRestart.addEventListener('click', startPractice);
     refs.btnReviewRestart.addEventListener('click', startReview);
@@ -4088,6 +4161,7 @@
     });
     // 学习计划：智能生成 + 手动添加
     refs.btnSmartPlan.addEventListener('click', onSmartPlan);
+    if (refs.btnAiPlan) refs.btnAiPlan.addEventListener('click', onAiPlan);
     refs.btnAddPlanItem.addEventListener('click', function () {
       var text = refs.planItemText.value.trim();
       if (!text) { alert('请输入计划内容'); return; }

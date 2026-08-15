@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260815c" />
+  <link rel="stylesheet" href="styles.css?v=20260815d" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -291,25 +291,6 @@
           <div class="sc-item">
             <div class="sc-label">累计等级</div>
             <div class="sc-value" id="agg-level">Lv.0</div>
-          </div>
-        </div>
-
-        <!-- 旧 secondary 隐藏（CSS 已 display:none 兜底） -->
-        <div class="today-secondary" style="display:none">
-          <div class="sec-item">
-            <span class="sec-label">距考研</span>
-            <span class="sec-num" id="agg-countdown">--</span>
-            <span class="sec-unit">天</span>
-          </div>
-          <span class="sec-divider" aria-hidden="true"></span>
-          <div class="sec-item">
-            <span class="sec-label">今日得分</span>
-            <span class="sec-num" id="agg-score">0</span>
-          </div>
-          <span class="sec-divider" aria-hidden="true"></span>
-          <div class="sec-item">
-            <span class="sec-label">累计等级</span>
-            <span class="sec-num" id="agg-level">Lv.1</span>
           </div>
         </div>
 
@@ -589,7 +570,9 @@
         <h2 class="card-title">📕 错词本（错误单词记录本） <span id="wrong-count" class="count-pill">0</span></h2>
         <div class="btn-row" style="margin-bottom:10px">
           <button id="btn-clear-wrong" class="btn btn-danger">清空错词本</button>
+          <button id="btn-ai-summarize-wrong" class="btn btn-ghost">🤖 AI 归纳全书错词</button>
         </div>
+        <div id="wrong-ai-summary" class="ai-summary-box"></div>
         <div id="wrong-list" class="mistake-list"></div>
       </div>
     </section>
@@ -710,6 +693,7 @@
         <h2 class="card-title">🗺️ 学习计划</h2>
         <div class="btn-row">
           <button id="btn-smart-plan" class="btn btn-primary">⚡ 按进度智能生成计划</button>
+          <button id="btn-ai-plan" class="btn btn-primary">🤖 AI 生成计划</button>
         </div>
         <div id="plan-items" class="plan-items"></div>
         <div class="plan-add">
@@ -913,13 +897,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260815c"></script>
-  <script src="words.js?v=20260815c"></script>
-  <script src="store.js?v=20260815c"></script>
-  <script src="charts.js?v=20260815c"></script>
-  <script src="share.js?v=20260815c"></script>
-  <script src="md5.js?v=20260815c"></script>
-  <script src="sentences.js?v=20260815c"></script>
-  <script src="app.js?v=20260815c"></script>
+  <script src="qrcode.min.js?v=20260815d"></script>
+  <script src="words.js?v=20260815d"></script>
+  <script src="store.js?v=20260815d"></script>
+  <script src="charts.js?v=20260815d"></script>
+  <script src="share.js?v=20260815d"></script>
+  <script src="md5.js?v=20260815d"></script>
+  <script src="sentences.js?v=20260815d"></script>
+  <script src="app.js?v=20260815d"></script>
 </body>
 </html>
