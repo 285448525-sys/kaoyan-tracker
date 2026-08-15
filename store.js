@@ -107,7 +107,7 @@
       websites: [], // {id,name,url,cat}
       vocab: [],    // {id,word,cn,box,next,added,wrong,last}
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
-      aiConfig: { baseUrl: '', model: '', key: '' }, // AI 中转配置（OpenAI 兼容：接口地址/模型/Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
+      aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
       wrongWords: [], // 错词本（独立）{id,word,cn,created,src}
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
@@ -511,12 +511,13 @@
     save();
   }
 
-  /* ---------- AI 配置（OpenAI 兼容：接口地址/模型/Key；仅存本机浏览器，key 经 /api/ai 中转不暴露） ---------- */
+  /* ---------- AI 配置（内置 DeepSeek 默认值，用户只需填 Key；仅存本机浏览器，key 经 /api/ai 中转不暴露） ---------- */
   function getAiConfig() {
+    var ac = state.aiConfig || {};
     return {
-      baseUrl: (state.aiConfig && state.aiConfig.baseUrl) || '',
-      model: (state.aiConfig && state.aiConfig.model) || '',
-      key: (state.aiConfig && state.aiConfig.key) || ''
+      baseUrl: (ac.baseUrl || '') || 'https://api.deepseek.com/v1',
+      model: (ac.model || '') || 'deepseek-chat',
+      key: (ac.key || '') || ''
     };
   }
   function setAiConfig(cfg) {

@@ -184,22 +184,12 @@
       </div>
 
       <div class="card ai-card">
-        <h2 class="card-title">🤖 AI 能力（错题讲解 / 长难句深度分析）</h2>
-        <p class="hint">填写 OpenAI 兼容接口的地址、模型与 Key，即可在错题本、长难句模块使用 AI 讲解。你的 Key 经本站服务器中转、不暴露在浏览器中。⚠️ 接口地址必须是 API 端点（不是网页管理后台），如 <code>https://api.deepseek.com/v1</code>。</p>
+        <h2 class="card-title">🤖 AI 能力（计划 / 错词归纳 / 学习总结 / 长难句分析）</h2>
+        <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
         <div class="field-row">
-          <label>接口地址</label>
-          <input type="text" id="ai-baseurl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
-          <div class="field-hint">接口地址必须包含 <code>/v1</code>，不能填管理后台网址（如 platform.deepseek.com/api_keys）。</div>
-        </div>
-        <div class="field-row">
-          <label>模型名称</label>
-          <input type="text" id="ai-model" placeholder="deepseek-chat" autocomplete="off" />
-          <div class="field-hint">例如 deepseek-chat、deepseek-reasoner、qwen-plus 等。</div>
-        </div>
-        <div class="field-row">
-          <label>API Key</label>
+          <label>DeepSeek API Key</label>
           <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
-          <div class="field-hint">在对应平台「API Keys」页面生成，以 sk- 开头。</div>
+          <div class="field-hint">在 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a> 生成，以 sk- 开头。</div>
         </div>
         <div class="btn-row">
           <button id="btn-save-ai" class="btn btn-primary">保存配置</button>

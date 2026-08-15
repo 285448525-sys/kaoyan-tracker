@@ -91,17 +91,17 @@ setTimeout(function () {
 function runNextChecks() {
   try { window.localStorage.setItem('kaoyan_tour_done', '1'); } catch (e) {}
 
-  // ---- AI 配置卡 ----
-  ok(!!document.getElementById('ai-baseurl'), '配置页存在 AI 接口地址输入框');
-  ok(!!document.getElementById('ai-model'), '配置页存在 AI 模型输入框');
-  ok(!!document.getElementById('ai-key'), '配置页存在 AI Key 输入框');
+  // ---- AI 配置卡（简化：仅需 DeepSeek Key） ----
+  ok(!document.getElementById('ai-baseurl'), '配置页已移除 AI 接口地址输入框（内置 DeepSeek 默认值）');
+  ok(!document.getElementById('ai-model'), '配置页已移除 AI 模型名称输入框（内置 deepseek-chat）');
+  ok(!!document.getElementById('ai-key'), '配置页存在 DeepSeek API Key 输入框');
   ok(!!document.getElementById('btn-save-ai'), '存在保存 AI 配置按钮');
   ok(!!document.getElementById('btn-test-ai'), '存在测试 AI 连接按钮');
   // Store API
   ok(typeof Store.getAiConfig === 'function' && typeof Store.setAiConfig === 'function', 'Store 导出 getAiConfig/setAiConfig');
-  Store.setAiConfig({ baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: 'sk-test' });
+  Store.setAiConfig({ key: 'sk-test' });
   const ai = Store.getAiConfig();
-  ok(ai.baseUrl === 'https://api.deepseek.com/v1' && ai.model === 'deepseek-chat' && ai.key === 'sk-test', 'AI 配置存取正确');
+  ok(ai.baseUrl === 'https://api.deepseek.com/v1' && ai.model === 'deepseek-chat' && ai.key === 'sk-test', 'AI 配置存取正确（内置默认 baseUrl/model）');
   Store.setAiConfig({ key: '' });
   ok(Store.getAiConfig().key === '', 'AI Key 可清空');
 

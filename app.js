@@ -2304,11 +2304,11 @@
     });
   }
 
-  /* ============ AI 能力（OpenAI 兼容接口，key 经 /api/ai 中转） ============ */
+  /* ============ AI 能力（DeepSeek 内置，用户只需填 Key） ============ */
+  var AI_DEFAULT_BASE = 'https://api.deepseek.com/v1';
+  var AI_DEFAULT_MODEL = 'deepseek-chat';
   function renderAiConfig() {
     var c = Store.getAiConfig();
-    if (refs.aiBaseUrl) refs.aiBaseUrl.value = c.baseUrl || '';
-    if (refs.aiModel) refs.aiModel.value = c.model || '';
     if (refs.aiKey) refs.aiKey.value = c.key || '';
   }
   function onSaveAi() {
@@ -2317,21 +2317,12 @@
     var restore = function () { if (btn) { btn.disabled = false; btn.textContent = '保存配置'; } };
     var safeToast = function (msg, type) { try { showToast(msg, type); } catch (e) {} };
     try {
-      var baseUrl = (refs.aiBaseUrl.value || '').trim();
-      var model = (refs.aiModel.value || '').trim();
       var key = (refs.aiKey.value || '').trim();
-      var c = Store.setAiConfig({ baseUrl: baseUrl, model: model, key: key });
-      refs.aiStatus.textContent = (c.baseUrl && c.model && c.key) ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
+      // 内置 DeepSeek 默认值，用户只需填 key
+      var c = Store.setAiConfig({ baseUrl: AI_DEFAULT_BASE, model: AI_DEFAULT_MODEL, key: key });
+      refs.aiStatus.textContent = key ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
       refs.aiStatus.className = 'import-status ai-status ok';
-      safeToast('AI 配置已保存', 'ok');
-      // 如果 URL 明显不是 API 端点，给出警告
-      if (baseUrl && !/^https?:\/\//i.test(baseUrl)) {
-        safeToast('接口地址必须以 http:// 或 https:// 开头', 'warn');
-      } else if (baseUrl && /\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) {
-        safeToast('接口地址看起来是管理页面，不是 API 端点。正确示例：' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
-      } else if (baseUrl && !baseUrl.includes('/v1')) {
-        safeToast('建议接口地址以 /v1 结尾，例如 ' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
-      }
+      safeToast(key ? 'AI 配置已保存' : 'AI 配置已清空', 'ok');
     } catch (e) {
       safeToast('保存失败：' + (e && e.message || '未知错误'), 'err');
       refs.aiStatus.textContent = '✗ 保存失败';
@@ -2341,15 +2332,8 @@
     }
   }
   function onTestAi() {
-    var baseUrl = (refs.aiBaseUrl.value || '').trim();
-    var model = (refs.aiModel.value || '').trim();
     var key = (refs.aiKey.value || '').trim();
-    if (!baseUrl) { showToast('请填写接口地址', 'err'); refs.aiStatus.textContent = '✗ 接口地址未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
-    if (!/^https?:\/\//i.test(baseUrl)) { showToast('接口地址必须以 http:// 或 https:// 开头', 'err'); refs.aiStatus.textContent = '✗ 接口地址格式错误'; refs.aiStatus.className = 'import-status ai-status err'; return; }
-    if (/\/(api_keys|dashboard|login|signup|console|settings)(\/|$)/i.test(baseUrl)) { showToast('接口地址是管理页面，不是 API 端点。请填写 API 地址，如 https://api.deepseek.com/v1', 'err'); refs.aiStatus.textContent = '✗ 接口地址不是 API 端点'; refs.aiStatus.className = 'import-status ai-status err'; return; }
-    if (!model) { showToast('请填写模型名称', 'err'); refs.aiStatus.textContent = '✗ 模型名称未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
-    if (/^\d+$/.test(model)) { showToast('模型名称不能是纯数字，请填写如 deepseek-chat', 'err'); refs.aiStatus.textContent = '✗ 模型名称格式错误'; refs.aiStatus.className = 'import-status ai-status err'; return; }
-    if (!key) { showToast('请填写 API Key', 'err'); refs.aiStatus.textContent = '✗ API Key 未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
+    if (!key) { showToast('请填写 DeepSeek API Key', 'err'); refs.aiStatus.textContent = '✗ API Key 未填写'; refs.aiStatus.className = 'import-status ai-status err'; return; }
     onSaveAi();
     var btn = refs.btnTestAi;
     if (btn) { btn.disabled = true; btn.textContent = '测试中…'; }
