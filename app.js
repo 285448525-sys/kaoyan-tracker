@@ -12,7 +12,7 @@
   // 规则：渲染任何「用户或云端他人输入」的文本时，二选一：
   //  1) 纯文本 → 用 setText(node, text)（走 textContent，绝不会被当 HTML 解析，最安全）；
   //  2) 需要拼接 HTML → 对其中每一段动态内容先 escapeHtml() 再拼。
-  // 已核对：renderWatchBody 等渲染云端数据的函数均已对全部字段 escapeHtml。
+  // 已核对：所有动态写入 DOM 的用户/云端内容均已 escapeHtml 或走 textContent。
   function setText(node, text) {
     if (!node) return;
     node.textContent = (text === undefined || text === null) ? '' : String(text);
@@ -607,45 +607,6 @@
         navigator.share({ files: [f], title: '考研学习打卡', text: '今日学习打卡' }).catch(function () {});
       }
     });
-  }
-
-  function onInvite() {
-    var cfg = Store.getConfig();
-    var streak = Store.consecutiveStreak();
-    var nick = cfg.nickname || '我';
-    var url = window.location.origin;
-    var msg = '我正在用「考研学习Hub」记录每天的复习进度';
-    if (streak > 0) msg += '，已连续打卡 ' + streak + ' 天';
-    msg += '！\n\n背单词、刷题、计时、学习计划、番茄钟全都有，还能跨设备云同步，手机电脑数据一样。\n\n一起来打卡吧 👉 ' + url;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(msg).then(function () {
-          alert('邀请文案已复制到剪贴板！\n\n直接粘贴到微信群/QQ群即可，朋友们点链接就能用。');
-        }).catch(function () {
-          fallbackCopy(msg);
-        });
-      } else {
-        fallbackCopy(msg);
-      }
-    } catch (e) {
-      fallbackCopy(msg);
-    }
-  }
-
-  function fallbackCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      alert('邀请文案已复制到剪贴板！\n\n直接粘贴到微信群/QQ群即可，朋友们点链接就能用。');
-    } catch (e) {
-      prompt('复制失败，请手动选中以下文字复制：', text);
-    }
-    document.body.removeChild(ta);
   }
 
   function buildMarkdownReport() {
@@ -2313,7 +2274,6 @@
         safeToast('建议接口地址以 /v1 结尾，例如 ' + (refs.aiBaseUrl.placeholder || 'https://api.xxx.com/v1'), 'warn');
       }
     } catch (e) {
-      console.error('onSaveAi error', e);
       safeToast('保存失败：' + (e && e.message || '未知错误'), 'err');
       refs.aiStatus.textContent = '✗ 保存失败';
       refs.aiStatus.className = 'import-status ai-status err';
@@ -3379,7 +3339,7 @@
     });
   }
 
-  /* ---------------- 云端同步（登录码） ---------------- */
+  /* ---------------- 云端同步（简化版） ---------------- */
   function renderSyncConfig() {
     if (!refs.syncCode) return;
     refs.syncCode.value = Store.getLastSyncCode();
@@ -3402,12 +3362,10 @@
   }
   function syncApi(method, payload) {
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return Promise.reject(new Error('no sync code')); }
+    if (!code) { syncSetStatus('请先输入登录码', 'error'); return Promise.reject(new Error('no sync code')); }
     var headers = { 'Content-Type': 'application/json' };
-    // 后端从 X-Sync-Key header 读取登录码（GET/DELETE 不能带 body，所以必须放 header）
     headers['X-Sync-Key'] = code;
     var opts = { method: method, headers: headers };
-    // 浏览器硬约束：GET/HEAD/DELETE 不能带请求体，只有 PUT/POST 才发送 body
     if (method === 'PUT' || method === 'POST') {
       var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
       if (payload !== undefined) body.data = payload;
@@ -3419,88 +3377,56 @@
       return j;
     });
   }
-  function onSyncUpload() {
+
+  /* 确定：保存登录码 + 上传数据 + 启动自动同步 */
+  function onSyncConfirm() {
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
-    if (!confirm('确定把本机全部数据上传到云端登录码「' + code + '」？\n相同登录码的旧云端数据会被覆盖。')) return;
+    if (!code) { syncSetStatus('请先输入登录码', 'error'); return; }
+    if (code.length < 3) { syncSetStatus('登录码至少需要 3 个字符', 'error'); return; }
+    // 保存到本地
+    Store.setLastSyncCode(code);
     syncSetStatus('正在上传…', '');
     var payload = Store.snapshot();
     syncApi('PUT', payload).then(function (res) {
-      Store.setLastSyncCode(code);
-      syncSetStatus('✅ 上传成功（版本 ' + (res && res.version ? res.version : '?') + '，设备：' + Store.getLastDeviceId() + '）', 'ok');
-      showToast('云端上传成功 ☁️');
+      syncSetStatus('✅ 已连接云端（版本 ' + (res && res.version ? res.version : '?') + '）', 'ok');
+      showToast('云端同步已开启 ☁️');
+      // 启动自动同步
+      autoSyncEnabled = true;
+      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '1'); } catch (e) {}
+      lastPushAt = Date.now();
+      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+      startAutoSyncPolling();
     }).catch(function (err) {
-      syncSetStatus('❌ 上传失败：' + (err.message || err), 'error');
+      syncSetStatus('❌ 连接失败：' + (err.message || err), 'error');
     });
   }
   function onSyncDownload() {
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
-    if (!confirm('从云端登录码「' + code + '」下载数据会覆盖本机全部数据，确定继续？')) return;
-    if (!confirm('二次确认：本机学习记录、计划、错题、词汇等都将被云端数据替换，建议先点「导出备份」留一份。确定下载？')) return;
+    if (!code) { syncSetStatus('请先输入登录码', 'error'); return; }
+    if (!confirm('从云端下载「' + code + '」的数据会覆盖本机全部数据，确定继续？')) return;
+    if (!confirm('二次确认：本机学习记录、计划、错题、词汇等都将被云端数据替换，建议先「导出备份」留一份。确定下载？')) return;
     syncSetStatus('正在下载…', '');
     syncApi('GET').then(function (res) {
       if (!res || !res.data) { syncSetStatus('⚠️ 该登录码暂无云端数据', 'error'); return; }
+      isApplyingRemote = true;
       var ok = Store.restoreSnapshot(res.data);
+      isApplyingRemote = false;
       if (!ok) { syncSetStatus('❌ 数据恢复失败，格式不兼容', 'error'); return; }
       Store.setLastSyncCode(code);
-      syncSetStatus('✅ 下载成功（版本 ' + (res.version || '?') + '），正在刷新页面…', 'ok');
+      syncSetStatus('✅ 下载成功，正在刷新…', 'ok');
       setTimeout(function () { location.reload(); }, 900);
     }).catch(function (err) {
       syncSetStatus('❌ 下载失败：' + (err.message || err), 'error');
     });
   }
-  function onSyncDelete() {
-    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入或生成登录码', 'error'); return; }
-    if (!confirm('确定删除云端登录码「' + code + '」的全部数据？\n本机数据不受影响，但之后无法用这个登录码从云端拉取。')) return;
-    if (!confirm('二次确认：云端数据将被永久删除，无法恢复。确定删除？')) return;
-    syncSetStatus('正在删除…', '');
-    syncApi('DELETE').then(function (res) {
-      syncSetStatus('✅ 云端数据已删除（' + (res && res.removed ? res.removed + ' 条记录' : '完成') + '）', 'ok');
-      showToast('云端数据已删除');
-    }).catch(function (err) {
-      syncSetStatus('❌ 删除失败：' + (err.message || err), 'error');
-    });
-  }
-  function onGenSyncCode() {
-    var c = Store.generateSyncCode();
-    if (refs.syncCode) refs.syncCode.value = c;
-    Store.setLastSyncCode(c);
-    syncSetStatus('已生成新登录码，记得分享给要同步的设备哦 🎲', 'ok');
-  }
-  function onCopySyncCode() {
-    var c = ((refs.syncCode ? refs.syncCode.value : '') || '').trim();
-    if (!c) { syncSetStatus('登录码为空，无法复制', 'error'); return; }
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(c).then(function () {
-          syncSetStatus('✅ 登录码「' + c + '」已复制到剪贴板', 'ok');
-        }, function () { throw new Error('clipboard fail'); });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = c; document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-        syncSetStatus('✅ 登录码「' + c + '」已复制', 'ok');
-      }
-    } catch (e) {
-      syncSetStatus('复制失败，请手动选中文本复制：' + c, 'error');
-    }
-  }
 
-  /* ---------------- 自动同步（实时双向） ---------------- */
+  /* ---- 自动同步（默认开启，用户无感） ---- */
   var autoSyncEnabled = false;
-  var lastPushAt = 0;        // 上次成功推送到云端的时间戳
-  var lastLocalEditAt = 0;   // 上次本地有改动的时间戳（用于冲突检测）
+  var lastPushAt = 0;
+  var lastLocalEditAt = 0;
   var autoSyncTimer = null;
   var autoPushTimer = null;
-  var isApplyingRemote = false; // 正在应用云端拉取时，抑制 save 钩子触发推送
-  function setAutoSyncStatus(msg, cls) {
-    var el = $('auto-sync-status');
-    if (!el) return;
-    el.textContent = msg || '';
-    el.className = 'import-status' + (cls ? ' ' + cls : '');
-  }
+  var isApplyingRemote = false;
   function autoSyncTimeStr(d) {
     var h = d.getHours(), m = d.getMinutes();
     return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
@@ -3510,9 +3436,7 @@
     var p = '0';
     try { p = localStorage.getItem('kaoyan_tracker_v1:auto_sync_push_at') || '0'; } catch (e) {}
     lastPushAt = Number(p) || 0;
-    if (refs.autoSyncToggle) refs.autoSyncToggle.checked = autoSyncEnabled;
     if (autoSyncEnabled) startAutoSyncPolling();
-    setAutoSyncStatus(autoSyncEnabled ? '自动同步已开启' : '', autoSyncEnabled ? 'ok' : '');
   }
   function scheduleAutoPush() {
     if (!autoSyncEnabled || isApplyingRemote) return;
@@ -3528,31 +3452,25 @@
     syncApi('PUT', payload).then(function () {
       lastPushAt = Date.now();
       try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
-      setAutoSyncStatus('已自动同步 ' + autoSyncTimeStr(new Date()), 'ok');
-    }).catch(function (err) {
-      setAutoSyncStatus('自动同步失败：' + (err.message || err), 'error');
-    });
+    }).catch(function () {});
   }
   function startAutoSyncPolling() {
     if (autoSyncTimer) clearInterval(autoSyncTimer);
     autoSyncTimer = setInterval(function () {
       if (!autoSyncEnabled) return;
       doAutoPullCheck();
-    }, 15000);
+    }, 30000);
   }
   function doAutoPullCheck() {
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code || isApplyingRemote) return;
     syncApi('GET').then(function (res) {
-      // 云端还没有数据 → 把本机作为基线推上去
       if (!res || !res.data) {
         if (autoSyncEnabled && lastPushAt === 0) doAutoPush(code);
         return;
       }
       var cloudUpdated = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : 0;
-      // 云端比我们上次推送新 → 别人在其他设备改了 → 拉取
       if (cloudUpdated > lastPushAt) {
-        var localDirty = lastLocalEditAt > lastPushAt;
         isApplyingRemote = true;
         var ok = Store.restoreSnapshot(res.data);
         isApplyingRemote = false;
@@ -3560,145 +3478,11 @@
           lastPushAt = cloudUpdated;
           try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
           if (typeof renderAll === 'function') renderAll();
-          setAutoSyncStatus((localDirty ? '⚠️ 云端有更新已同步（本机未上传改动可能已覆盖） ' : '已从云端更新 ') + autoSyncTimeStr(new Date()), localDirty ? 'error' : 'ok');
         }
       } else if (lastPushAt === 0) {
-        // 云端没比我们新，但我们还没推过 → 推一次确保基线
         doAutoPush(code);
       }
     }).catch(function () {});
-  }
-  function onToggleAutoSync() {
-    autoSyncEnabled = !!(refs.autoSyncToggle && refs.autoSyncToggle.checked);
-    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', autoSyncEnabled ? '1' : '0'); } catch (e) {}
-    if (autoSyncEnabled) {
-      var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-      if (!code) { syncSetStatus('请先输入登录码再开启自动同步', 'error'); refs.autoSyncToggle.checked = false; autoSyncEnabled = false; try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '0'); } catch (e) {} return; }
-      startAutoSyncPolling();
-      doAutoPullCheck(); // 先拉取云端基线（云端有数据则不覆盖），云端空则推本机基线
-      setAutoSyncStatus('自动同步已开启，正在同步…', 'ok');
-    } else {
-      if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
-      setAutoSyncStatus('自动同步已关闭', '');
-    }
-  }
-
-  /* ---------------- 实时查看云端（只读，不覆盖本机数据） ---------------- */
-  var watchTimer = null;
-  function computeStreakFromDays(days) {
-    if (!days) return 0;
-    var active = {};
-    Object.keys(days).forEach(function (ds) {
-      var d = days[ds]; if (!d) return;
-      var total = 0;
-      if (d.durations) Object.keys(d.durations).forEach(function (k) { total += Number(d.durations[k]) || 0; });
-      if (total > 0) active[ds] = true;
-    });
-    var streak = 0;
-    var cur = new Date();
-    // 如果今天还没学，从昨天算起，避免连续 0 天打断
-    if (!active[fmtDate(cur)]) cur.setDate(cur.getDate() - 1);
-    while (active[fmtDate(cur)]) { streak++; cur.setDate(cur.getDate() - 1); }
-    return streak;
-  }
-  function fmtDate(d) {
-    var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
-    return y + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
-  }
-  function onWatchCloud() {
-    var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
-    if (!code) { syncSetStatus('请先输入要查看的登录码', 'error'); return; }
-    var modal = $('watch-modal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    fetchWatchOnce();
-    if (watchTimer) clearInterval(watchTimer);
-    watchTimer = setInterval(fetchWatchOnce, 15000); // 每 15 秒自动刷新
-  }
-  function fetchWatchOnce() {
-    var metaEl = $('watch-meta');
-    var bodyEl = $('watch-body');
-    if (!bodyEl) return;
-    syncApi('GET').then(function (res) {
-      if (!res || !res.data) {
-        if (bodyEl) bodyEl.innerHTML = '<div class="watch-empty">该登录码暂无云端数据</div>';
-        if (metaEl) metaEl.textContent = '';
-        return;
-      }
-      renderWatchBody(res.data, res.meta);
-      if (metaEl) {
-        var now = new Date();
-        var t = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()) + ':' + (now.getSeconds() < 10 ? '0' + now.getSeconds() : now.getSeconds());
-        metaEl.textContent = '最后刷新 ' + t + ' · 每 15 秒自动更新';
-      }
-    }).catch(function (err) {
-      if (bodyEl) bodyEl.innerHTML = '<div class="watch-err">加载失败：' + escapeHtml(err.message || err) + '<br>请确认登录码正确，且对方已上传过数据。</div>';
-    });
-  }
-  function renderWatchBody(data, meta) {
-    var bodyEl = $('watch-body');
-    if (!bodyEl) return;
-    var cfg = data.config || {};
-    var days = data.days || {};
-    var subjects = cfg.subjects || [];
-    var subMap = {}; subjects.forEach(function (s) { subMap[s.key] = s; });
-    var streak = computeStreakFromDays(days);
-    // 最近 7 天
-    var recent = Object.keys(days).sort().reverse().slice(0, 7);
-    var totalMin7 = 0;
-    recent.forEach(function (ds) {
-      var d = days[ds]; if (!d || !d.durations) return;
-      Object.keys(d.durations).forEach(function (k) { totalMin7 += Number(d.durations[k]) || 0; });
-    });
-    var avg = recent.length ? Math.round(totalMin7 / recent.length) : 0;
-    var html = '';
-    html += '<div class="wk-name">' + escapeHtml(cfg.nickname || '未命名') + '</div>';
-    html += '<div class="wk-sub">登录码 ' + escapeHtml((refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '') +
-            (cfg.major ? ' · 目标专业：' + escapeHtml(cfg.major) : '') + '</div>';
-    html += '<div class="wk-stat-row">';
-    html += '<div class="wk-stat"><div class="v">' + streak + '</div><div class="l">连续打卡(天)</div></div>';
-    html += '<div class="wk-stat"><div class="v">' + recent.length + '</div><div class="l">近7天学习(天)</div></div>';
-    html += '<div class="wk-stat"><div class="v">' + avg + '</div><div class="l">日均(分钟)</div></div>';
-    if (meta && meta.updatedAt) html += '<div class="wk-stat"><div class="v" style="font-size:13px;padding-top:4px">' + escapeHtml(String(meta.updatedAt).slice(0, 16).replace('T', ' ')) + '</div><div class="l">云端更新于</div></div>';
-    html += '</div>';
-
-    // 最近学习记录
-    if (recent.length) {
-      html += '<div class="wk-sec-title">📅 最近学习记录</div>';
-      recent.forEach(function (ds) {
-        var d = days[ds];
-        var total = 0; var parts = [];
-        if (d.durations) Object.keys(d.durations).forEach(function (k) {
-          var m = Number(d.durations[k]) || 0; if (m <= 0) return;
-          total += m;
-          var name = (subMap[k] && subMap[k].name) || k;
-          parts.push(name + ' ' + m + '分');
-        });
-        html += '<div class="wk-day"><span class="d">' + escapeHtml(ds) + '</span>' +
-                '<span class="mins">' + total + '分</span>' +
-                '<span class="subj">' + escapeHtml(parts.join('，') || '—') + '</span></div>';
-      });
-    } else {
-      html += '<div class="watch-empty">还没有学习记录</div>';
-    }
-
-    // 词汇 / 错题
-    var vocabN = (data.vocab || []).length;
-    var wrongN = (data.wrongWords || []).length;
-    var mathCur = data.mathCurrent, mathTotal = (data.mathChapters || []).length;
-    html += '<div class="wk-sec-title">📚 其他数据</div>';
-    html += '<div class="wk-stat-row">';
-    html += '<div class="wk-stat"><div class="v">' + vocabN + '</div><div class="l">生词本</div></div>';
-    html += '<div class="wk-stat"><div class="v">' + wrongN + '</div><div class="l">错词本</div></div>';
-    if (mathTotal) html += '<div class="wk-stat"><div class="v">' + (mathCur >= 0 ? mathCur + 1 : 0) + '/' + mathTotal + '</div><div class="l">数学章节</div></div>';
-    html += '</div>';
-
-    bodyEl.innerHTML = html;
-  }
-  function closeWatch() {
-    var modal = $('watch-modal');
-    if (modal) modal.style.display = 'none';
-    if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
   }
 
   function renderAll() {
@@ -3813,19 +3597,11 @@
     refs.fileImport = $('file-import');
     refs.btnResetAll = $('btn-reset-all');
 
-    // 云同步（登录码）
+    // 云同步（简化版）
     refs.syncCode = $('sync-code');
-    refs.btnGenSyncCode = $('btn-gen-sync-code');
-    refs.btnCopySyncCode = $('btn-copy-sync-code');
-    refs.btnSyncUpload = $('btn-sync-upload');
+    refs.btnSyncConfirm = $('btn-sync-confirm');
     refs.btnSyncDownload = $('btn-sync-download');
-    refs.btnSyncDelete = $('btn-sync-delete');
     refs.syncStatus = $('sync-status');
-    // 邀请好友 / 实时查看云端 / 自动同步开关
-    refs.btnInvite = $('btn-invite');
-    refs.btnSyncWatch = $('btn-sync-watch');
-    refs.autoSyncToggle = $('auto-sync-toggle');
-    refs.btnWatchClose = $('btn-watch-close');
 
     refs.timerRows = $('timer-rows');
     refs.pomoTime = $('pomo-time');
@@ -4147,23 +3923,14 @@
       renderPlan(); renderToday();
     });
 
-    // 云同步按钮
-    if (refs.btnGenSyncCode) refs.btnGenSyncCode.addEventListener('click', onGenSyncCode);
-    if (refs.btnCopySyncCode) refs.btnCopySyncCode.addEventListener('click', onCopySyncCode);
-    if (refs.btnSyncUpload) refs.btnSyncUpload.addEventListener('click', onSyncUpload);
+    // 云同步（简化版）
+    if (refs.btnSyncConfirm) refs.btnSyncConfirm.addEventListener('click', onSyncConfirm);
     if (refs.btnSyncDownload) refs.btnSyncDownload.addEventListener('click', onSyncDownload);
-    if (refs.btnSyncDelete) refs.btnSyncDelete.addEventListener('click', onSyncDelete);
     if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').trim().toUpperCase()); });
-    // 邀请好友 / 实时查看云端 / 自动同步（双向实时）
-    if (refs.btnInvite) refs.btnInvite.addEventListener('click', onInvite);
-    if (refs.btnSyncWatch) refs.btnSyncWatch.addEventListener('click', onWatchCloud);
-    if (refs.autoSyncToggle) refs.autoSyncToggle.addEventListener('change', onToggleAutoSync);
+    // 自动同步（默认开启，确定后自动启动）
+    loadAutoSyncPref();
     if (refs.btnStartTour) refs.btnStartTour.addEventListener('click', startTour);
     if (refs.btnRestartTour) refs.btnRestartTour.addEventListener('click', startTour);
-    // 实时查看云端：关闭按钮 + 点击遮罩关闭
-    if (refs.btnWatchClose) refs.btnWatchClose.addEventListener('click', closeWatch);
-    var watchBackdrop = document.querySelector('#watch-modal .watch-backdrop');
-    if (watchBackdrop) watchBackdrop.addEventListener('click', closeWatch);
 
     // 数据
     refs.heatPrev.addEventListener('click', function () { heatMonth--; if (heatMonth < 0) { heatMonth = 11; heatYear--; } renderData(); });

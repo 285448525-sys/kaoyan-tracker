@@ -1067,39 +1067,9 @@ body.theme-dark .sec-num { color: #f5f3ff; }
 .switch .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
 .switch input:checked + .slider { background: var(--primary, #4f46e5); }
 .switch input:checked + .slider:before { transform: translateX(20px); }
-#auto-sync-status { margin-top: 6px; font-size: 13px; color: #6b7280; }
-#auto-sync-status.ok { color: #16a34a; }
-#auto-sync-status.error { color: #dc2626; }
-
-/* ---- 实时查看云端 模态框 ---- */
-.watch-modal { position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
-.watch-backdrop { position: absolute; inset: 0; background: rgba(15,18,32,.55); backdrop-filter: blur(2px); }
-.watch-panel { position: relative; width: min(560px, 92vw); max-height: 86vh; overflow: hidden; background: var(--card, #fff); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.28); display: flex; flex-direction: column; }
-.watch-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line, #e5e7eb); }
-.watch-title { font-weight: 700; font-size: 15px; color: var(--ink, #1f2937); }
-.watch-meta { font-size: 12px; color: #6b7280; margin-left: auto; }
-.watch-close { margin-left: 6px; border: none; background: transparent; font-size: 18px; cursor: pointer; color: #9ca3af; line-height: 1; }
-.watch-close:hover { color: #374151; }
-.watch-body { overflow-y: auto; padding: 16px 18px; }
-.watch-empty { color: #9ca3af; text-align: center; padding: 30px 0; }
-.watch-err { color: #dc2626; padding: 20px 0; text-align: center; }
-.wk-name { font-size: 18px; font-weight: 700; color: var(--ink, #1f2937); }
-.wk-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
-.wk-stat-row { display: flex; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
-.wk-stat { flex: 1; min-width: 90px; background: #f3f4f6; border-radius: 10px; padding: 10px 12px; text-align: center; }
-.wk-stat .v { font-size: 20px; font-weight: 700; color: var(--primary, #4f46e5); }
-.wk-stat .l { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.wk-sec-title { font-size: 13px; font-weight: 700; color: var(--ink, #1f2937); margin: 16px 0 8px; }
-.wk-day { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; }
-.wk-day:nth-child(odd) { background: #f9fafb; }
-.wk-day .d { font-size: 13px; color: #374151; width: 92px; flex-shrink: 0; }
-.wk-day .mins { font-weight: 700; color: var(--primary, #4f46e5); width: 64px; text-align: right; flex-shrink: 0; }
-.wk-day .subj { font-size: 12px; color: #6b7280; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-:root[data-theme="dark"] .watch-panel { background: #1f2233; }
-:root[data-theme="dark"] .watch-head { border-color: #313548; }
-:root[data-theme="dark"] .wk-stat { background: #272a3d; }
-:root[data-theme="dark"] .wk-day:nth-child(odd) { background: #252838; }
-:root[data-theme="dark"] .watch-empty, :root[data-theme="dark"] .wk-day .subj { color: #9ca3af; }
+/* ---- 云端同步（简化版） ---- */
+.sync-hint { font-size: 13px; color: #6b7280; margin: 4px 0 10px; line-height: 1.5; }
+.cloud-sync-card .btn-row { margin-top: 8px; }
 
 /* ============ 通用小字（精简统计行，非教学说明） ============ */
 .card-sub { font-size: 13px; color: var(--muted); margin: 6px 0 10px; line-height: 1.5; }

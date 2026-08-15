@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260815a" />
+  <link rel="stylesheet" href="styles.css?v=20260815b" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -153,33 +153,18 @@
       </div>
 
       <div class="card cloud-sync-card">
-        <h2 class="card-title">☁️ 云端同步（登录码）</h2>
+        <h2 class="card-title">☁️ 云端同步</h2>
+        <p class="card-sub">输入自定义登录码后点击「确定」，数据自动上传至云端，此后所有设备用同一登录码即可同步。</p>
         <div class="field-row">
           <label>我的登录码</label>
-          <div style="display:flex;gap:8px;width:100%">
-            <input type="text" id="sync-code" placeholder="如：A7K9M3X2（8 位，分享给对象/朋友即可同步）" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',consolas,monospace" autocomplete="off" />
-            <button id="btn-gen-sync-code" class="btn btn-ghost" title="生成新登录码">🎲 生成</button>
-            <button id="btn-copy-sync-code" class="btn btn-ghost" title="复制登录码">📋 复制</button>
-          </div>
+          <input type="text" id="sync-code" placeholder="自己设定一个登录码，如：mykaoyan2026" autocomplete="off" style="width:100%;box-sizing:border-box;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',consolas,monospace" />
         </div>
+        <p class="sync-hint">💡 我的登录码是自定义的，以后要记住这个登录码。</p>
         <div class="btn-row">
-          <button id="btn-sync-upload" class="btn btn-primary">⬆️ 上传数据到云端</button>
+          <button id="btn-sync-confirm" class="btn btn-primary">✓ 确定（保存并上传）</button>
           <button id="btn-sync-download" class="btn btn-ghost">⬇️ 从云端下载</button>
-          <button id="btn-sync-delete" class="btn btn-danger">🗑 删除云端数据</button>
         </div>
-        <div class="btn-row">
-          <button id="btn-invite" class="btn btn-ghost">💌 邀请好友</button>
-          <button id="btn-sync-watch" class="btn btn-ghost">👁 实时查看云端</button>
-        </div>
-        <div class="switch-row">
-          <label class="switch"><input type="checkbox" id="auto-sync-toggle" /><span class="slider"></span></label>
-          <span>🔄 自动同步（实时双向：本机改动自动上传，其他设备改动自动拉取）</span>
-        </div>
-        <div id="auto-sync-status" class="import-status"></div>
-        <div class="field-row">
-          <label></label>
-          <div id="sync-status" class="import-status"></div>
-        </div>
+        <div id="sync-status" class="import-status"></div>
       </div>
 
       <div class="card translator-card">
@@ -918,21 +903,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- 实时查看云端（只读模态框） -->
-  <div id="watch-modal" class="watch-modal" style="display:none">
-    <div class="watch-backdrop" data-close="1"></div>
-    <div class="watch-panel">
-      <div class="watch-head">
-        <span class="watch-title">👁 实时查看云端</span>
-        <span id="watch-meta" class="watch-meta"></span>
-        <button id="btn-watch-close" class="watch-close" title="关闭">×</button>
-      </div>
-      <div id="watch-body" class="watch-body">
-        <div class="watch-empty">正在加载…</div>
-      </div>
-    </div>
-  </div>
-
   <!-- 移动端底部 Tab Bar -->
   <nav class="bottom-tabbar" id="bottomTabbar" aria-label="底部导航">
     <button class="btb-btn active" data-tab="today"><span>📅</span><span>今日</span></button>
@@ -944,13 +914,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260815a"></script>
-  <script src="words.js?v=20260815a"></script>
-  <script src="store.js?v=20260815a"></script>
-  <script src="charts.js?v=20260815a"></script>
-  <script src="share.js?v=20260815a"></script>
-  <script src="md5.js?v=20260815a"></script>
-  <script src="sentences.js?v=20260815a"></script>
-  <script src="app.js?v=20260815a"></script>
+  <script src="qrcode.min.js?v=20260815b"></script>
+  <script src="words.js?v=20260815b"></script>
+  <script src="store.js?v=20260815b"></script>
+  <script src="charts.js?v=20260815b"></script>
+  <script src="share.js?v=20260815b"></script>
+  <script src="md5.js?v=20260815b"></script>
+  <script src="sentences.js?v=20260815b"></script>
+  <script src="app.js?v=20260815b"></script>
 </body>
 </html>
