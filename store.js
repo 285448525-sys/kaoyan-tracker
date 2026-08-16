@@ -109,7 +109,7 @@
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
       aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
-      wrongWords: [], // 错词本（独立）{id,word,cn,created,src}
+      wrongWords: [], // 查词记录（独立）{id,word,cn,created,src}
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
       milestones: [], // 已达成里程碑 id 列表（用于庆祝动画去重，避免重复触发）
       moduleMastery: {},     // { 模块名: '已掌握'|'进行中'|'未开始' }
@@ -530,7 +530,7 @@
     save();
   }
 
-  /* ---------- 错词本（独立，与 vocab 分开） ---------- */
+  /* ---------- 查词记录（独立，与 vocab 分开） ---------- */
   function getWrongWords() {
     return (state.wrongWords || []).slice().sort(function (a, b) { return (a.created || '').localeCompare(b.created || ''); });
   }

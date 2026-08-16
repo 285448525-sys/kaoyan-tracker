@@ -7,7 +7,7 @@
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
-  //  - el(tag, cls, text)          → 第 3 参一律走 textContent（绝不解析为 HTML），覆盖所有叶子节点（模块名/计划/错词/生词…）。
+  //  - el(tag, cls, text)          → 第 3 参一律走 textContent（绝不解析为 HTML），覆盖所有叶子节点（模块名/计划/查词/生词…）。
   //  - setText(node, text)         → 显式文本写入（textContent）。
   //  - mountSafe(node, c, opts)    → 统一安全挂载：默认 textContent（强制转义）；仅当 opts.raw===true 且内容已 escapeHtml/来自可信静态模板时才走 innerHTML。
   // ⚠️ 现状（勿误读）：叶子节点已由 el() 全量收口为 textContent；但 app.js 内仍存在直接 `.innerHTML =` 的

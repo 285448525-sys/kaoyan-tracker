@@ -354,7 +354,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .word-card .w-cn { font-size: 14px; color: var(--ink); }
 .word-manual { margin-top: 12px; }
 .count-pill { display: inline-block; min-width: 22px; text-align: center; background: var(--primary); color: #fff; border-radius: 999px; font-size: 12px; padding: 1px 8px; margin-left: 4px; }
-/* 翻译密钥（用户自带 key，仅存本机）与错词本 */
+/* 翻译密钥（用户自带 key，仅存本机）与查词记录 */
 .translator-card { border-left: 4px solid #f59e0b; }
 .translator-note { font-size: 12px; color: var(--muted); }
 .translator-query-card { border-left: 4px solid #0ea5e9; }

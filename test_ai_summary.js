@@ -1,4 +1,4 @@
-/* jsdom 专项验证：🤖 AI 归纳全书错词（summarizeWrongBook） */
+/* jsdom 专项验证：🤖 AI 归纳全书查词（summarizeWrongBook） */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -60,14 +60,14 @@ function mockAiSuccess(content) {
   };
 }
 
-// 清空错词本，保证测试起点干净
+// 清空查词记录，保证测试起点干净
 Store.clearWrongWords();
 
 // ================= 1) 按钮 / 容器存在 =================
-ok(!!document.getElementById('btn-ai-summarize-wrong'), '错词本存在「🤖 AI 归纳全书错词」按钮');
-ok(!!document.getElementById('wrong-ai-summary'), '错词本存在 AI 归纳结果容器 #wrong-ai-summary');
+ok(!!document.getElementById('btn-ai-summarize-wrong'), '查词记录存在「🤖 AI 归纳全书查词」按钮');
+ok(!!document.getElementById('wrong-ai-summary'), '查词记录存在 AI 归纳结果容器 #wrong-ai-summary');
 
-// ================= 2) 空错词本 → 提示「暂无错词」 =================
+// ================= 2) 空查词记录 → 提示「暂无查词记录」 =================
 (function () {
   document.getElementById('btn-ai-summarize-wrong').dispatchEvent(new window.Event('click'));
   setTimeout(function () {
@@ -75,7 +75,7 @@ ok(!!document.getElementById('wrong-ai-summary'), '错词本存在 AI 归纳结�
     ok(!!box && box.textContent.indexOf('暂无查词记录') >= 0, '空查词记录点击给出「暂无查词记录」提示（不崩溃）');
     ok(runtimeErrors.length === 0, '空本点击不抛运行时错误（实际 ' + runtimeErrors.length + '）');
 
-    // ================= 3) 有 key + 错词 → 渲染归纳文本 =================
+    // ================= 3) 有 key + 查词 → 渲染归纳文本 =================
     Store.addWrongWord('abandon', 'v. 放弃', 'translate');
     Store.addWrongWord('abolish', 'v. 废除', 'translate');
     Store.setAiConfig({ baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: 'sk-test' });
@@ -83,8 +83,8 @@ ok(!!document.getElementById('wrong-ai-summary'), '错词本存在 AI 归纳结�
     document.getElementById('btn-ai-summarize-wrong').dispatchEvent(new window.Event('click'));
     setTimeout(function () {
       const box = document.getElementById('wrong-ai-summary');
-      ok(!!box && box.textContent.indexOf('高频') >= 0, '有错词且 AI 成功时渲染归纳文本');
-      ok(runtimeErrors.length === 0, '有错词点击不抛运行时错误（实际 ' + runtimeErrors.length + '）');
+      ok(!!box && box.textContent.indexOf('高频') >= 0, '有查词且 AI 成功时渲染归纳文本');
+      ok(runtimeErrors.length === 0, '有查词点击不抛运行时错误（实际 ' + runtimeErrors.length + '）');
 
       // ================= 4) 无 key → 配置提示 =================
       Store.setAiConfig({ baseUrl: '', model: '', key: '' });
@@ -93,7 +93,7 @@ ok(!!document.getElementById('wrong-ai-summary'), '错词本存在 AI 归纳结�
         const box = document.getElementById('wrong-ai-summary');
         ok(!!box && box.textContent.indexOf('配置') >= 0, '无 key 点击给出配置提示（不崩溃）');
         ok(jsdomErrors.length === 0, 'jsdom 内部错误数 = 0（实际 ' + jsdomErrors.length + '）');
-        console.log('\n========== AI 归纳全书错词测试结果 ==========');
+        console.log('\n========== AI 归纳全书查词测试结果 ==========');
         console.log('通过 ' + pass + ' / 失败 ' + fail);
         process.exit(fail ? 1 : 0);
       }, 120);

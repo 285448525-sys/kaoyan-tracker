@@ -99,15 +99,15 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
   ok(!threw, 'mountSafe / el 传入 null 节点不抛错');
 })();
 
-// 6) 真实数据路径回归：错词本渲染含 HTML 的错词内容不被执行
+// 6) 真实数据路径回归：查词记录渲染含 HTML 的查词内容不被执行
 (function () {
   window.Store.clearWrongWords();
   window.Store.addWrongWord('<img src=x onerror="window.__pwned3=1">', 'xss测试', 'translate');
-  // 触发错词本渲染
+  // 触发查词记录渲染
   window.__switchTab('wrong');
   const list = document.getElementById('wrong-list');
-  ok(!!list && list.querySelectorAll('img').length === 0, '错词本渲染含 HTML 的错词内容不创建 img 元素（el 已收口）');
-  ok(window.__pwned3 === undefined, '错词本渲染不触发 onerror 脚本');
+  ok(!!list && list.querySelectorAll('img').length === 0, '查词记录渲染含 HTML 的查词内容不创建 img 元素（el 已收口）');
+  ok(window.__pwned3 === undefined, '查词记录渲染不触发 onerror 脚本');
 })();
 
 // 7) 反向陷阱回归：el() 走 textContent 后，调用方不得再 escapeHtml，否则实体被字面显示
