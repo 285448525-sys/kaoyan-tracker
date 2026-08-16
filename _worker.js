@@ -188,6 +188,13 @@ async function handleSyncPut(env, req) {
       meta.phones[safe] = dataBinId;
       await jsonbinPut(META_BIN_ID, meta, key);
     } else {
+      // 乐观并发控制：若客户端携带 baseVersion（上次 GET 拿到的版本）与云端当前版本不一致，
+      // 说明该数据在客户端的版本之后已被其他设备修改过——返回 409 冲突，禁止静默整库覆盖。
+      const curRec = await jsonbinGet(dataBinId, key);
+      const curVersion = (curRec && curRec.version) || '';
+      if (r.baseVersion && curVersion && r.baseVersion !== curVersion) {
+        return jsonResponse(409, { error: 'conflict', currentVersion: curVersion }, { 'X-Sync-Version': curVersion });
+      }
       await jsonbinPut(dataBinId, record, key);
     }
     return jsonResponse(200, { ok: true, version }, { 'X-Sync-Version': version });

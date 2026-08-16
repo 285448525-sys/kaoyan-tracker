@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260815h';
+  var APP_VERSION = '20260815i';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3493,7 +3493,7 @@
     refs.syncStatus.textContent = msg || '';
     refs.syncStatus.className = 'import-status' + (type ? ' ' + type : '');
   }
-  function syncApi(method, payload) {
+  function syncApi(method, payload, syncOpts) {
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) { syncSetStatus('请先输入登录码', 'error'); return Promise.reject(new Error('no sync code')); }
     var headers = { 'Content-Type': 'application/json' };
@@ -3502,6 +3502,8 @@
     if (method === 'PUT' || method === 'POST') {
       var body = { syncCode: code, deviceId: Store.getLastDeviceId() };
       if (payload !== undefined) body.data = payload;
+      // B1：PUT 携带 baseVersion（上次 GET 拿到的版本）用于服务端乐观并发比对；force 覆盖时省略以跳过比对
+      if (syncOpts && syncOpts.baseVersion) body.baseVersion = syncOpts.baseVersion;
       opts.body = JSON.stringify(body);
     }
     return fetch('/api/sync', opts).then(function (r) { return r.json().then(function (j) { return [r, j]; }); }).then(function (arr) {
@@ -3555,6 +3557,7 @@
       var ok = Store.restoreSnapshot(res.data);
       isApplyingRemote = false;
       if (!ok) { syncSetStatus('❌ 数据恢复失败，格式不兼容', 'error'); return; }
+      if (res.version) lastSyncVersion = res.version;
       Store.setLastSyncCode(phone);
       syncSetStatus('✅ 登录成功，已同步云端数据', 'ok');
       showToast('登录成功，数据已同步 ☁️');
@@ -3587,6 +3590,7 @@
   var autoSyncEnabled = false;
   var lastPushAt = 0;
   var lastLocalEditAt = 0;
+  var lastSyncVersion = ''; // B1：上次 GET 拿到的云端版本，PUT 时作为 baseVersion 比对
   var autoSyncTimer = null;
   var autoPushTimer = null;
   var isApplyingRemote = false;
@@ -3609,13 +3613,36 @@
     if (autoPushTimer) clearTimeout(autoPushTimer);
     autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
   }
-  function doAutoPush(code) {
+  function doAutoPush(code, force) {
     if (!autoSyncEnabled || isApplyingRemote) return;
     var payload = Store.snapshot();
-    syncApi('PUT', payload).then(function () {
-      lastPushAt = Date.now();
-      try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
-    }).catch(function () {});
+    // B1：携带 baseVersion 供服务端乐观并发比对；force=true 时省略（强制覆盖冲突版本）
+    syncApi('PUT', payload, (force || !lastSyncVersion) ? {} : { baseVersion: lastSyncVersion })
+      .then(function () {
+        lastPushAt = Date.now();
+        try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+      })
+      .catch(function (err) {
+        // 409 冲突：云端已被其他设备修改（版本不一致）。征询用户：强制覆盖云端 or 拉取云端覆盖本机
+        if (err && /conflict/i.test(err.message || '')) {
+          var overwrite = confirm('云端数据已被其他设备更新（版本冲突）。\n点「确定」用本机数据强制覆盖云端（其他设备的改动将丢失）；\n点「取消」拉取云端覆盖本机。');
+          if (overwrite) {
+            doAutoPush(code, true); // 强制覆盖，不带 baseVersion
+          } else {
+            syncApi('GET').then(function (res) {
+              if (res && res.data) {
+                isApplyingRemote = true;
+                Store.restoreSnapshot(res.data);
+                isApplyingRemote = false;
+                if (res.version) lastSyncVersion = res.version;
+                lastPushAt = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : Date.now();
+                try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+                if (typeof renderAll === 'function') renderAll();
+              }
+            }).catch(function () {});
+          }
+        }
+      });
   }
   function startAutoSyncPolling() {
     if (autoSyncTimer) clearInterval(autoSyncTimer);
@@ -3632,8 +3659,20 @@
         if (autoSyncEnabled && lastPushAt === 0) doAutoPush(code);
         return;
       }
+      if (res.version) lastSyncVersion = res.version;
       var cloudUpdated = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : 0;
-      if (cloudUpdated > lastPushAt) {
+      // B1：用 max(上次推送, 本地最近编辑) 比较，而非仅 lastPushAt；避免本地未同步编辑被静默整份覆盖
+      var localLatest = Math.max(lastPushAt, lastLocalEditAt);
+      if (cloudUpdated > localLatest) {
+        // 本地存在未同步编辑（编辑后还没推上去），云端又有更新 → 不静默覆盖，征询用户
+        if (lastLocalEditAt > lastPushAt) {
+          var proceed = confirm('云端数据已于 ' + new Date(cloudUpdated).toLocaleString() + ' 更新，但本机也有未保存的改动。\n确定用云端覆盖本机吗？（本机未保存改动将丢失）\n点「取消」保留本机改动、稍后手动同步。');
+          if (!proceed) {
+            lastPushAt = cloudUpdated; // 标记为已阅，避免每次轮询反复弹窗
+            try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+            return;
+          }
+        }
         isApplyingRemote = true;
         var ok = Store.restoreSnapshot(res.data);
         isApplyingRemote = false;
@@ -4008,9 +4047,7 @@
     refs.btnSaveTranslator = $('btn-save-translator');
     refs.btnTestTranslator = $('btn-test-translator');
     refs.transStatus = $('trans-status');
-    // AI 配置（OpenAI 兼容，key 经 /api/ai 中转）
-    refs.aiBaseUrl = $('ai-baseurl');
-    refs.aiModel = $('ai-model');
+    // AI 配置（仅填 DeepSeek Key，接口地址/模型内置默认值，key 经 /api/ai 中转）
     refs.aiKey = $('ai-key');
     refs.btnSaveAi = $('btn-save-ai');
     refs.btnTestAi = $('btn-test-ai');
@@ -4286,6 +4323,15 @@
     window.__switchTab = switchTab;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
     window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
+    // B1 测试钩子（仅供 test_sync_phone.js 验证并发/本地保护逻辑，不影响生产行为）
+    window.__syncDebug = {
+      doAutoPullCheck: doAutoPullCheck,
+      doAutoPush: doAutoPush,
+      state: function () { return { lastPushAt: lastPushAt, lastLocalEditAt: lastLocalEditAt, lastSyncVersion: lastSyncVersion }; },
+      setLocalEditAt: function (t) { lastLocalEditAt = t; },
+      setPushAt: function (t) { lastPushAt = t; },
+      setSyncVersion: function (v) { lastSyncVersion = v; }
+    };
     // 回到顶部按钮
     initBackTop();
 
