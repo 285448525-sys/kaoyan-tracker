@@ -161,7 +161,7 @@ guard('数据热力图-翻页', function () {
 // 今日打卡
 guard('今日打卡-打卡按钮', function () {
   window.__switchTab('today');
-  const ck = document.querySelector('#btn-checkin');
+  const ck = document.querySelector('#btn-checkin-today');
   if (ck) ck.click();
 });
 // 长难句分析

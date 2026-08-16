@@ -557,6 +557,12 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   cursor: pointer; display: grid; place-items: center; transition: background .15s ease;
 }
 .theme-toggle:hover { background: rgba(255,255,255,.3); }
+.help-btn {
+  flex: none; width: 36px; height: 36px; border-radius: 10px; margin-left: 6px;
+  border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 19px; font-weight: 700;
+  cursor: pointer; display: grid; place-items: center; transition: background .15s ease;
+}
+.help-btn:hover { background: rgba(255,255,255,.3); }
 
 /* ============ 今日聚合卡片（模块 #1 美化重构 · 依据 UI配色规范 v1）============ */
 /* --- 0. 本模块新增令牌（并入 :root，配色规范 v1 N1） --- */
@@ -865,6 +871,16 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .hfwords-fold[open] .card-sub { margin-top: 8px; }
 .hfwords-fold .hf-list { margin-top: 10px; }
 .hfwords-fold .card-sub { margin: 6px 0 8px; }
+
+/* ============ 数据页「更多图表」折叠 ============ */
+.charts-fold { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); overflow: hidden; }
+.charts-fold > summary { cursor: pointer; list-style: none; padding: 14px 18px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.charts-fold > summary::-webkit-details-marker { display: none; }
+.charts-fold > summary::after { content: '▸'; margin-left: auto; transition: transform .15s ease; color: var(--muted); }
+.charts-fold[open] > summary { border-bottom: 1px solid var(--line); }
+.charts-fold[open] > summary::after { transform: rotate(90deg); }
+.charts-fold > .card { border: none; box-shadow: none; border-radius: 0; margin: 0; }
+.charts-fold > .card + .card { border-top: 1px solid var(--line); }
 
 /* ============ 章节勾选圆圈（独立完成标记，支持跳跃式学习） ============ */
 .chapter-check {

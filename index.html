@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260816c" />
+  <link rel="stylesheet" href="styles.css?v=20260816d" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -32,6 +32,7 @@
         <p class="brand-sub">计时 · 计划 · 模考 · 词汇</p>
       </div>
       <button class="theme-toggle" id="themeToggle" title="切换深色 / 浅色主题" aria-label="切换主题">🌙</button>
+      <button class="help-btn" id="btnHelp" title="使用说明 / 新手引导" aria-label="使用说明">？</button>
     </div>
     <nav class="side-menu">
       <div class="side-group-title">📋 核心流程</div>
@@ -60,7 +61,6 @@
 
       <div class="side-divider"></div>
       <div class="side-group-title">📖 帮助</div>
-      <button class="tab-btn" data-tab="manual"><span>📖</span><span class="tab-label">说明书</span></button>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
@@ -423,11 +423,6 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">🍰 今日学习时长分布</h2>
-        <div id="today-pie"></div>
-      </div>
-
-      <div class="card">
         <h2 class="card-title">🔥 学习热力图</h2>
         <div class="mheat-nav">
           <button id="heat-prev" class="mini-btn">‹</button>
@@ -439,19 +434,8 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">📈 成绩趋势</h2>
-        <div id="trend" class="trend-wrap"></div>
-      </div>
-
-      <div class="card">
         <h2 class="card-title">🧭 综合掌握度雷达图</h2>
         <div id="subject-radar"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">📚 各科目学习统计</h2>
-        <div id="subject-bars" class="subject-bars"></div>
-        <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
       </div>
 
       <div class="card weakness-card" id="weakness-card">
@@ -459,6 +443,23 @@
         <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
         <div id="weakness-report"></div>
       </div>
+
+      <details class="charts-fold">
+        <summary>📊 更多图表（学习时长分布 · 成绩趋势 · 各科目统计）</summary>
+        <div class="card">
+          <h2 class="card-title">🍰 今日学习时长分布</h2>
+          <div id="today-pie"></div>
+        </div>
+        <div class="card">
+          <h2 class="card-title">📈 成绩趋势</h2>
+          <div id="trend" class="trend-wrap"></div>
+        </div>
+        <div class="card">
+          <h2 class="card-title">📚 各科目学习统计</h2>
+          <div id="subject-bars" class="subject-bars"></div>
+          <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
+        </div>
+      </details>
     </section>
 
     <!-- 错题 -->
@@ -683,15 +684,10 @@
         <h2 class="card-title">📋 今日学习总结</h2>
         <div id="summary-body"></div>
         <div class="btn-row" style="margin-top:14px">
-          <button id="btn-checkin" class="btn btn-ghost">✅ 今日打卡</button>
           <button id="btn-share-summary" class="btn btn-primary">📤 分享今日卡片</button>
           <button id="btn-ai-summary" class="btn btn-ghost">🤖 AI 生成学习总结</button>
         </div>
         <div id="ai-summary-out" class="ai-summary-out"></div>
-      </div>
-      <div class="card">
-        <h2 class="card-title">🔔 智能提醒与推送</h2>
-        <div id="summary-reminders"></div>
       </div>
     </section>
 
@@ -872,13 +868,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260816c"></script>
-  <script src="words.js?v=20260816c"></script>
-  <script src="store.js?v=20260816c"></script>
-  <script src="charts.js?v=20260816c"></script>
-  <script src="share.js?v=20260816c"></script>
-  <script src="md5.js?v=20260816c"></script>
-  <script src="sentences.js?v=20260816c"></script>
-  <script src="app.js?v=20260816c"></script>
+  <script src="qrcode.min.js?v=20260816d"></script>
+  <script src="words.js?v=20260816d"></script>
+  <script src="store.js?v=20260816d"></script>
+  <script src="charts.js?v=20260816d"></script>
+  <script src="share.js?v=20260816d"></script>
+  <script src="md5.js?v=20260816d"></script>
+  <script src="sentences.js?v=20260816d"></script>
+  <script src="app.js?v=20260816d"></script>
 </body>
 </html>

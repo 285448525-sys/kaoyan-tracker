@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816c';
+  var APP_VERSION = '20260816d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1226,7 +1226,7 @@
   }
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
-  function switchTab(target) { var btn = document.querySelector('.tab-btn[data-tab="' + target + '"]'); if (btn) btn.click(); }
+  function switchTab(target) { var btn = document.querySelector('.tab-btn[data-tab="' + target + '"]'); if (btn) btn.click(); else showTab(target); }
   function updateMathTabVisibility() {
     var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
     var btn = document.querySelector('.tab-btn[data-tab="math"]');
@@ -1236,44 +1236,6 @@
     if (!hasMath) {
       var active = document.querySelector('.tab-btn.active');
       if (active && active.getAttribute('data-tab') === 'math') switchTab('today');
-    }
-  }
-  function reminderCard(title, text, actionLabel, actionFn) {
-    var c = el('div', 'reminder');
-    c.appendChild(el('div', 'reminder-title', title));
-    c.appendChild(el('div', 'reminder-text', text));
-    if (actionLabel) { var b = el('button', 'btn btn-ghost reminder-btn', actionLabel); b.addEventListener('click', actionFn); c.appendChild(b); }
-    return c;
-  }
-  function computeWeakness() {
-    var subs = Store.getSubjects(); if (!subs.length) return null;
-    var days = Store.getDays();
-    var cutoff = Store.dateStr(Store.addDays(new Date(), -6));
-    var arr = subs.map(function (s) {
-      var sum = 0; Object.keys(days).forEach(function (k) { if (k >= cutoff) { var d = days[k]; if (d && d.durations && d.durations[s.key]) sum += d.durations[s.key]; } });
-      return { name: s.name, recent: sum };
-    });
-    arr.sort(function (a, b) { return a.recent - b.recent; });
-    return { name: arr[0].name };
-  }
-  function renderReminders() {
-    var box = refs.summaryReminders; box.innerHTML = '';
-    var ds = Store.todayStr();
-    var cfg = Store.getConfig();
-    var day = Store.getDay(ds) || {};
-    if (!Store.isCheckedIn(ds) && Store.totalMinutesForDay(day) === 0) {
-      box.appendChild(reminderCard('📅 打卡提醒', '今天还没有学习记录，去「记录」里计时或手动记录一下，保持连续学习 🔥', '去记录', function () { switchTab('record'); }));
-    } else {
-      box.appendChild(reminderCard('🔥 连续学习', '已连续打卡 ' + Store.consecutiveStreak() + ' 天，继续保持！💪', null, null));
-    }
-    var due = Store.getDueVocab(ds).length;
-    if (due > 0) box.appendChild(reminderCard('🧠 生词复习（遗忘曲线）', '你有 ' + due + ' 个生词今天该复习了，及时复习才能记住。', '去复习', function () { switchTab('review'); }));
-    else box.appendChild(reminderCard('🧠 生词复习（遗忘曲线）', '今天没有待复习的生词，保持得不错 👍', null, null));
-    var weak = computeWeakness();
-    if (weak) box.appendChild(reminderCard('🎯 薄弱项智能推送', '检测到「' + weak.name + '」近期投入较少，今天建议重点复习它。', '去计时', function () { switchTab('record'); }));
-    if (cfg.examDate) {
-      var diff = Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000);
-      if (diff >= 0) box.appendChild(reminderCard('⏳ 考研倒计时', '距离考研还有 ' + diff + ' 天，合理分配各科时间，冲！', null, null));
     }
   }
   function renderSummary() {
@@ -1294,10 +1256,6 @@
     var due = Store.getDueVocab(ds).length;
     body.appendChild(sLine('待复习生词(记忆曲线)', due + ' 个'));
     body.appendChild(sLine('连续打卡', Store.consecutiveStreak() + ' 天'));
-    var checkedIn = Store.isCheckedIn(ds);
-    refs.btnCheckin.textContent = checkedIn ? '✅ 今日已打卡' : '✅ 今日打卡';
-    refs.btnCheckin.disabled = checkedIn;
-    renderReminders();
     renderCheckinCard();
   }
   /* 统一的打卡逻辑：今日页大按钮 + 总结页按钮共用 */
@@ -3731,26 +3689,25 @@
       render408Years();
     }, 0);
   }
+  function showTab(target) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
+    if (target === 'review') setReviewMode(reviewMode);
+    if (target === 'summary') renderSummary();
+    if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
+    if (target === 'words') renderWrongBook();
+    if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
+    if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
+    if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+    if (target === 'mistakes') { renderMistakeList(); }
+    if (target === 'data') { renderData(); }
+    if (target === 'today') renderTodayAggregate();
+    if (target === 'manual') renderHelpManual();
+    if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
+  }
   function initTabs() {
-    var tabs = document.querySelectorAll('.tab-btn');
-    tabs.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var target = btn.getAttribute('data-tab');
-        tabs.forEach(function (b) { b.classList.toggle('active', b === btn); });
-        document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-        if (target === 'review') setReviewMode(reviewMode);
-        if (target === 'summary') renderSummary();
-        if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
-        if (target === 'words') renderWrongBook();
-        if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
-        if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
-        if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
-        if (target === 'mistakes') { renderMistakeList(); }
-        if (target === 'data') { renderData(); }
-        if (target === 'today') renderTodayAggregate();
-        if (target === 'manual') renderHelpManual();
-        if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
-      });
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { showTab(btn.getAttribute('data-tab')); });
     });
     updateMathTabVisibility();
     update408TabVisibility();
@@ -3775,8 +3732,9 @@
     }
 
     /* ===== 底部 Tab Bar 高亮同步 ===== */
-    var origTabHandler = tabs.length ? tabs[0].onclick : null;
-    tabs.forEach(function (btn) {
+    var sideTabBtns = document.querySelectorAll('.tab-btn');
+    var origTabHandler = sideTabBtns.length ? sideTabBtns[0].onclick : null;
+    sideTabBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var target = btn.getAttribute('data-tab');
         btbBtns.forEach(function (b) {
@@ -3926,11 +3884,10 @@
 
     // 今日总结
     refs.summaryBody = $('summary-body');
-    refs.btnCheckin = $('btn-checkin');
     refs.btnShareSummary = $('btn-share-summary');
-    refs.summaryReminders = $('summary-reminders');
     refs.btnAiSummary = $('btn-ai-summary');
     refs.aiSummaryOut = $('ai-summary-out');
+    refs.btnHelp = $('btnHelp');
 
     // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）
     refs.btnCheckinToday = $('btn-checkin-today');
@@ -4247,7 +4204,6 @@
     // 高频词搜索
     refs.hfSearch.addEventListener('input', renderHfWords);
     // 今日总结：打卡 + 分享
-    refs.btnCheckin.addEventListener('click', doCheckin);
     bindTap(refs.btnCheckinToday, doCheckin);
     refs.btnShareSummary.addEventListener('click', onShareToday);
     if (refs.btnAiSummary) refs.btnAiSummary.addEventListener('click', onAiSummary);
@@ -4295,6 +4251,7 @@
     if (refs.pomoCountdownOnly) refs.pomoCountdownOnly.addEventListener('change', function () { applyCountdownOnlyUI(); readPomoCountdownOnly(); renderPomodoro(); });
     // 主题切换
     if (refs.themeToggle) refs.themeToggle.addEventListener('click', toggleTheme);
+    if (refs.btnHelp) refs.btnHelp.addEventListener('click', function () { switchTab('manual'); });
 
     refs.manualDate.value = Store.todayStr();
     refs.examDate2.value = Store.todayStr();
