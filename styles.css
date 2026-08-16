@@ -245,7 +245,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* Trend */
 .trend-wrap { width: 100%; overflow-x: auto; }
-.trend-svg { width: 100%; min-width: 480px; height: auto; }
+.trend-svg { width: 100%; height: auto; display: block; }
 .grid-line { stroke: #eef2f7; stroke-width: 1; }
 .axis-label { fill: var(--muted); font-size: 11px; }
 .target-line { stroke: #ef4444; stroke-width: 1.5; stroke-dasharray: 5 4; }
@@ -1523,3 +1523,9 @@ input:focus, select:focus, textarea:focus {
 .mistake-review-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .mistake-review-body .mr-line { font-size: 14px; color: var(--ink); }
 .mistake-review-body .mr-line.ok { color: #16a34a; }
+
+/* --- 8. 平板 / 小笔记本区间（861–1080px）：4 列卡收拢为 2 列，横屏不再过挤 --- */
+@media (min-width: 861px) and (max-width: 1080px) {
+  .today-stats { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
