@@ -145,6 +145,9 @@ Store.recordMathStat('概率统计', true);
 ['线性代数', '线性代数', '线性代数', '线性代数'].forEach(function () { Store.recordMathStat('线性代数', true); });
 Store.recordMathStat('线性代数', false);
 ['数据结构', '数据结构', '数据结构'].forEach(function () { Store.recordMathStat('数据结构', false); });
+// 确保数学章节已预填：init 会预填，但上面 importJSON 清状态时把 mathChapters 重置为空，
+// 薄弱分支 → 章节映射依赖这些章节，否则会落到「该分支暂无章节数据」导致映射断言失败。这里补回生产环境应有的章节。
+if (!Store.getMathChapters().length) Store.setMathChapters(Store.getMathVolumeTemplates()[Store.getMathVolume()].slice());
 window.__switchTab('data');
 const wkBox = document.querySelector('#weakness-report');
 ok('A3 薄弱点报告容器存在', !!wkBox);
