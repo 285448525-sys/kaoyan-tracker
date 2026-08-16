@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260816a" />
+  <link rel="stylesheet" href="styles.css?v=20260816b" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -478,10 +478,32 @@
     <section id="tab-mistakes" class="tab-panel">
       <div class="card">
         <h2 class="card-title">📌 错题 / 感悟整理</h2>
-        <div class="chip-row" id="mistake-types"></div>
         <div class="field-row">
-          <label>科目</label>
-          <select id="mistake-subject"><option value="">不指定</option></select>
+          <label>范围</label>
+          <select id="mistake-scope">
+            <option value="general">通用（感悟 / 通用错题）</option>
+            <option value="math">数学</option>
+            <option value="cs408">408</option>
+          </select>
+        </div>
+        <div id="mistake-scope-general">
+          <div class="chip-row" id="mistake-types"></div>
+          <div class="field-row">
+            <label>科目</label>
+            <select id="mistake-subject"><option value="">不指定</option></select>
+          </div>
+        </div>
+        <div id="mistake-scope-math" hidden>
+          <div class="field-row">
+            <label>分类</label>
+            <select id="mistake-math-cat"></select>
+          </div>
+        </div>
+        <div id="mistake-scope-cs408" hidden>
+          <div class="field-row">
+            <label>分类</label>
+            <select id="mistake-cs408-cat"></select>
+          </div>
         </div>
         <div class="field">
           <label>内容</label>
@@ -494,8 +516,25 @@
         <button id="btn-add-mistake" class="btn btn-primary full">保存</button>
       </div>
       <div class="card">
-        <h2 class="card-title">我的整理</h2>
+        <h2 class="card-title">我的整理 <span id="mistake-due-badge" class="review-badge" style="display:none"></span></h2>
+        <div class="chip-row" id="mistake-filter"></div>
         <div id="mistake-list" class="mistake-list"></div>
+      </div>
+      <div class="card flashcard-card">
+        <h2 class="card-title">🃏 错题速查卡（记忆曲线复习）</h2>
+        <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。数学答对升一箱（间隔拉长），408 标记已回顾；答错回到最短间隔，到期自动提醒。</p>
+        <div class="field-row">
+          <label>范围</label>
+          <select id="mistake-flash-scope">
+            <option value="all">全部到期</option>
+            <option value="math">数学</option>
+            <option value="cs408">408</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button id="btn-mistake-flash-start" class="btn btn-primary">🔄 抽取待复习</button>
+        </div>
+        <div id="mistake-flashcard-box" class="flashcard-wrap"></div>
       </div>
     </section>
 
@@ -713,34 +752,6 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">📝 数学错题整理 <span class="review-badge" id="math-due-badge" style="display:none"></span></h2>
-        <div class="field-row">
-          <label>分类</label>
-          <select id="math-mistake-cat"></select>
-        </div>
-        <div class="field">
-          <label>题目 / 错因</label>
-          <textarea id="math-mistake-content" rows="3" placeholder="记录错题或错因……"></textarea>
-        </div>
-        <div class="field">
-          <label>备注（可选）</label>
-          <input type="text" id="math-mistake-note" placeholder="如：对应知识点 / 正确解法" />
-        </div>
-        <button id="btn-add-math-mistake" class="btn btn-primary full">保存错题</button>
-        <div class="chip-row" id="math-mistake-filter" style="margin-top:12px"></div>
-        <div id="math-mistake-list" class="mistake-list"></div>
-      </div>
-
-      <div class="card flashcard-card">
-        <h2 class="card-title">🃏 数学错题速查卡（记忆曲线复习）</h2>
-        <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。答对升一箱（间隔拉长），答错回到第 1 箱（最短间隔），到期自动提醒。</p>
-        <div class="btn-row">
-          <button id="btn-math-flash-start" class="btn btn-primary">🔄 抽取待复习</button>
-        </div>
-        <div id="math-flashcard-box" class="flashcard-wrap"></div>
-      </div>
-
-      <div class="card">
         <h2 class="card-title">🧮 分类选择题刷题</h2>
         <div class="field-row">
           <label>分类</label>
@@ -781,25 +792,6 @@
       <div class="card">
         <h2 class="card-title">💻 408 章节进度</h2>
         <div id="cs408-chapters" class="chapter-list"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">📝 408 错题整理 <span class="review-badge" id="cs408-due-badge" style="display:none"></span></h2>
-        <div class="field-row">
-          <label>分类</label>
-          <select id="cs408-mistake-cat"></select>
-        </div>
-        <div class="field">
-          <label>题目 / 错因</label>
-          <textarea id="cs408-mistake-content" rows="3" placeholder="记录错题或错因……"></textarea>
-        </div>
-        <div class="field">
-          <label>备注（可选）</label>
-          <input type="text" id="cs408-mistake-note" placeholder="如：对应知识点 / 正确解法" />
-        </div>
-        <button id="btn-add-cs408-mistake" class="btn btn-primary full">保存错题</button>
-        <div class="chip-row" id="cs408-mistake-filter" style="margin-top:12px"></div>
-        <div id="cs408-mistake-list" class="mistake-list"></div>
       </div>
 
       <div class="card">
@@ -898,13 +890,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260816a"></script>
-  <script src="words.js?v=20260816a"></script>
-  <script src="store.js?v=20260816a"></script>
-  <script src="charts.js?v=20260816a"></script>
-  <script src="share.js?v=20260816a"></script>
-  <script src="md5.js?v=20260816a"></script>
-  <script src="sentences.js?v=20260816a"></script>
-  <script src="app.js?v=20260816a"></script>
+  <script src="qrcode.min.js?v=20260816b"></script>
+  <script src="words.js?v=20260816b"></script>
+  <script src="store.js?v=20260816b"></script>
+  <script src="charts.js?v=20260816b"></script>
+  <script src="share.js?v=20260816b"></script>
+  <script src="md5.js?v=20260816b"></script>
+  <script src="sentences.js?v=20260816b"></script>
+  <script src="app.js?v=20260816b"></script>
 </body>
 </html>

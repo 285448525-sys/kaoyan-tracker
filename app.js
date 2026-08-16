@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816a';
+  var APP_VERSION = '20260816b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -964,24 +964,100 @@
       if (!added[s.name]) { added[s.name] = true; var o = el('option'); o.value = s.name; o.textContent = s.name; refs.mistakeSubject.appendChild(o); }
     });
   }
+  var mistakeFilterScope = 'all';   // 列表筛选：范围 all/general/math/cs408
+  var mistakeFilterCat = '全部';    // 列表筛选：分类（通用为 type）
+
   function renderMistakeList() {
+    var today = Store.todayStr();
+    // 三数组合并 + scope 标签（零迁移，各自存各自数组）
+    var general = Store.getMistakes().map(function (m) { return Object.assign({}, m, { scope: 'general' }); });
+    var math = Store.getMathMistakes().map(function (m) { return Object.assign({}, m, { scope: 'math' }); });
+    var cs = Store.get408Mistakes().map(function (m) { return Object.assign({}, m, { scope: 'cs408' }); });
+    var all = general.concat(math, cs);
+
+    // 到期徽标 = 数学 + 408 待复习总数（通用无到期概念）
+    var dueCount = Store.getMathDueMistakes(today).length + Store.get408DueMistakes(today).length;
+    if (refs.mistakeDueBadge) {
+      if (dueCount > 0) { refs.mistakeDueBadge.style.display = ''; refs.mistakeDueBadge.textContent = dueCount + ' 题待复习'; }
+      else refs.mistakeDueBadge.style.display = 'none';
+    }
+
+    // 范围筛选
+    var inScope = all.filter(function (m) {
+      if (mistakeFilterScope === 'all') return true;
+      return m.scope === mistakeFilterScope;
+    });
+
+    // 筛选 chips：范围 + 分类（同一行）
+    refs.mistakeFilter.innerHTML = '';
+    [['all', '全部'], ['general', '通用'], ['math', '数学'], ['cs408', '408']].forEach(function (p) {
+      var cnt = p[0] === 'all' ? all.length : all.filter(function (m) { return m.scope === p[0]; }).length;
+      var chip = el('div', 'chip' + (mistakeFilterScope === p[0] ? ' active' : ''), p[1] + ' (' + cnt + ')');
+      chip.addEventListener('click', function () { mistakeFilterScope = p[0]; mistakeFilterCat = '全部'; renderMistakeList(); });
+      refs.mistakeFilter.appendChild(chip);
+    });
+    var catMap = {};
+    inScope.forEach(function (m) {
+      var key = m.scope === 'general' ? (m.type || '其他') : (m.category || '其他');
+      catMap[key] = (catMap[key] || 0) + 1;
+    });
+    Object.keys(catMap).forEach(function (c) {
+      var chip = el('div', 'chip' + (mistakeFilterCat === c ? ' active' : ''), c + ' (' + catMap[c] + ')');
+      chip.addEventListener('click', function () { mistakeFilterCat = c; renderMistakeList(); });
+      refs.mistakeFilter.appendChild(chip);
+    });
+
+    // 应用分类筛选
+    var list = inScope.filter(function (m) {
+      if (mistakeFilterCat === '全部') return true;
+      var key = m.scope === 'general' ? (m.type || '其他') : (m.category || '其他');
+      return key === mistakeFilterCat;
+    });
+
     refs.mistakeList.innerHTML = '';
-    var list = Store.getMistakes();
     if (!list.length) { refs.mistakeList.appendChild(el('div', 'empty-hint', '还没有整理内容')); return; }
     list.forEach(function (m) {
-      var item = el('div', 'mistake-item');
+      var isDue = m.scope === 'math'
+        ? (!m.nextReview || m.nextReview <= today)
+        : (m.scope === 'cs408' ? (!m.reviewed || (m.nextReview && m.nextReview <= today)) : false);
+      var item = el('div', 'mistake-item' + (m.reviewed ? ' reviewed' : '') + (isDue ? ' due' : ''));
       var top = el('div', 'mistake-top');
-      top.appendChild(el('span', 'mistake-badge', m.type));
+      // scope 徽标
+      var scopeLabel = m.scope === 'general' ? '通用' : (m.scope === 'math' ? '数学' : '408');
+      var scopeCls = m.scope === 'math' ? 'math' : (m.scope === 'cs408' ? 'cs408' : '');
+      top.appendChild(el('span', 'mistake-scope ' + scopeCls, scopeLabel));
+      // 分类 / 类型 徽标
+      top.appendChild(el('span', 'mistake-badge', m.scope === 'general' ? (m.type || '其他') : (m.category || '其他')));
+      if (isDue) top.appendChild(el('span', 'due-tag', '待复习'));
       var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.removeMistake(m.id); renderMistakeList(); });
+      del.addEventListener('click', function () {
+        if (m.scope === 'general') Store.removeMistake(m.id);
+        else if (m.scope === 'math') Store.removeMathMistake(m.id);
+        else Store.remove408Mistake(m.id);
+        renderMistakeList();
+      });
       top.appendChild(del);
       item.appendChild(top);
-      item.appendChild(el('div', 'mistake-content', m.content));
+      item.appendChild(el('div', 'mistake-content', m.content || ''));
       var meta = [];
-      if (m.subject) meta.push(m.subject);
-      meta.push(m.date);
+      if (m.scope === 'general') { if (m.subject) meta.push(m.subject); meta.push(m.date); }
+      else { if (m.created) meta.push(m.created); }
       if (m.note) meta.push('备注：' + m.note);
+      if (m.reviewCount) meta.push('已回顾 ' + m.reviewCount + ' 次');
+      if (m.nextReview) meta.push('下次复习：' + m.nextReview);
       item.appendChild(el('div', 'mistake-meta', meta.join(' · ')));
+      // 标记已回顾（仅 math / cs408 有记忆曲线）
+      if (m.scope !== 'general') {
+        var rev = el('button', 'btn btn-ghost mistake-review', m.reviewed ? '✓ 已回顾（再复习）' : '✓ 标记已回顾');
+        rev.addEventListener('click', function () {
+          if (m.scope === 'math') Store.reviewMathMistake(m.id, true);
+          else Store.update408Mistake(m.id, { reviewed: true });
+          renderMistakeList();
+          var updated = (m.scope === 'math' ? Store.getMathMistakes() : Store.get408Mistakes()).filter(function (x) { return x.id === m.id; })[0];
+          showToast('已标记回顾，下次复习：' + (updated ? updated.nextReview : '—'));
+        });
+        item.appendChild(rev);
+      }
       refs.mistakeList.appendChild(item);
     });
   }
@@ -1670,8 +1746,7 @@
     });
   }
 
-  /* ============ 数学模块：章节 + 错题 + 分类刷题 ============ */
-  var mathMistakeFilter = '全部';
+  /* ============ 数学模块：章节 + 分类刷题 ============ */
   var mathPractice = null;
 
   function renderMathChapters() {
@@ -1706,81 +1781,39 @@
     renderMathGrouped(mount);
   }
 
-  function renderMathMistakes() {
-    var box = refs.mathMistakeList; box.innerHTML = '';
-    var all = Store.getMathMistakes();
-    var today = Store.todayStr();
-    var list = mathMistakeFilter === '全部' ? all : all.filter(function (m) { return m.category === mathMistakeFilter; });
-    // 分类筛选 chips
-    var cats = { '全部': all.length };
-    all.forEach(function (m) { cats[m.category] = (cats[m.category] || 0) + 1; });
-    refs.mathMistakeFilter.innerHTML = '';
-    Object.keys(cats).forEach(function (c) {
-      var chip = el('div', 'chip' + (c === mathMistakeFilter ? ' active' : ''), c + ' (' + cats[c] + ')');
-      chip.addEventListener('click', function () { mathMistakeFilter = c; renderMathMistakes(); });
-      refs.mathMistakeFilter.appendChild(chip);
-    });
-    // 到期复习徽标（数学错题 Leitner）
-    var dueCount = Store.getMathDueMistakes(today).length;
-    if (refs.mathDueBadge) {
-      if (dueCount > 0) { refs.mathDueBadge.style.display = ''; refs.mathDueBadge.textContent = dueCount + ' 题待复习'; }
-      else refs.mathDueBadge.style.display = 'none';
-    }
-    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有错题记录')); return; }
-    list.forEach(function (m) {
-      var isDue = !m.nextReview || m.nextReview <= today;
-      var item = el('div', 'mistake-item' + (m.reviewed ? ' reviewed' : '') + (isDue ? ' due' : ''));
-      var top = el('div', 'mistake-top');
-      var tags = el('div', 'mistake-tags');
-      tags.appendChild(el('span', 'mistake-badge', m.category || '其他'));
-      tags.appendChild(el('span', 'box-badge', '箱 ' + (m.box || 1) + '/5'));
-      if (isDue) tags.appendChild(el('span', 'due-tag', '待复习'));
-      top.appendChild(tags);
-      var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.removeMathMistake(m.id); renderMathMistakes(); });
-      top.appendChild(del);
-      item.appendChild(top);
-      item.appendChild(el('div', 'mistake-content', m.content || ''));
-      var meta = [];
-      if (m.created) meta.push(m.created);
-      if (m.note) meta.push('备注：' + m.note);
-      if (m.reviewCount) meta.push('已回顾 ' + m.reviewCount + ' 次');
-      if (m.nextReview) meta.push('下次复习：' + m.nextReview);
-      item.appendChild(el('div', 'mistake-meta', meta.join(' · ')));
-      var rev = el('button', 'btn btn-ghost mistake-review', m.reviewed ? '✓ 已回顾（再复习）' : '✓ 标记已回顾');
-      rev.addEventListener('click', function () {
-        Store.reviewMathMistake(m.id, true);
-        renderMathMistakes();
-        var updated = Store.getMathMistakes().filter(function (x) { return x.id === m.id; })[0];
-        showToast('已标记回顾，下次复习：' + (updated ? updated.nextReview : '—'));
-      });
-      item.appendChild(rev);
-      box.appendChild(item);
-    });
+  /* renderMathMistakes 已合并进 renderMistakeList（三套错题本统一列表） */
+
+  /* ============ 错题速查卡（Leitner 记忆曲线复习，三套合并） ============ */
+  var flash = null;
+
+  // 按范围取待复习（数学/408 各自到期逻辑；all = 二者并集），并打 scope 标签便于路由复习调用
+  function getDueByScope(scope) {
+    var t = Store.todayStr();
+    if (scope === 'math') return Store.getMathDueMistakes(t).map(function (m) { return Object.assign({}, m, { scope: 'math' }); });
+    if (scope === 'cs408') return Store.get408DueMistakes(t).map(function (m) { return Object.assign({}, m, { scope: 'cs408' }); });
+    return Store.getMathDueMistakes(t).map(function (m) { return Object.assign({}, m, { scope: 'math' }); })
+      .concat(Store.get408DueMistakes(t).map(function (m) { return Object.assign({}, m, { scope: 'cs408' }); }));
   }
 
-  /* ============ 数学错题速查卡（Leitner 记忆曲线复习） ============ */
-  var mathFlash = null;
-
-  function startMathFlash() {
-    var due = Store.getMathDueMistakes(Store.todayStr());
-    if (!due.length) { mathFlash = { items: [], index: 0, revealed: false, total: 0, right: 0, wrong: 0 }; }
-    else { mathFlash = { items: due.slice(), index: 0, revealed: false, total: due.length, right: 0, wrong: 0 }; }
-    renderMathFlashcard();
+  function startFlash(scope) {
+    scope = scope || 'all';
+    var due = getDueByScope(scope);
+    flash = { scope: scope, items: due.slice(), index: 0, revealed: false, total: due.length, right: 0, wrong: 0 };
+    renderFlashcard();
   }
 
-  function renderMathFlashcard() {
-    var box = refs.mathFlashcardBox;
+  function renderFlashcard() {
+    var box = refs.mistakeFlashcardBox;
     if (!box) return;
     box.innerHTML = '';
-    if (!mathFlash) { startMathFlash(); return; }
-    var s = mathFlash;
-    var dueTotal = Store.getMathDueMistakes(Store.todayStr()).length;
+    if (!flash) { startFlash('all'); return; }
+    var s = flash;
+    var dueTotal = getDueByScope(s.scope).length;
     var overview = el('div', 'flash-overview');
     overview.appendChild(el('span', 'flash-count', '待复习队列：' + dueTotal + ' 张'));
     box.appendChild(overview);
     if (!s.items.length) {
-      box.appendChild(el('div', 'empty-hint', '🎉 今天没有待复习的数学错题，去「数学错题整理」记新题吧！'));
+      box.appendChild(el('div', 'empty-hint', '🎉 今天没有待复习的错题，去「错题本」记新题吧！'));
       return;
     }
     if (s.index >= s.items.length) {
@@ -1790,15 +1823,18 @@
       done.appendChild(el('div', 'muted', '共 ' + s.total + ' 张 · 答对 ' + s.right + ' · 答错 ' + s.wrong + ' · 正确率 ' + acc + '%'));
       box.appendChild(done);
       var again = el('button', 'btn btn-primary', '重新抽取待复习');
-      again.addEventListener('click', startMathFlash);
+      again.addEventListener('click', function () { startFlash(s.scope); });
       box.appendChild(again);
       return;
     }
     var cur = s.items[s.index];
     var card = el('div', 'flashcard');
-    card.appendChild(el('div', 'flash-progress', '第 ' + (s.index + 1) + ' / ' + s.items.length + ' 张 · 箱位 ' + (cur.box || 1) + '/5'));
+    var progressText = '第 ' + (s.index + 1) + ' / ' + s.items.length + ' 张';
+    if (cur.scope === 'math') progressText += ' · 箱位 ' + (cur.box || 1) + '/5';
+    else progressText += ' · 408';
+    card.appendChild(el('div', 'flash-progress', progressText));
     // ⚠️ 此处勿加 escapeHtml：el() 已走 textContent 天然防 XSS，再转义会让 x>0 字面显示成 x&gt;0（数学题高频字符）
-    card.appendChild(el('div', 'flash-cat', cur.category || '其他'));
+    card.appendChild(el('div', 'flash-cat', (cur.scope === 'math' || cur.scope === 'cs408') ? (cur.category || '其他') : (cur.type || '其他')));
     var front = el('div', 'flash-front');
     front.appendChild(el('div', 'flash-label', '题目 / 错因'));
     front.appendChild(el('div', 'flash-q', cur.content || ''));
@@ -1810,31 +1846,27 @@
       card.appendChild(back);
       var act = el('div', 'flash-actions');
       var rightBtn = el('button', 'btn btn-ok', '✓ 我答对了');
-      rightBtn.addEventListener('click', function () { s.right++; Store.reviewMathMistake(cur.id, true); s.index++; s.revealed = false; renderMathFlashcard(); });
+      rightBtn.addEventListener('click', function () {
+        s.right++;
+        if (cur.scope === 'math') Store.reviewMathMistake(cur.id, true);
+        else Store.update408Mistake(cur.id, { reviewed: true });
+        s.index++; s.revealed = false; renderFlashcard();
+      });
       var wrongBtn = el('button', 'btn btn-bad', '✗ 我答错了');
-      wrongBtn.addEventListener('click', function () { s.wrong++; Store.reviewMathMistake(cur.id, false); s.index++; s.revealed = false; renderMathFlashcard(); });
+      wrongBtn.addEventListener('click', function () {
+        s.wrong++;
+        if (cur.scope === 'math') Store.reviewMathMistake(cur.id, false); // 数学答错回箱1
+        // 408 无箱概念：答错保持待复习（不推进间隔）
+        s.index++; s.revealed = false; renderFlashcard();
+      });
       act.appendChild(rightBtn); act.appendChild(wrongBtn);
       card.appendChild(act);
     } else {
       var show = el('button', 'btn btn-primary', '显示答案');
-      show.addEventListener('click', function () { s.revealed = true; renderMathFlashcard(); });
+      show.addEventListener('click', function () { s.revealed = true; renderFlashcard(); });
       card.appendChild(show);
     }
     box.appendChild(card);
-  }
-
-  function onAddMathMistake() {
-    var content = refs.mathMistakeContent.value.trim();
-    if (!content) { alert('请输入错题 / 错因'); return; }
-    Store.addMathMistake({
-      category: refs.mathMistakeCat.value || '其他',
-      content: content,
-      note: refs.mathMistakeNote.value.trim(),
-      created: Store.todayStr(),
-      reviewed: false
-    });
-    refs.mathMistakeContent.value = ''; refs.mathMistakeNote.value = '';
-    mathMistakeFilter = '全部'; renderMathMistakes(); showToast('已保存错题 ✅');
   }
 
   function buildMathPool(cat) {
@@ -1936,8 +1968,7 @@
     renderMathQuestionList(); showToast('题目已加入题库 ✅');
   }
 
-  /* ============ 408 专业课模块：章节 + 错题(间隔复习) + 刷题 + 知识点 + 真题 ============ */
-  var cs408MistakeFilter = '全部';
+  /* ============ 408 专业课模块：章节 + 分类刷题 + 知识点 + 真题 ============ */
   var cs408Practice = null;
   var kpFilter = '全部';
 
@@ -1947,63 +1978,8 @@
     renderChapterBlock('cs408', box);
   }
 
-  function render408Mistakes() {
-    var box = refs.cs408MistakeList; box.innerHTML = '';
-    var all = Store.get408Mistakes();
-    var today = Store.todayStr();
-    var list = cs408MistakeFilter === '全部' ? all : all.filter(function (m) { return m.category === cs408MistakeFilter; });
-    // 分类筛选 chips
-    var cats = { '全部': all.length };
-    all.forEach(function (m) { cats[m.category] = (cats[m.category] || 0) + 1; });
-    refs.cs408MistakeFilter.innerHTML = '';
-    Object.keys(cats).forEach(function (c) {
-      var chip = el('div', 'chip' + (c === cs408MistakeFilter ? ' active' : ''), c + ' (' + cats[c] + ')');
-      chip.addEventListener('click', function () { cs408MistakeFilter = c; render408Mistakes(); });
-      refs.cs408MistakeFilter.appendChild(chip);
-    });
-    // 到期复习徽标
-    var dueCount = Store.get408DueMistakes(today).length;
-    if (refs.cs408DueBadge) {
-      if (dueCount > 0) { refs.cs408DueBadge.style.display = ''; refs.cs408DueBadge.textContent = dueCount + ' 题待复习'; }
-      else refs.cs408DueBadge.style.display = 'none';
-    }
-    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有错题记录')); return; }
-    list.forEach(function (m) {
-      var isDue = !m.reviewed || (m.nextReview && m.nextReview <= today);
-      var item = el('div', 'mistake-item' + (m.reviewed ? ' reviewed' : '') + (isDue ? ' due' : ''));
-      var top = el('div', 'mistake-top');
-      top.appendChild(el('span', 'mistake-badge', m.category || '其他'));
-      if (isDue) top.appendChild(el('span', 'due-tag', '待复习'));
-      var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.remove408Mistake(m.id); render408Mistakes(); });
-      top.appendChild(del);
-      item.appendChild(top);
-      item.appendChild(el('div', 'mistake-content', m.content || ''));
-      var meta = [];
-      if (m.created) meta.push(m.created);
-      if (m.note) meta.push('备注：' + m.note);
-      if (m.reviewCount) meta.push('已回顾 ' + m.reviewCount + ' 次');
-      if (m.nextReview) meta.push('下次复习：' + m.nextReview);
-      item.appendChild(el('div', 'mistake-meta', meta.join(' · ')));
-      var rev = el('button', 'btn btn-ghost mistake-review', m.reviewed ? '✓ 已回顾（再次复习）' : '✓ 标记已回顾');
-      rev.addEventListener('click', function () { Store.update408Mistake(m.id, { reviewed: true }); render408Mistakes(); showToast('已标记回顾，下次复习：' + Store.get408Mistakes().filter(function(x){return x.id===m.id;})[0].nextReview); });
-      item.appendChild(rev);
-      box.appendChild(item);
-    });
-  }
-
-  function onAdd408Mistake() {
-    var content = refs.cs408MistakeContent.value.trim();
-    if (!content) { alert('请输入错题 / 错因'); return; }
-    Store.add408Mistake({
-      category: refs.cs408MistakeCat.value || '其他',
-      content: content,
-      note: refs.cs408MistakeNote.value.trim(),
-      created: Store.todayStr()
-    });
-    refs.cs408MistakeContent.value = ''; refs.cs408MistakeNote.value = '';
-    cs408MistakeFilter = '全部'; render408Mistakes(); showToast('已保存错题 ✅');
-  }
+  /* render408Mistakes 已合并进 renderMistakeList（三套错题本统一列表） */
+  /* onAdd408Mistake 已合并进 btn-add-mistake 的按范围路由保存（见下方事件绑定） */
 
   function build408Pool(cat) {
     var builtin = CS408_BUILTIN_Q;
@@ -3745,12 +3721,9 @@
       renderSubjectChapters();
       renderPlanItems();
       renderMathChapters();
-      renderMathMistakes();
-      startMathFlash();
       renderMathQuestionList();
       renderMathPractice();
       render408Chapters();
-      render408Mistakes();
       render408QuestionList();
       render408Practice();
       render408Knowledge();
@@ -3771,8 +3744,9 @@
         if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
         if (target === 'words') renderWrongBook();
         if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
-        if (target === 'math') { renderMathChapters(); renderMathMistakes(); startMathFlash(); renderMathQuestionList(); renderMathPractice(); }
-        if (target === 'cs408') { render408Chapters(); render408Mistakes(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+        if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
+        if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+        if (target === 'mistakes') { renderMistakeList(); }
         if (target === 'data') { renderData(); }
         if (target === 'today') renderTodayAggregate();
         if (target === 'manual') renderHelpManual();
@@ -3885,6 +3859,18 @@
     refs.mistakeNote = $('mistake-note');
     refs.btnAddMistake = $('btn-add-mistake');
     refs.mistakeList = $('mistake-list');
+    // 三套错题本合并：范围选择器 + 速查卡
+    refs.mistakeScope = $('mistake-scope');
+    refs.mistakeScopeGeneral = $('mistake-scope-general');
+    refs.mistakeScopeMath = $('mistake-scope-math');
+    refs.mistakeScopeCs408 = $('mistake-scope-cs408');
+    refs.mistakeMathCat = $('mistake-math-cat');
+    refs.mistakeCs408Cat = $('mistake-cs408-cat');
+    refs.mistakeDueBadge = $('mistake-due-badge');
+    refs.mistakeFilter = $('mistake-filter');
+    refs.mistakeFlashScope = $('mistake-flash-scope');
+    refs.btnMistakeFlashStart = $('btn-mistake-flash-start');
+    refs.mistakeFlashcardBox = $('mistake-flashcard-box');
 
     refs.curatedSites = $('curated-sites');
     refs.userSites = $('user-sites');
@@ -3966,15 +3952,6 @@
 
     // 数学模块
     refs.mathChapters = $('math-chapters');
-    refs.mathMistakeCat = $('math-mistake-cat');
-    refs.mathMistakeContent = $('math-mistake-content');
-    refs.mathMistakeNote = $('math-mistake-note');
-    refs.btnAddMathMistake = $('btn-add-math-mistake');
-    refs.mathMistakeFilter = $('math-mistake-filter');
-    refs.mathMistakeList = $('math-mistake-list');
-    refs.mathDueBadge = $('math-due-badge');
-    refs.mathFlashcardBox = $('math-flashcard-box');
-    refs.btnMathFlashStart = $('btn-math-flash-start');
     refs.mathPracticeCat = $('math-practice-cat');
     refs.mathPractice = $('math-practice');
     refs.btnMathPracticeStart = $('btn-math-practice-start');
@@ -3991,13 +3968,6 @@
 
     // 408 专业课模块
     refs.cs408Chapters = $('cs408-chapters');
-    refs.cs408MistakeCat = $('cs408-mistake-cat');
-    refs.cs408MistakeContent = $('cs408-mistake-content');
-    refs.cs408MistakeNote = $('cs408-mistake-note');
-    refs.btnAddCs408Mistake = $('btn-add-cs408-mistake');
-    refs.cs408MistakeFilter = $('cs408-mistake-filter');
-    refs.cs408MistakeList = $('cs408-mistake-list');
-    refs.cs408DueBadge = $('cs408-due-badge');
     refs.cs408PracticeCat = $('cs408-practice-cat');
     refs.cs408Practice = $('cs408-practice');
     refs.btnCs408PracticeStart = $('btn-cs408-practice-start');
@@ -4160,7 +4130,14 @@
     refs.btnAddMistake.addEventListener('click', function () {
       var content = refs.mistakeContent.value.trim();
       if (!content) { alert('请输入内容'); return; }
-      Store.addMistake({ type: selectedType, content: content, subject: refs.mistakeSubject.value || '', note: refs.mistakeNote.value.trim(), date: Store.todayStr() });
+      var scope = refs.mistakeScope.value;
+      if (scope === 'general') {
+        Store.addMistake({ type: selectedType, content: content, subject: refs.mistakeSubject.value || '', note: refs.mistakeNote.value.trim(), date: Store.todayStr() });
+      } else if (scope === 'math') {
+        Store.addMathMistake({ category: refs.mistakeMathCat.value || '其他', content: content, note: refs.mistakeNote.value.trim() });
+      } else {
+        Store.add408Mistake({ category: refs.mistakeCs408Cat.value || '其他', content: content, note: refs.mistakeNote.value.trim() });
+      }
       refs.mistakeContent.value = ''; refs.mistakeNote.value = ''; renderMistakeList(); showToast('已整理 ✅');
     });
 
@@ -4289,17 +4266,21 @@
       Store.addPlanItem({ text: text, note: refs.planNote.value.trim(), done: false });
       refs.planItemText.value = ''; refs.planNote.value = ''; renderPlanItems();
     });
-    // 数学：错题
-    refs.btnAddMathMistake.addEventListener('click', onAddMathMistake);
-    // 数学：错题速查卡（Leitner 复习）
-    if (refs.btnMathFlashStart) refs.btnMathFlashStart.addEventListener('click', startMathFlash);
+    // 错题本：范围切换显隐录入子面板
+    refs.mistakeScope.addEventListener('change', function () {
+      var v = refs.mistakeScope.value;
+      refs.mistakeScopeGeneral.hidden = v !== 'general';
+      refs.mistakeScopeMath.hidden = v !== 'math';
+      refs.mistakeScopeCs408.hidden = v !== 'cs408';
+    });
+    // 错题本：速查卡抽取（按范围 Leitner 复习）
+    refs.btnMistakeFlashStart.addEventListener('click', function () { startFlash(refs.mistakeFlashScope.value); });
     // 数学：分类刷题
     refs.btnMathPracticeStart.addEventListener('click', onMathPracticeStart);
     // 数学：自定义题库
     refs.btnAddMq.addEventListener('click', onAddMathQuestion);
 
-    // 408：错题
-    if (refs.btnAddCs408Mistake) refs.btnAddCs408Mistake.addEventListener('click', onAdd408Mistake);
+    // 408 错题录入已合并进「错题本」tab（见 btn-add-mistake 的范围路由）
     // 408：分类刷题
     if (refs.btnCs408PracticeStart) refs.btnCs408PracticeStart.addEventListener('click', on408PracticeStart);
     // 408：自定义题库
@@ -4323,17 +4304,15 @@
 
     // 数学章节预填充（仅首次，按当前卷种模板）
     if (!Store.getMathChapters().length) Store.setMathChapters(Store.getMathVolumeTemplates()[Store.getMathVolume()].slice());
-    // 数学错题分类下拉
-    refs.mathMistakeCat.innerHTML = '';
-    MATH_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mathMistakeCat.appendChild(o); });
+    // 数学错题分类下拉（三套合并后录入时复用）
+    refs.mistakeMathCat.innerHTML = '';
+    MATH_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mistakeMathCat.appendChild(o); });
 
     // 408 章节预填充（仅首次）
     if (!Store.get408Chapters().length) Store.set408Chapters(CS408_CHAPTERS_PREFILL.slice());
-    // 408 错题分类下拉
-    if (refs.cs408MistakeCat) {
-      refs.cs408MistakeCat.innerHTML = '';
-      CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.cs408MistakeCat.appendChild(o); });
-    }
+    // 408 错题分类下拉（三套合并后录入时复用）
+    refs.mistakeCs408Cat.innerHTML = '';
+    CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mistakeCs408Cat.appendChild(o); });
 
     // 主题初始化 + 键盘快捷键 + 今日聚合
     applyTheme();

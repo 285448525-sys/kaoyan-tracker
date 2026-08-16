@@ -112,12 +112,17 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
 
 // 7) 反向陷阱回归：el() 走 textContent 后，调用方不得再 escapeHtml，否则实体被字面显示
 //    （曾致数学错题闪卡把 "x>0" 显示成 "x&gt;0"，数学题中 < > & " 为高频字符）
+//    闪卡已合并进「错题本」tab 统一速查卡（#mistake-flashcard-box），需切到该 tab 并抽取待复习
 (function () {
   const S = window.Store;
   const raw = '当 x>0 且 a<b 时，求 "极限" & 导数';
   const rawNote = '注意 x>0 边界 & 定义域';
   S.addMathMistake({ category: '高数', content: raw, note: rawNote, nextReview: S.todayStr() });
-  window.__switchTab('math');
+  window.__switchTab('mistakes');
+  const scopeSel = document.getElementById('mistake-flash-scope');
+  scopeSel.value = 'math';
+  scopeSel.dispatchEvent(new window.Event('change', { bubbles: true }));
+  document.getElementById('btn-mistake-flash-start').dispatchEvent(new window.Event('click', { bubbles: true }));
   const q = document.querySelector('.flash-q');
   ok(!!q, '数学闪卡正面已渲染');
   ok(!!q && q.textContent === raw,
@@ -134,8 +139,10 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
     '闪卡备注原样显示不含转义实体（期望 "' + rawNote + '"，实际 "' + (a ? a.textContent : '(未渲染)') + '"）');
   // 同时确认「不转义」没有反过来引入 XSS（textContent 天然安全）
   S.addMathMistake({ category: 'xss', content: '<img src=x onerror="window.__pwned4=1">', note: 'n', nextReview: S.todayStr() });
-  window.__switchTab('today'); window.__switchTab('math');
-  const box = document.getElementById('math-flashcard-box') || document.querySelector('.flashcard');
+  window.__switchTab('today'); window.__switchTab('mistakes');
+  scopeSel.value = 'math';
+  document.getElementById('btn-mistake-flash-start').dispatchEvent(new window.Event('click', { bubbles: true }));
+  const box = document.getElementById('mistake-flashcard-box') || document.querySelector('.flashcard');
   ok(!box || box.querySelectorAll('img').length === 0, '闪卡渲染 HTML 载荷不创建 img 元素（textContent 仍防 XSS）');
   ok(window.__pwned4 === undefined, '闪卡渲染未触发 onerror 脚本');
 })();

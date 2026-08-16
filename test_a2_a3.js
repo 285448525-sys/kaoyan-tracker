@@ -102,29 +102,33 @@ ok('A2 旧数据归一化 box=1', old.box === 1, 'box=' + old.box);
 ok('A2 旧数据归一化 nextReview 为字符串', typeof old.nextReview === 'string' && old.nextReview.length === 10, 'next=' + old.nextReview);
 ok('A2 旧数据（nextReview<=today）进入待复习', Store.getMathDueMistakes(today).some(function (x) { return x.id === 'mm_old'; }));
 
-// =================== A2：速查卡 UI ===================
+// =================== A2：速查卡 UI（已合并进「错题本」tab 统一速查卡） ===================
 // 准备一条到期错题
 Store.importJSON(JSON.stringify({ mathMistakes: [] }));
 Store.addMathMistake({ category: '计算错误', content: '积分上下限代错', note: '注意对称性' });
 const allM = Store.getMathMistakes();
 Store.updateMathMistake(allM[0].id, { nextReview: today });
-// 切到数学 tab（触发 renderMathMistakes + renderMathFlashcard）
-window.__switchTab('math');
-const flashcardBox = document.querySelector('#math-flashcard-box');
+// 切到「错题本」tab，选数学范围并抽取待复习（统一速查卡）
+window.__switchTab('mistakes');
+const flashScope = document.getElementById('mistake-flash-scope');
+flashScope.value = 'math';
+flashScope.dispatchEvent(new window.Event('change', { bubbles: true }));
+document.getElementById('btn-mistake-flash-start').dispatchEvent(new window.Event('click', { bubbles: true }));
+const flashcardBox = document.querySelector('#mistake-flashcard-box');
 ok('A2 速查卡容器存在', !!flashcardBox);
-const cardEl = document.querySelector('#math-flashcard-box .flashcard');
+const cardEl = document.querySelector('#mistake-flashcard-box .flashcard');
 ok('A2 有到期题时渲染出速查卡', !!cardEl);
-// 待复习徽标
-const badge = document.querySelector('#math-due-badge');
+// 待复习徽标（合并列表标题处）
+const badge = document.querySelector('#mistake-due-badge');
 ok('A2 待复习徽标显示且含“待复习”', badge && badge.style.display !== 'none' && /待复习/.test(badge.textContent), badge && badge.textContent);
 // 点击“显示答案”
-const showBtn = Array.from(document.querySelectorAll('#math-flashcard-box button')).find(function (b) { return /显示答案/.test(b.textContent); });
+const showBtn = Array.from(document.querySelectorAll('#mistake-flashcard-box button')).find(function (b) { return /显示答案/.test(b.textContent); });
 ok('A2 存在“显示答案”按钮', !!showBtn);
 if (showBtn) {
   showBtn.click();
-  const backEl = document.querySelector('#math-flashcard-box .flash-back');
+  const backEl = document.querySelector('#mistake-flashcard-box .flash-back');
   ok('A2 点击显示答案后出现答案区', !!backEl);
-  const rightBtn = Array.from(document.querySelectorAll('#math-flashcard-box button')).find(function (b) { return /我答对了/.test(b.textContent); });
+  const rightBtn = Array.from(document.querySelectorAll('#mistake-flashcard-box button')).find(function (b) { return /我答对了/.test(b.textContent); });
   ok('A2 存在“我答对了”按钮', !!rightBtn);
   if (rightBtn) {
     rightBtn.click();

@@ -1456,3 +1456,9 @@ input:focus, select:focus, textarea:focus {
 .opt { color: var(--muted); font-size: 12px; font-weight: 500; margin-left: 4px; }
 :root[data-theme="dark"] .opt { color: #9ca3af; }
 :root[data-theme="dark"] .fold-summary:hover { background: rgba(165, 180, 252, 0.08); }
+
+/* ===== 三套错题本合并：范围联动显隐 + 列表 scope 徽标 ===== */
+#mistake-scope-math[hidden], #mistake-scope-cs408[hidden] { display: none; }
+.mistake-scope { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--primary-08, #eef2ff); color: var(--primary); margin-right: 6px; }
+.mistake-scope.math { background: #e0f2fe; color: #0369a1; }
+.mistake-scope.cs408 { background: #dcfce7; color: #15803d; }
