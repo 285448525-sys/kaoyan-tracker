@@ -248,6 +248,10 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .trend-line { fill: none; stroke: #4f46e5; stroke-width: 2.5; }
 .trend-dot { fill: #4f46e5; }
 .point-label { fill: var(--ink); font-size: 11px; font-weight: 600; }
+.exam-warning { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.exam-warning.ok { background: #ecfdf3; color: #166534; border: 1px solid #a7f3c0; }
+.exam-warning.warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.exam-warning.danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
 /* Stats */
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }

@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816f';
+  var APP_VERSION = '20260816g';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -748,7 +748,7 @@
     renderTodayPieCard();
     Charts.renderMonthHeatmap(refs.heatmap, heatYear, heatMonth, Store.getDays());
     refs.heatLabel.textContent = heatYear + '年' + (heatMonth + 1) + '月';
-    Charts.renderTrend(refs.trend, Store.getExams(), Number(cfg.targetTotal) || 0);
+    Charts.renderTrend(refs.trend, Store.getExams(), Number(cfg.targetTotal) || 0, cfg.examDate);
     // D3：掌握度雷达图
     renderRadarCard();
     renderSubjectStats();

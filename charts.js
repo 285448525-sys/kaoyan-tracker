@@ -59,7 +59,7 @@
   }
 
   /* ---------- SVG 成绩趋势图 ---------- */
-  function renderTrend(container, exams, targetTotal) {
+  function renderTrend(container, exams, targetTotal, examDate) {
     container.innerHTML = '';
     if (!exams || exams.length < 2) {
       container.appendChild(el('div', 'empty-hint', '至少需要 2 次模考成绩，才能生成成绩趋势图。'));
@@ -99,6 +99,36 @@
     });
     svg += '</svg>';
     container.innerHTML = svg;
+    // 考试日预测 + 预警（基于真实备考天数进步斜率）
+    if (examDate && targetTotal > 0 && exams.length >= 2) {
+      var sorted = exams.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      function dayOf(d) { return Math.round(Date.parse(d + 'T00:00:00') / 86400000); }
+      var first = sorted[0], last = sorted[sorted.length - 1];
+      var span = Math.max(1, dayOf(last.date) - dayOf(first.date));
+      var slope = (last.total - first.total) / span; // 分/天
+      var daysLeft = dayOf(examDate) - dayOf(global.Store.todayStr());
+      var box, cls, msg;
+      if (daysLeft <= 0) {
+        cls = 'warn';
+        msg = '考试日临近（剩 ' + Math.max(0, daysLeft) + ' 天），以最近一次模考 ' + last.total + ' 分为最新基线。';
+      } else {
+        var predict = Math.round(last.total + slope * daysLeft);
+        var gap = targetTotal - predict;
+        if (predict >= targetTotal) {
+          cls = 'ok';
+          msg = '按当前进步速度（约 ' + (slope >= 0 ? '+' : '') + slope.toFixed(1) + ' 分/天），距考试还有 ' + daysLeft + ' 天，预计考前可达约 ' + predict + ' 分，已超目标 ' + targetTotal + ' 分。';
+        } else if (predict >= targetTotal * 0.9) {
+          cls = 'warn';
+          msg = '按当前进步速度，距考试还有 ' + daysLeft + ' 天，预计考前约 ' + predict + ' 分，距目标还差 ' + gap + ' 分，需保持节奏。';
+        } else {
+          cls = 'danger';
+          msg = '按当前进步速度，距考试还有 ' + daysLeft + ' 天，预计考前约 ' + predict + ' 分，距目标还差 ' + gap + ' 分，进度滞后，建议提速。';
+        }
+        if (slope < 0) { msg += '（注意：近期模考有回落，优先稳住基础分。）'; }
+      }
+      box = el('div', 'exam-warning ' + cls, msg);
+      container.appendChild(box);
+    }
   }
 
   /* ---------- H4：各科目累计时长 横向条形图 ---------- */
