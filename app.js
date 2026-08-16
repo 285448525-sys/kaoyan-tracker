@@ -2430,7 +2430,7 @@
     });
   }
 
-  // 错词本 AI 讲解（展开/收起式，AI 输出用 textContent 防 XSS）
+  // 查词记录 AI 讲解（展开/收起式，AI 输出用 textContent 防 XSS）
   function explainWrongWord(w, btn) {
     var item = btn.closest('.mistake-item');
     if (!item) return;
@@ -2452,7 +2452,7 @@
     });
   }
 
-  // 错词本 AI 归纳（全书错词聚类 + 共性薄弱点 + 复习建议；输出 textContent 防 XSS）
+  // 查词记录 AI 归纳（全书查词聚类 + 共性薄弱点 + 复习建议；输出 textContent 防 XSS）
   function summarizeWrongBook() {
     var box = refs.wrongAiSummary;
     if (!box) return;
@@ -4007,7 +4007,7 @@
     refs.btnSaveAi = $('btn-save-ai');
     refs.btnTestAi = $('btn-test-ai');
     refs.aiStatus = $('ai-status');
-    // 即时翻译 / 错词本
+    // 即时翻译 / 查词记录
     refs.transInput = $('trans-input');
     refs.btnTranslate = $('btn-translate');
     refs.btnTranslateClear = $('btn-translate-clear');
@@ -4119,7 +4119,7 @@
     refs.btnTestTranslator.addEventListener('click', onTestTranslator);
     refs.btnSaveAi.addEventListener('click', onSaveAi);
     refs.btnTestAi.addEventListener('click', onTestAi);
-    // 即时翻译 / 错词本
+    // 即时翻译 / 查词记录
     refs.btnTranslate.addEventListener('click', onTranslate);
     refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
     // 番茄钟
