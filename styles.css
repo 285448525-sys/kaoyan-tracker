@@ -558,19 +558,34 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .theme-toggle:hover { background: rgba(255,255,255,.3); }
 
-/* ============ 今日聚合卡片（v20260814l 重设计）============ */
+/* ============ 今日聚合卡片（模块 #1 美化重构 · 依据 UI配色规范 v1）============ */
+/* --- 0. 本模块新增令牌（并入 :root，配色规范 v1 N1） --- */
+:root {
+  --grad-hero: linear-gradient(135deg, var(--primary) 0%, var(--primary-l) 60%, var(--primary-d) 100%);
+  --grad-cta:  linear-gradient(120deg, var(--primary), var(--primary-l));
+  --glass-fill: color-mix(in srgb, var(--card) 72%, transparent);
+  --glass-line: color-mix(in srgb, var(--primary) 14%, transparent);
+  --primary-08: color-mix(in srgb, var(--primary) 8%, transparent);
+  --primary-25: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* --- 1. 英雄卡容器 --- */
 .today-aggregate {
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, #ffffff 0%, #f5f3ff 55%, #ede9fe 100%);
-  border: 1px solid rgba(99,102,241,.14);
+  background: linear-gradient(135deg,
+              var(--card) 0%,
+              color-mix(in srgb, var(--primary-l) 8%, var(--card)) 55%,
+              color-mix(in srgb, var(--primary) 10%, var(--card)) 100%);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
   color: var(--ink);
 }
 .today-aggregate::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: radial-gradient(circle at 1px 1px, rgba(99,102,241,.07) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--primary) 7%, transparent) 1px, transparent 0);
   background-size: 22px 22px;
   pointer-events: none;
   opacity: .85;
@@ -578,210 +593,161 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
           mask-image: linear-gradient(180deg, #000 0%, #000 60%, transparent 100%);
 }
 
-/* 头部：eyebrow + 日期 + 加油按钮 */
+/* --- 2. 头部：eyebrow + 日期 + 加油按钮 --- */
 .today-head {
   position: relative; z-index: 1;
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 12px; padding: 4px 4px 18px;
+  gap: 12px; padding: 0 0 18px;
 }
 .today-head-text { min-width: 0; }
 .today-eyebrow {
   font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  color: #6366f1; font-weight: 700;
+  color: var(--primary-l); font-weight: 700;
 }
 .today-date {
   font-size: 28px; font-weight: 800; letter-spacing: -.015em;
   color: var(--ink); margin-top: 6px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  font-variant-numeric: tabular-nums; line-height: 1.1;
 }
-
 .today-cheer {
   appearance: none; border: 0; cursor: pointer; flex: none;
   padding: 10px 20px; border-radius: 999px;
-  background: linear-gradient(120deg, #4f46e5, #7c3aed);
+  background: var(--grad-cta);
   color: #fff; font-weight: 700; font-size: 13px; letter-spacing: .04em;
-  box-shadow:
-    0 6px 18px -6px rgba(79,70,229,.55),
-    inset 0 1px 0 rgba(255,255,255,.22);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.22);
   transition: transform .15s ease, box-shadow .2s ease, filter .15s ease;
   white-space: nowrap;
 }
 .today-cheer:hover {
   transform: translateY(-1px);
-  box-shadow:
-    0 10px 24px -8px rgba(79,70,229,.65),
-    inset 0 1px 0 rgba(255,255,255,.25);
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--primary) 65%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
   filter: brightness(1.05);
 }
+.today-cheer:focus-visible { outline: 2px solid var(--primary-l); outline-offset: 2px; }
 .today-cheer:active { transform: translateY(0); filter: brightness(.95); }
 .today-cheer.is-pulsing { animation: cheer-pulse 1.4s ease-in-out 1; }
 @keyframes cheer-pulse {
   0%   { transform: scale(1); }
-  35%  { transform: scale(1.07); box-shadow: 0 0 0 0 rgba(124,58,237,.5), 0 6px 18px -6px rgba(79,70,229,.55); }
-  100% { transform: scale(1); box-shadow: 0 6px 18px -6px rgba(79,70,229,.55), inset 0 1px 0 rgba(255,255,255,.22); }
+  35%  { transform: scale(1.07); box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 50%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent); }
+  100% { transform: scale(1); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.22); }
 }
 
-/* 三大主指标 + 行动按钮 */
-.today-stats {
+/* --- 3. 倒计时英雄卡（桌面/移动通用，修复 F1 缺样式） --- */
+.today-countdown-card {
   position: relative; z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 88px;
-  gap: 12px;
-  align-items: stretch;
-  margin-top: 2px;
-}
-.stat-block {
-  position: relative;
-  background: rgba(255,255,255,.72);
-  border: 1px solid rgba(99,102,241,.12);
-  border-radius: 16px;
-  padding: 16px 14px 14px;
-  transition: transform .2s ease, box-shadow .25s ease, border-color .2s ease;
-  -webkit-backdrop-filter: blur(6px);
-          backdrop-filter: blur(6px);
-  min-width: 0;
+  display: block; margin: 4px 0 20px; padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  background: var(--grad-hero);
+  color: #fff;
+  box-shadow: 0 12px 32px -8px color-mix(in srgb, var(--primary) 45%, transparent);
   overflow: hidden;
 }
-.stat-block::after {
-  content: '';
-  position: absolute; left: 14px; right: 14px; bottom: 8px; height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: .12;
-  transition: opacity .2s ease, transform .2s ease;
-  transform: scaleX(.6);
-  transform-origin: left;
+.today-countdown-card::before {
+  content: ''; position: absolute; top: -50%; right: -20%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.countdown-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; position: relative; z-index: 1;
+}
+.countdown-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.18); backdrop-filter: blur(8px);
+}
+.countdown-quote { font-size: 13px; font-weight: 500; opacity: .85; }
+.countdown-body {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 20px; position: relative; z-index: 1;
+}
+.countdown-number { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.countdown-day { font-size: 64px; line-height: 1; font-weight: 900; letter-spacing: -.03em; }
+.countday-unit { font-size: 20px; font-weight: 600; opacity: .8; }
+.countdown-progress-wrap { flex: 1; min-width: 200px; }
+.countdown-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; opacity: .85; margin-bottom: 6px; }
+.countdown-bar { height: 10px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
+.countdown-bar-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #fff, rgba(255,255,255,.85));
+  transition: width .5s ease; box-shadow: 0 0 8px rgba(255,255,255,.4);
+}
+
+/* --- 4. 四指标卡 --- */
+.today-stats {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; align-items: stretch; margin-top: 2px;
+}
+.stat-block {
+  position: relative; background: var(--glass-fill);
+  border: 1px solid var(--glass-line); border-radius: var(--radius);
+  padding: 16px 14px 14px; min-width: 0; overflow: hidden;
+  transition: transform .2s ease, box-shadow .25s ease, border-color .2s ease;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 .stat-block:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 26px -12px rgba(99,102,241,.32);
-  border-color: rgba(99,102,241,.25);
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--primary) 32%, transparent);
+  border-color: var(--primary-25);
 }
-.stat-block:hover::after { opacity: .35; transform: scaleX(1); }
-
-/* 数字 + 单位组合：解决 "0" 与 "天" 紧贴 */
+.stat-block:focus-within { outline: 2px solid var(--primary-l); outline-offset: 2px; }
+.stat-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: 12px; line-height: 1;
+}
 .stat-value {
   display: flex; align-items: baseline; gap: 0;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
-  line-height: 1.05;
-  color: var(--ink);
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  line-height: 1.05; color: var(--ink);
 }
-.stat-value .num {
-  font-size: 30px; font-weight: 800;
-  transition: color .2s ease;
-}
-.stat-value .unit {
-  font-size: 13px; font-weight: 600;
-  color: var(--muted);
-  margin-left: 5px;        /* ← 关键：数字与单位的合理间隙 */
-  opacity: .85;
-  letter-spacing: 0;
-}
-.stat-value .sep {
-  font-size: 18px; font-weight: 600;
-  color: var(--muted);
-  margin: 0 5px;
-  opacity: .55;
-}
-.stat-label {
-  margin-top: 8px;
-  font-size: 12px; font-weight: 600;
-  color: var(--muted); letter-spacing: .04em;
-}
+.stat-value .num { font-size: 30px; font-weight: 800; transition: color .2s ease; }
+.stat-value .unit { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 5px; opacity: .85; letter-spacing: 0; }
+.stat-value .sep { font-size: 18px; font-weight: 600; color: var(--muted); margin: 0 5px; opacity: .55; }
+.stat-label { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
 
-/* 配色：紫色 = 专注、橙 = 打卡、绿 = 计划 */
-.stat-focus   { color: #6366f1; }
-.stat-streak  { color: #f59e0b; }
-.stat-plan    { color: #10b981; }
-.stat-focus  .stat-value .num { color: #6366f1; }
-.stat-streak .stat-value .num { color: #f59e0b; }
-.stat-plan   .stat-value .num { color: #10b981; }
-
-/* 0 时数字淡灰，避免一打开页面"全 0"很刺眼 */
+/* 配色：专注=primary / 打卡=warn / 计划=ok / 趋势=math紫（均来自配色规范 v1） */
+.stat-focus  .stat-icon { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
+.stat-focus  .stat-value .num { color: var(--primary); }
+.stat-streak .stat-icon { background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn); }
+.stat-streak .stat-value .num { color: var(--warn); }
+.stat-plan   .stat-icon { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+.stat-plan   .stat-value .num { color: var(--ok); }
+.stat-trend  .stat-icon { background: color-mix(in srgb, var(--c-math) 12%, transparent); color: var(--c-math); }
+.stat-trend  .stat-value .num { color: var(--c-math); }
 .stat-block.is-zero .stat-value .num { opacity: .5; color: var(--muted); }
-.stat-block.is-zero::after { opacity: .04; }
 
-/* 行动按钮：圆形渐变 + 微动效 */
-.today-action {
-  appearance: none; border: 0; cursor: pointer;
-  border-radius: 16px;
-  background: linear-gradient(140deg, #6366f1, #4f46e5 60%, #4338ca);
-  color: #fff;
-  display: grid; place-items: center;
-  box-shadow:
-    0 8px 22px -10px rgba(79,70,229,.6),
-    inset 0 1px 0 rgba(255,255,255,.22);
-  transition: transform .15s ease, box-shadow .25s ease, filter .15s ease;
-  min-height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-.today-action::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.22), transparent 60%);
-  pointer-events: none;
-}
-.today-action:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 14px 30px -10px rgba(79,70,229,.7),
-    inset 0 1px 0 rgba(255,255,255,.28);
-  filter: brightness(1.05);
-}
-.today-action:active { transform: translateY(0); filter: brightness(.95); }
-.today-action svg { transition: transform .3s ease; position: relative; z-index: 1; }
-.today-action:hover svg { transform: translateX(2px); }
-
-/* 次级指标条：紧凑信息 */
-.today-secondary {
+/* --- 5. 得分卡 --- */
+.today-score-card {
   position: relative; z-index: 1;
-  margin-top: 12px; padding: 10px 16px;
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  background: rgba(255,255,255,.6);
-  border: 1px solid rgba(99,102,241,.1);
-  border-radius: 12px;
-  font-size: 12px;
-  -webkit-backdrop-filter: blur(4px);
-          backdrop-filter: blur(4px);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-top: 12px;
 }
-.sec-item { display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; }
-.sec-label { color: var(--muted); font-weight: 500; letter-spacing: .02em; }
-.sec-num {
-  font-weight: 700; color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  margin-left: 2px;
+.today-score-card .sc-item {
+  background: var(--glass-fill); border: 1px solid var(--glass-line);
+  border-radius: var(--radius); padding: 16px 18px;
+  box-shadow: var(--shadow); transition: box-shadow .2s ease, transform .2s ease;
 }
-.sec-unit { color: var(--muted); margin-left: 1px; font-size: 11px; }
-.sec-divider { width: 1px; height: 12px; background: rgba(99,102,241,.18); flex: none; }
+.today-score-card .sc-item:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+.today-score-card .sc-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.today-score-card .sc-value { font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 
-@media (max-width: 560px) {
-  .today-head { flex-wrap: wrap; }
-  .today-date { font-size: 22px; }
-  .today-stats { grid-template-columns: 1fr 1fr; }
-  .today-action { grid-column: 1 / -1; min-height: 56px; border-radius: 14px; }
-  .stat-value .num { font-size: 24px; }
-  .stat-value .unit { font-size: 12px; }
-}
-
-/* 深色主题下的玻璃态微调 */
-body.theme-dark .today-aggregate {
-  background: linear-gradient(135deg, rgba(30,27,75,.55) 0%, rgba(49,46,129,.45) 100%);
-  border-color: rgba(129,140,248,.18);
-}
-body.theme-dark .stat-block {
-  background: rgba(30,27,75,.55);
-  border-color: rgba(129,140,248,.18);
-}
-body.theme-dark .today-secondary {
-  background: rgba(30,27,75,.45);
-  border-color: rgba(129,140,248,.18);
-}
-body.theme-dark .today-eyebrow { color: #a5b4fc; }
-body.theme-dark .today-date { color: #f5f3ff; }
-body.theme-dark .sec-num { color: #f5f3ff; }
+/* --- 6. 科目进度条（位于英雄卡底部，修复 F1 缺样式） --- */
+.agg-subject-progress { position: relative; z-index: 1; margin-top: 16px; }
+.agg-sp-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.agg-sp-name { width: 80px; flex: none; font-size: 13px; font-weight: 600; color: var(--ink); }
+.agg-sp-bar { flex: 1; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.agg-sp-fill { height: 100%; border-radius: 999px; transition: width .35s ease; }
+.agg-sp-fill.c-politics { background: linear-gradient(90deg, var(--c-politics), color-mix(in srgb, var(--c-politics) 70%, #fff)); }
+.agg-sp-fill.c-english  { background: linear-gradient(90deg, var(--c-english),  color-mix(in srgb, var(--c-english) 70%, #fff)); }
+.agg-sp-fill.c-math     { background: linear-gradient(90deg, var(--c-math),     color-mix(in srgb, var(--c-math) 70%, #fff)); }
+.agg-sp-fill.c-major    { background: linear-gradient(90deg, var(--c-major),    color-mix(in srgb, var(--c-major) 70%, #fff)); }
+.agg-sp-fill.c-cs408    { background: linear-gradient(90deg, var(--accent),     color-mix(in srgb, var(--accent) 70%, #fff)); }
+.agg-sp-fill.c-default  { background: linear-gradient(90deg, var(--primary),    color-mix(in srgb, var(--primary) 70%, #fff)); }
+.agg-sp-percent { width: 48px; flex: none; text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 
 /* ============ 408 错题：到期复习徽标 / 待复习标签 ============ */
 .review-badge {
@@ -1363,318 +1329,48 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* --- 2. 今日聚合卡：彻底重做！倒计时独立成"深色渐变紫卡片" --- */
-.today-aggregate {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin-bottom: 20px;
-}
-.today-aggregate::before { display: none !important; }
-
-/* 今日头部（问候语+加油按钮） */
-.today-head {
-  padding: 0 2px 16px !important;
-  margin-bottom: 0;
-}
-.today-eyebrow {
-  color: var(--primary) !important;
-  font-weight: 700;
-  letter-spacing: .12em;
-}
-.today-date {
-  font-size: 30px !important;
-  font-weight: 800 !important;
-  color: var(--ink) !important;
+/* --- 7. 移动端重排（仅改布局，不再重写整套样式） --- */
+@media (max-width: 860px) {
+  .today-aggregate { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
+  .today-aggregate::before { display: none; }
+  .today-head { padding: 0 2px 16px; }
+  .today-date { font-size: 30px; }
+  .today-countdown-card { padding: 20px; margin: 4px 0 16px; }
+  .countdown-body { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .countdown-progress-wrap { width: 100%; min-width: 0; }
+  .countdown-day { font-size: 48px; }
+  .today-stats { grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 16px; }
+  .stat-block { background: var(--card); border-color: var(--line); box-shadow: var(--shadow); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .stat-block:hover { box-shadow: var(--shadow-hover); }
+  .stat-value .num { font-size: 28px; }
+  .today-score-card { gap: 10px; }
+  .today-score-card .sc-item { padding: 14px 12px; }
 }
 
-/* 倒计时独立卡片：深色渐变紫背景（设计方案核心视觉） */
-.today-countdown-card {
-  display: block;
-  margin: 4px 0 20px;
-  padding: 28px 32px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #9333EA 100%);
-  color: #fff;
-  box-shadow: 0 12px 32px -8px rgba(79,70,229,.45);
-  position: relative;
-  overflow: hidden;
-}
-.today-countdown-card::before {
-  content: '';
-  position: absolute;
-  top: -50%; right: -20%;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-.countdown-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; position: relative; z-index: 1;
-}
-.countdown-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 600;
-  padding: 4px 12px; border-radius: 999px;
-  background: rgba(255,255,255,.18);
-  backdrop-filter: blur(8px);
-}
-.countdown-quote {
-  font-size: 13px; font-weight: 500; opacity: .85;
-}
-.countdown-body {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 20px; position: relative; z-index: 1;
-}
-.countdown-number {
-  display: flex; align-items: baseline; gap: 8px;
-  font-variant-numeric: tabular-nums;
-}
-.countdown-day {
-  font-size: 64px; line-height: 1;
-  font-weight: 900;
-  letter-spacing: -.03em;
-}
-.countday-unit {
-  font-size: 20px; font-weight: 600; opacity: .8;
-}
-.countdown-progress-wrap {
-  flex: 1; min-width: 200px;
-}
-.countdown-label {
-  display: flex; justify-content: space-between;
-  font-size: 12px; font-weight: 600; opacity: .85;
-  margin-bottom: 6px;
-}
-.countdown-bar {
-  height: 10px; border-radius: 999px;
-  background: rgba(255,255,255,.18);
-  overflow: hidden;
-}
-.countdown-bar-fill {
-  height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, #fff, rgba(255,255,255,.85));
-  transition: width .5s ease;
-  box-shadow: 0 0 8px rgba(255,255,255,.4);
-}
-
-/* --- 3. 4 个指标卡：独立配色 + 图标（蓝/绿/橙/紫） --- */
-.today-stats {
-  grid-template-columns: 1fr 1fr 1fr 1fr !important;
-  gap: 16px !important;
-  margin: 0 0 16px !important;
-}
-.today-action {
-  display: none !important;
-}
-.stat-block {
-  padding: 20px 18px !important;
-  border-radius: var(--radius) !important;
-  background: var(--card) !important;
-  border: 1px solid var(--line) !important;
-  box-shadow: var(--shadow) !important;
-  transition: all .2s ease !important;
-  backdrop-filter: none !important;
-  position: relative;
-  overflow: hidden;
-}
-.stat-block::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-.stat-block::after { display: none !important; }
-.stat-block:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--shadow-hover) !important;
-}
-.stat-icon {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 20px; margin-bottom: 12px;
-  line-height: 1;
-}
-.stat-focus { border-top: none; }
-.stat-focus::before { background: linear-gradient(90deg, #3B82F6, #06B6D4); }
-.stat-focus .stat-icon { background: rgba(59,130,246,.1); color: #3B82F6; }
-.stat-focus .stat-value .num { color: #3B82F6; }
-
-.stat-streak { border-top: none; }
-.stat-streak::before { background: linear-gradient(90deg, #10B981, #34D399); }
-.stat-streak .stat-icon { background: rgba(16,185,129,.1); color: #10B981; }
-.stat-streak .stat-value .num { color: #10B981; }
-
-.stat-plan { border-top: none; }
-.stat-plan::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
-.stat-plan .stat-icon { background: rgba(245,158,11,.1); color: #F59E0B; }
-.stat-plan .stat-value .num { color: #F59E0B; }
-
-.stat-trend { border-top: none; display: flex !important; flex-direction: column !important; }
-.stat-trend::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
-.stat-trend .stat-icon { background: rgba(139,92,246,.1); color: #8B5CF6; }
-.stat-trend .stat-value .num { color: #8B5CF6; }
-
-.stat-value {
-  margin-bottom: 4px;
-}
-.stat-value .num {
-  font-size: 28px !important;
-  font-weight: 800;
-}
-.stat-label {
-  font-size: 13px !important;
-  color: var(--muted) !important;
-  font-weight: 500;
-}
-
-/* 次级指标（倒计时/得分/等级）移动到了新的深紫卡，旧区域调整 */
-.today-secondary {
-  display: none !important;  /* 倒计时已移到独立卡片，得分/等级挪到下方 */
-}
-
-/* 原来的 today-secondary 内容改展示为"今日得分卡"（和 4 指标卡一致的风格） */
-.today-score-card {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.today-score-card .sc-item {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: var(--shadow);
-  transition: all .2s ease;
-}
-.today-score-card .sc-item:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-1px);
-}
-.today-score-card .sc-label {
-  font-size: 12px; color: var(--muted);
-  font-weight: 600; margin-bottom: 8px;
-}
-.today-score-card .sc-value {
-  font-size: 24px; font-weight: 800; color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- 4. 科目进度：语义色进度条（政治橙/英语蓝/数学紫/专业课绿） --- */
-.agg-sp-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px 0;
-}
-.agg-sp-name {
-  width: 80px; flex: none;
-  font-size: 13px; font-weight: 600; color: var(--ink);
-}
-.agg-sp-bar {
-  flex: 1; height: 10px !important;
-  border-radius: 999px !important;
-  background: var(--line) !important;
-  overflow: hidden;
-}
-.agg-sp-fill {
-  height: 100%; border-radius: 999px;
-  transition: width .35s ease;
-}
-.agg-sp-fill.c-politics { background: linear-gradient(90deg, #F97316, #FB923C); }
-.agg-sp-fill.c-english  { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
-.agg-sp-fill.c-math     { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
-.agg-sp-fill.c-major    { background: linear-gradient(90deg, #10B981, #34D399); }
-.agg-sp-fill.c-cs408    { background: linear-gradient(90deg, #06B6D4, #22D3EE); }
-.agg-sp-fill.c-default  { background: linear-gradient(90deg, #6366F1, #818CF8); }
-.agg-sp-percent {
-  width: 48px; flex: none; text-align: right;
-  font-size: 13px; font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
-
-/* 计划清单 / 任务行视觉强化 */
-.plan-item {
-  border-radius: var(--radius-sm) !important;
-  padding: 12px 14px !important;
-  margin-bottom: 8px !important;
-  border: 1px solid var(--line) !important;
-  transition: all .15s ease;
-}
-.plan-item:hover {
-  border-color: var(--primary-l) !important;
-  box-shadow: 0 2px 8px rgba(79,70,229,.08);
-}
-.plan-item.done {
-  background: rgba(16,185,129,.06) !important;
-  border-color: rgba(16,185,129,.25) !important;
-}
-
-/* 卡片头部间距统一 */
-.card-head {
-  padding-bottom: 4px;
-}
-
-/* --- 深色模式适配 --- */
-:root[data-theme="dark"] .today-score-card .sc-item {
-  background: #1e293b !important;
-  border-color: var(--line) !important;
-  box-shadow: none;
+/* --- 8. 深色主题（统一收口到 :root[data-theme="dark"]，修复 F3） --- */
+:root[data-theme="dark"] .today-aggregate {
+  background: linear-gradient(135deg,
+              color-mix(in srgb, var(--primary-d) 22%, var(--bg)) 0%,
+              color-mix(in srgb, var(--primary) 18%, var(--bg)) 100%);
+  border-color: color-mix(in srgb, var(--primary-l) 22%, transparent);
 }
 :root[data-theme="dark"] .stat-block {
-  background: #1e293b !important;
-  border-color: var(--line) !important;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  border-color: color-mix(in srgb, var(--primary-l) 20%, transparent);
+}
+:root[data-theme="dark"] .today-score-card .sc-item {
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  border-color: color-mix(in srgb, var(--primary-l) 20%, transparent);
   box-shadow: none;
 }
-:root[data-theme="dark"] .stat-label {
-  color: #94a3b8 !important;
-}
-:root[data-theme="dark"] .plan-item {
-  background: #1e293b !important;
-  border-color: var(--line) !important;
-}
-:root[data-theme="dark"] .plan-item.done {
-  background: rgba(16,185,129,.08) !important;
-  border-color: rgba(16,185,129,.25) !important;
-}
-:root[data-theme="dark"] .agg-sp-name,
-:root[data-theme="dark"] .agg-sp-percent {
-  color: #e2e8f0 !important;
+:root[data-theme="dark"] .today-cheer {
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.18);
 }
 
-/* --- 移动端响应式 --- */
-@media (max-width: 860px) {
-  .today-countdown-card {
-    padding: 20px 20px;
-  }
-  .countdown-day {
-    font-size: 48px;
-  }
-  .countdown-body {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .countdown-progress-wrap {
-    width: 100%;
-    min-width: 0;
-  }
-  .today-stats {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  .today-score-card {
-    grid-template-columns: 1fr 1fr 1fr !important;
-    gap: 10px;
-  }
-  .today-score-card .sc-item {
-    padding: 14px 12px;
-  }
-  .today-score-card .sc-value {
-    font-size: 20px;
-  }
+/* --- 9. 动效降级（修复 F5） --- */
+@media (prefers-reduced-motion: reduce) {
+  .today-cheer, .stat-block, .today-score-card .sc-item, .countdown-bar-fill { transition: none !important; }
+  .today-cheer.is-pulsing { animation: none !important; }
 }
 
 /* ===== 打卡卡片（今日页核心行动区） ===== */
