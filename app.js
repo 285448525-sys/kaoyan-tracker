@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816k';
+  var APP_VERSION = '20260816l';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2549,6 +2549,8 @@
 
   /* ============ 番茄钟 / 倒计时（自定义时长 + 仅倒计时合并） ============ */
   var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, workMin: 25, breakMin: 5, timer: null, countdownOnly: false, workSec: 0, done: false };
+  var pomoAudioCtx = null;         // 结束提示音上下文（须在用户手势内解锁）
+  var ORIG_TITLE = document.title; // 计时时临时改写标签页标题，结束后复原
   function fmtPomo(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
   function renderPomodoro() {
     if (!refs.pomoTime) return;
@@ -2559,13 +2561,44 @@
     refs.btnPomoReset.disabled = !pomodoro.running && pomodoro.remain === pomodoro.total && !pomodoro.done;
     var disp = refs.pomoTime ? refs.pomoTime.parentElement : null;
     if (disp) { disp.classList.toggle('break', !pomodoro.countdownOnly && pomodoro.mode !== 'study'); disp.classList.toggle('done', !!pomodoro.done); }
+    updatePomoTitle();
   }
-  function notifyPomodoro(msg) {
+  function notifyPomodoro(msg, type) {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       try { new Notification('考研番茄钟', { body: msg }); } catch (e) {}
     }
-    showToast(msg);
+    showToast(msg, type);
   }
+  // 计时结束提示音：Web Audio 振荡器合成，无需音频文件、零依赖
+  function playPomoChime(times) {
+    if (!pomoAudioCtx) return;
+    try {
+      var n = times || 1;
+      for (var i = 0; i < n; i++) {
+        var o = pomoAudioCtx.createOscillator(), g = pomoAudioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = 880;
+        o.connect(g); g.connect(pomoAudioCtx.destination);
+        var t = pomoAudioCtx.currentTime + i * 0.25;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        o.start(t); o.stop(t + 0.24);
+      }
+    } catch (e) {}
+  }
+  // 计时中实时改写标签页标题，切到别的标签也能看到剩余/结束
+  function updatePomoTitle() {
+    if (pomodoro.running) {
+      var em = pomodoro.done ? '⏰' : (pomodoro.countdownOnly ? '⏲' : (pomodoro.mode === 'study' ? '🍅' : '☕'));
+      document.title = em + ' ' + fmtPomo(pomodoro.remain) + ' · 考研学习记录';
+    } else if (pomodoro.done) {
+      document.title = '⏰ 时间到！';
+    } else {
+      document.title = ORIG_TITLE;
+    }
+  }
+  // 移动端触感反馈
+  function pomoVibrate() { if (navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} } }
   function readPomoTimes() {
     var w = Number(refs.pomoWork && refs.pomoWork.value) || 25;
     var b = Number(refs.pomoBreak && refs.pomoBreak.value) || 5;
@@ -2592,20 +2625,26 @@
       if (pomodoro.mode === 'study') {
         if (pomodoro.countdownOnly) {
           pomodoro.remain = 0; pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); pomodoro.done = true;
-          notifyPomodoro('⏲ 倒计时结束！时间到 ⏰');
+          playPomoChime(2); pomoVibrate();
+          notifyPomodoro('⏲ 倒计时结束！时间到 ⏰', 'ok');
           renderPomodoro();
           return;
         }
         pomodoro.mode = 'rest'; pomodoro.total = pomodoro.breakMin * 60; pomodoro.remain = pomodoro.breakMin * 60;
-        notifyPomodoro('学习结束，休息 ' + pomodoro.breakMin + ' 分钟！喝口水 💧');
+        playPomoChime(1); pomoVibrate();
+        notifyPomodoro('学习结束，休息 ' + pomodoro.breakMin + ' 分钟！喝口水 💧', 'ok');
       } else {
         pomodoro.mode = 'study'; pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60;
-        notifyPomodoro('休息结束，继续学习 💪');
+        playPomoChime(1); pomoVibrate();
+        notifyPomodoro('休息结束，继续学习 💪', 'ok');
       }
     }
     renderPomodoro();
   }
   function startPomodoro() {
+    // 必须在用户手势内创建/恢复 AudioContext，否则浏览器禁止自动播放
+    if (!pomoAudioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { try { pomoAudioCtx = new AC(); } catch (e) {} } }
+    if (pomoAudioCtx && pomoAudioCtx.state === 'suspended') { try { pomoAudioCtx.resume(); } catch (e) {} }
     if (pomodoro.running) { pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); renderPomodoro(); return; }
     readPomoTimes(); readPomoCountdownOnly();
     if (pomodoro.done || pomodoro.remain === pomodoro.total) {

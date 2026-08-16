@@ -559,6 +559,13 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .pomo-setup .field-row input[type=number] { flex: none; }
 .pomo-display.break .pomo-time { color: #10b981; }
 .pomo-display.done .pomo-time { color: var(--ok); }
+.pomo-display.done .pomo-time { animation: pomo-done-pulse .8s ease-in-out 4; }
+.pomodoro-card:has(.pomo-display.done) { animation: pomo-card-flash 1s ease-in-out 2; }
+@keyframes pomo-done-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes pomo-card-flash { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 0 3px var(--ok), 0 0 18px rgba(16,185,129,.45); } }
+@media (prefers-reduced-motion: reduce) {
+  .pomo-display.done .pomo-time, .pomodoro-card:has(.pomo-display.done) { animation: none; }
+}
 
 /* ============ 深色 / 浅色主题切换按钮 ============ */
 .theme-toggle {
