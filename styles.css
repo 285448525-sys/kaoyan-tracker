@@ -326,13 +326,14 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   color: #fff; padding: 18px 12px; display: flex; flex-direction: column; gap: 6px;
   overflow-y: auto; transition: transform .25s ease; box-shadow: var(--shadow);
 }
-.side-nav .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.side-nav .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; row-gap: 8px; }
+.side-nav .brand > div { flex: 1 1 auto; min-width: 140px; }
 .side-nav .brand-logo {
   width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.2);
   display: grid; place-items: center; font-size: 20px; font-weight: 700; flex: none;
 }
-.side-nav h1 { font-size: 16px; margin: 0; color: #fff; }
-.side-nav .brand-sub { font-size: 11px; opacity: .8; margin: 2px 0 0; }
+.side-nav h1 { font-size: 16px; margin: 0; color: #fff; white-space: nowrap; }
+.side-nav .brand-sub { font-size: 11px; opacity: .8; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .side-menu { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .side-menu .tab-btn {
   flex: none; display: flex; flex-direction: row; align-items: center; gap: 10px;
