@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816b';
+  var APP_VERSION = '20260816c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -54,6 +54,7 @@
   DICT.forEach(function (d) { DICT_MAP[d.w.toLowerCase()] = d; });
   var practiceSession = null; // {items, index, answered}
   var reviewQueue = null;     // {items, index, total}
+  var reviewMode = 'review';  // 'review' | 'practice'（复习/自测 tab 内的子模式）
   var LEITNER = [1, 2, 4, 7, 15]; // box 1..5 -> 间隔天数
   function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
@@ -753,6 +754,10 @@
     // 里程碑检测（首次达成触发庆祝）
     checkMilestones();
     renderWeaknessReport();
+    // S3：非数学/408 用户不展示薄弱点卡（无刷题数据）
+    var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
+    var hasCs408 = Store.getSubjects().some(function (s) { return s.key === 'cs408'; });
+    if (refs.weaknessCard) refs.weaknessCard.classList.toggle('nav-hidden', !(hasMath || hasCs408));
   }
   /* ============ A3：基于刷题正确率的薄弱点分析报告 ============ */
   var WEAK_THRESHOLD = 0.6;   // 正确率 < 60% 视为薄弱
@@ -2579,18 +2584,18 @@
     else if (has && st.indexOf('请先在') === 0) refs.transQueryStatus.textContent = '';
   }
 
-  /* ============ 番茄钟（可自定义时长） + 自定义倒计时 ============ */
-  var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, workMin: 25, breakMin: 5, timer: null };
-  var customTimer = { running: false, remain: 25 * 60, total: 25 * 60, timer: null, done: false };
+  /* ============ 番茄钟 / 倒计时（自定义时长 + 仅倒计时合并） ============ */
+  var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, workMin: 25, breakMin: 5, timer: null, countdownOnly: false, workSec: 0, done: false };
   function fmtPomo(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
   function renderPomodoro() {
     if (!refs.pomoTime) return;
     refs.pomoTime.textContent = fmtPomo(pomodoro.remain);
-    refs.pomoMode.textContent = pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中';
+    if (pomodoro.done) refs.pomoMode.textContent = '✅ 倒计时结束';
+    else refs.pomoMode.textContent = pomodoro.countdownOnly ? '⏲ 倒计时' : (pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中');
     refs.btnPomoStart.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
-    refs.btnPomoReset.disabled = !pomodoro.running && pomodoro.remain === pomodoro.total;
+    refs.btnPomoReset.disabled = !pomodoro.running && pomodoro.remain === pomodoro.total && !pomodoro.done;
     var disp = refs.pomoTime ? refs.pomoTime.parentElement : null;
-    if (disp) { disp.classList.toggle('break', pomodoro.mode !== 'study'); disp.classList.remove('done'); }
+    if (disp) { disp.classList.toggle('break', !pomodoro.countdownOnly && pomodoro.mode !== 'study'); disp.classList.toggle('done', !!pomodoro.done); }
   }
   function notifyPomodoro(msg) {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -2604,10 +2609,30 @@
     pomodoro.workMin = Math.max(1, Math.min(120, w));
     pomodoro.breakMin = Math.max(1, Math.min(60, b));
   }
+  function readPomoCountdownOnly() {
+    pomodoro.countdownOnly = !!(refs.pomoCountdownOnly && refs.pomoCountdownOnly.checked);
+    pomodoro.workSec = (pomodoro.countdownOnly && refs.pomoWorkSec) ? Math.max(0, Math.min(59, Number(refs.pomoWorkSec.value) || 0)) : 0;
+  }
+  function applyCountdownOnlyUI() {
+    var on = !!(refs.pomoCountdownOnly && refs.pomoCountdownOnly.checked);
+    if (refs.pomoBreak) {
+      var lbl = refs.pomoBreak.previousElementSibling;
+      refs.pomoBreak.style.display = on ? 'none' : '';
+      if (lbl && lbl.tagName === 'LABEL') lbl.style.display = on ? 'none' : '';
+    }
+    if (refs.pomoSecLabel) refs.pomoSecLabel.style.display = on ? '' : 'none';
+    if (refs.pomoWorkSec) refs.pomoWorkSec.style.display = on ? '' : 'none';
+  }
   function tickPomodoro() {
     pomodoro.remain--;
     if (pomodoro.remain <= 0) {
       if (pomodoro.mode === 'study') {
+        if (pomodoro.countdownOnly) {
+          pomodoro.remain = 0; pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); pomodoro.done = true;
+          notifyPomodoro('⏲ 倒计时结束！时间到 ⏰');
+          renderPomodoro();
+          return;
+        }
         pomodoro.mode = 'rest'; pomodoro.total = pomodoro.breakMin * 60; pomodoro.remain = pomodoro.breakMin * 60;
         notifyPomodoro('学习结束，休息 ' + pomodoro.breakMin + ' 分钟！喝口水 💧');
       } else {
@@ -2619,9 +2644,11 @@
   }
   function startPomodoro() {
     if (pomodoro.running) { pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); renderPomodoro(); return; }
-    readPomoTimes();
-    // 如果是初始状态，按自定义时长重置
-    if (pomodoro.remain === pomodoro.total && pomodoro.mode === 'study') { pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60; }
+    readPomoTimes(); readPomoCountdownOnly();
+    if (pomodoro.done || pomodoro.remain === pomodoro.total) {
+      var total = pomodoro.countdownOnly ? (pomodoro.workMin * 60 + pomodoro.workSec) : (pomodoro.mode === 'rest' ? pomodoro.breakMin * 60 : pomodoro.workMin * 60);
+      pomodoro.total = total; pomodoro.remain = total; pomodoro.done = false;
+    }
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') { try { Notification.requestPermission().catch(function () {}); } catch (e) {} }
     pomodoro.running = true;
     pomodoro.timer = setInterval(tickPomodoro, 1000);
@@ -2629,51 +2656,25 @@
   }
   function resetPomodoro() {
     pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer);
-    readPomoTimes();
-    pomodoro.mode = 'study'; pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60; renderPomodoro();
+    readPomoTimes(); readPomoCountdownOnly();
+    pomodoro.mode = 'study'; pomodoro.done = false;
+    pomodoro.total = pomodoro.countdownOnly ? (pomodoro.workMin * 60 + pomodoro.workSec) : pomodoro.workMin * 60;
+    pomodoro.remain = pomodoro.total; renderPomodoro();
   }
 
-  // 自定义倒计时
-  function renderCustomTimer() {
-    if (!refs.timerCustomTime) return;
-    refs.timerCustomTime.textContent = fmtPomo(customTimer.remain);
-    refs.timerCustomMode.textContent = customTimer.done ? '✅ 已完成' : '⏲ 倒计时';
-    refs.btnTimerCustomStart.textContent = customTimer.running ? '暂停' : (customTimer.remain < customTimer.total ? '继续' : '开始');
-    refs.btnTimerCustomReset.disabled = !customTimer.running && customTimer.remain === customTimer.total;
-    var disp = refs.timerCustomTime ? refs.timerCustomTime.parentElement : null;
-    if (disp) { disp.classList.toggle('done', !!customTimer.done); disp.classList.remove('break'); }
-  }
-  function tickCustomTimer() {
-    customTimer.remain--;
-    if (customTimer.remain <= 0) {
-      customTimer.remain = 0;
-      customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer);
-      customTimer.done = true;
-      notifyPomodoro('⏲ 倒计时结束！时间到 ⏰');
-    }
-    renderCustomTimer();
-  }
-  function startCustomTimer() {
-    if (customTimer.running) { customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer); renderCustomTimer(); return; }
-    if (customTimer.done || customTimer.remain === customTimer.total) {
-      var m = Number(refs.timerCustomMin && refs.timerCustomMin.value) || 25;
-      var s = Number(refs.timerCustomSec && refs.timerCustomSec.value) || 0;
-      var total = Math.max(1, m * 60 + s);
-      customTimer.total = total; customTimer.remain = total; customTimer.done = false;
-    }
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') { try { Notification.requestPermission().catch(function () {}); } catch (e) {} }
-    customTimer.running = true;
-    customTimer.timer = setInterval(tickCustomTimer, 1000);
-    renderCustomTimer();
-  }
-  function resetCustomTimer() {
-    customTimer.running = false; if (customTimer.timer) clearInterval(customTimer.timer);
-    var m = Number(refs.timerCustomMin && refs.timerCustomMin.value) || 25;
-    var s = Number(refs.timerCustomSec && refs.timerCustomSec.value) || 0;
-    var total = Math.max(1, m * 60 + s);
-    customTimer.total = total; customTimer.remain = total; customTimer.done = false; renderCustomTimer();
-  }
 
+  function setReviewMode(mode) {
+    reviewMode = mode;
+    if (refs.reviewBox) refs.reviewBox.style.display = mode === 'review' ? '' : 'none';
+    if (refs.practiceBox) refs.practiceBox.style.display = mode === 'practice' ? '' : 'none';
+    if (refs.reviewHint) refs.reviewHint.style.display = mode === 'review' ? '' : 'none';
+    if (refs.btnReviewRestart) refs.btnReviewRestart.style.display = mode === 'review' ? '' : 'none';
+    if (refs.btnPracticeRestart) refs.btnPracticeRestart.style.display = mode === 'practice' ? '' : 'none';
+    if (refs.btnPracticeSettings) refs.btnPracticeSettings.style.display = mode === 'practice' ? '' : 'none';
+    document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-mode') === mode); });
+    if (mode === 'review') { if (!reviewQueue) startReview(); }
+    else { if (!practiceSession) startPractice(); }
+  }
   function buildPracticePool(scope) {
     if (scope === 'vocab') return Store.getVocab().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
     if (scope === 'wrong') return Store.getWrongWords().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
@@ -3266,7 +3267,7 @@
     { icon: '🧮', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
     { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
     { icon: '📌', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
-    { icon: '🎴', title: '背单词 / 复习', tab: 'practice', text: '查词记生词，按记忆曲线每天推送待复习词，4 选 1 测验（⚙️ 可自定义题量/范围/模式）。' },
+    { icon: '🔁', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（⚙️ 可自定义题量/范围/模式）。' },
     { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
     { icon: '☁️', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
     { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
@@ -3705,7 +3706,7 @@
     renderSyncConfig();
     updateTranslateButton();
     renderPomodoro();
-    renderCustomTimer();
+    applyCountdownOnlyUI();
     // 第二批：不在当前 tab 或 DOM 密集的内容，延迟到下一帧执行，避免阻塞主线程
     setTimeout(function () {
       renderData();
@@ -3737,10 +3738,8 @@
         var target = btn.getAttribute('data-tab');
         tabs.forEach(function (b) { b.classList.toggle('active', b === btn); });
         document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-        if (target === 'practice' && !practiceSession) startPractice();
-        if (target === 'review' && !reviewQueue) startReview();
+        if (target === 'review') setReviewMode(reviewMode);
         if (target === 'summary') renderSummary();
-        if (target === 'hfwords') renderHfWords();
         if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
         if (target === 'words') renderWrongBook();
         if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
@@ -3840,6 +3839,7 @@
     refs.subjectBars = $('subject-bars');
     refs.subjectStats = $('subject-stats');
     refs.weaknessReport = $('weakness-report');
+    refs.weaknessCard = $('weakness-card');
 
     refs.btnAutoPlan = $('btn-auto-plan');
     refs.planList = $('plan-list');
@@ -3994,15 +3994,12 @@
     refs.btnAddYr = $('btn-add-yr');
     refs.yrList = $('yr-list');
 
-    // 番茄钟自定义时长 + 自定义倒计时
+    // 番茄钟 / 倒计时（合并）
     refs.pomoWork = $('pomo-work');
     refs.pomoBreak = $('pomo-break');
-    refs.timerCustomMin = $('timer-custom-min');
-    refs.timerCustomSec = $('timer-custom-sec');
-    refs.timerCustomTime = $('timer-custom-time');
-    refs.timerCustomMode = $('timer-custom-mode');
-    refs.btnTimerCustomStart = $('btn-timer-custom-start');
-    refs.btnTimerCustomReset = $('btn-timer-custom-reset');
+    refs.pomoCountdownOnly = $('pomo-countdown-only');
+    refs.pomoWorkSec = $('pomo-work-sec');
+    refs.pomoSecLabel = $('pomo-sec-label');
 
     // 主题切换 + 今日聚合
     refs.themeToggle = $('themeToggle');
@@ -4178,6 +4175,10 @@
     // 词汇：背单词 / 复习
     refs.btnPracticeRestart.addEventListener('click', startPractice);
     refs.btnReviewRestart.addEventListener('click', startReview);
+    // 复习/自测 tab 内的子模式切换
+    document.querySelectorAll('.mode-btn').forEach(function (b) {
+      b.addEventListener('click', function () { setReviewMode(b.getAttribute('data-mode')); });
+    });
     // 背单词设置面板
     function openPracticeSettings() {
       var ps = Store.getPracticeSettings();
@@ -4290,9 +4291,8 @@
     // 408：真题年份
     if (refs.btnAddYr) refs.btnAddYr.addEventListener('click', onAdd408Year);
 
-    // 自定义倒计时
-    if (refs.btnTimerCustomStart) refs.btnTimerCustomStart.addEventListener('click', startCustomTimer);
-    if (refs.btnTimerCustomReset) refs.btnTimerCustomReset.addEventListener('click', resetCustomTimer);
+    // 仅倒计时开关
+    if (refs.pomoCountdownOnly) refs.pomoCountdownOnly.addEventListener('change', function () { applyCountdownOnlyUI(); readPomoCountdownOnly(); renderPomodoro(); });
     // 主题切换
     if (refs.themeToggle) refs.themeToggle.addEventListener('click', toggleTheme);
 

@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260816b" />
+  <link rel="stylesheet" href="styles.css?v=20260816c" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -49,9 +49,7 @@
 
       <div class="side-divider"></div>
       <div class="side-group-title">🗣️ 英语 · 词汇</div>
-      <button class="tab-btn" data-tab="practice"><span>🎴</span><span class="tab-label">背单词</span></button>
-      <button class="tab-btn" data-tab="review"><span>🔁</span><span class="tab-label">生词复习</span></button>
-      <button class="tab-btn" data-tab="hfwords"><span>📚</span><span class="tab-label">高频词</span></button>
+      <button class="tab-btn" data-tab="review"><span>🔁</span><span class="tab-label">复习 / 自测</span></button>
       <button class="tab-btn" data-tab="sentences"><span>🧩</span><span class="tab-label">长难句</span></button>
       <button class="tab-btn" data-tab="words"><span>📝</span><span class="tab-label">生词记录</span></button>
 
@@ -341,36 +339,25 @@
       </div>
 
       <div class="card pomodoro-card">
-        <h2 class="card-title">🍅 番茄钟（可自定义时长）</h2>
+        <h2 class="card-title">🍅 番茄钟 / 倒计时（可自定义）</h2>
         <div class="pomo-setup">
           <div class="field-row" style="margin-bottom:8px">
             <label>学习(分)</label>
             <input type="number" id="pomo-work" value="25" min="1" max="120" style="max-width:80px" />
+            <label class="pomo-sec-label" id="pomo-sec-label" style="display:none">秒</label>
+            <input type="number" id="pomo-work-sec" value="0" min="0" max="59" style="max-width:80px; display:none" />
             <label>休息(分)</label>
             <input type="number" id="pomo-break" value="5" min="1" max="60" style="max-width:80px" />
+          </div>
+          <div class="field-row" style="margin-bottom:8px">
+            <label class="switch"><input type="checkbox" id="pomo-countdown-only"><span class="slider"></span></label>
+            <span class="hint" style="margin:0">仅倒计时（无休息，计时结束不进入休息）</span>
           </div>
         </div>
         <div class="pomo-display"><span id="pomo-mode" class="pomo-mode">🍅 学习中</span><span id="pomo-time" class="pomo-time">25:00</span></div>
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-pomo-start" class="btn btn-primary">开始</button>
           <button id="btn-pomo-reset" class="btn btn-ghost">重置</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">⏲ 自定义倒计时</h2>
-        <div class="pomo-setup">
-          <div class="field-row" style="margin-bottom:8px">
-            <label>时长(分)</label>
-            <input type="number" id="timer-custom-min" value="25" min="1" max="300" style="max-width:80px" />
-            <label>秒</label>
-            <input type="number" id="timer-custom-sec" value="0" min="0" max="59" style="max-width:80px" />
-          </div>
-        </div>
-        <div class="pomo-display"><span id="timer-custom-mode" class="pomo-mode">⏲ 倒计时</span><span id="timer-custom-time" class="pomo-time">25:00</span></div>
-        <div class="btn-row" style="margin-top:12px">
-          <button id="btn-timer-custom-start" class="btn btn-primary">开始</button>
-          <button id="btn-timer-custom-reset" class="btn btn-ghost">重置</button>
         </div>
       </div>
 
@@ -467,7 +454,7 @@
         <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
       </div>
 
-      <div class="card weakness-card">
+      <div class="card weakness-card" id="weakness-card">
         <h2 class="card-title">📉 薄弱点分析报告（基于刷题正确率）</h2>
         <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
         <div id="weakness-report"></div>
@@ -613,13 +600,25 @@
         <div id="wrong-ai-summary" class="ai-summary-box"></div>
         <div id="wrong-list" class="mistake-list"></div>
       </div>
+
+      <details class="card hfwords-fold">
+        <summary class="card-title">📚 考研真题阅读高频词</summary>
+        <p class="card-sub">本地词库共 <span id="hf-count">0</span> 词</p>
+        <input type="text" id="hf-search" placeholder="搜索单词或释义，如 affect / 影响" />
+        <div id="hf-list" class="hf-list"></div>
+      </details>
     </section>
 
-    <section id="tab-practice" class="tab-panel">
+    <!-- 词汇模块：复习 / 自测（合并原「背单词」与「生词复习」两个 tab） -->
+    <section id="tab-review" class="tab-panel">
       <div class="card">
         <div class="card-head">
-          <h2 class="card-title">🎴 背单词（阅读词汇）</h2>
-          <button id="btn-practice-settings" class="icon-btn" title="练习设置" aria-label="练习设置">⚙️</button>
+          <h2 class="card-title">🔁 复习 / 自测</h2>
+          <div class="mode-switch">
+            <button type="button" class="mode-btn active" data-mode="review">记忆曲线复习</button>
+            <button type="button" class="mode-btn" data-mode="practice">测验模式</button>
+            <button type="button" id="btn-practice-settings" class="icon-btn" title="练习设置" aria-label="练习设置">⚙️</button>
+          </div>
         </div>
         <div id="practice-settings" class="practice-settings" hidden>
           <div class="field-row">
@@ -654,20 +653,12 @@
             <button id="btn-ps-close" class="btn btn-ghost">收起</button>
           </div>
         </div>
-        <div id="practice-box" class="practice-box"></div>
-        <div class="btn-row" style="margin-top:14px">
-          <button id="btn-practice-restart" class="btn btn-ghost">换一批</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-review" class="tab-panel">
-      <div class="card">
-        <h2 class="card-title">🔁 生词复习（记忆曲线）</h2>
         <p class="hint" id="review-hint"></p>
         <div id="review-box" class="review-box"></div>
+        <div id="practice-box" class="practice-box" style="display:none"></div>
         <div class="btn-row" style="margin-top:14px">
           <button id="btn-review-restart" class="btn btn-ghost">重新抽取待复习词</button>
+          <button id="btn-practice-restart" class="btn btn-ghost" style="display:none">换一批</button>
         </div>
       </div>
     </section>
@@ -685,15 +676,6 @@
       </div>
     </section>
 
-    <!-- 考研真题高频词 -->
-    <section id="tab-hfwords" class="tab-panel">
-      <div class="card">
-        <h2 class="card-title">📚 考研真题阅读高频词</h2>
-      <p class="card-sub">本地词库共 <span id="hf-count">0</span> 词</p>
-        <input type="text" id="hf-search" placeholder="搜索单词或释义，如 affect / 影响" />
-        <div id="hf-list" class="hf-list"></div>
-      </div>
-    </section>
 
     <!-- 今日学习总结（独立模块） -->
     <section id="tab-summary" class="tab-panel">
@@ -890,13 +872,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260816b"></script>
-  <script src="words.js?v=20260816b"></script>
-  <script src="store.js?v=20260816b"></script>
-  <script src="charts.js?v=20260816b"></script>
-  <script src="share.js?v=20260816b"></script>
-  <script src="md5.js?v=20260816b"></script>
-  <script src="sentences.js?v=20260816b"></script>
-  <script src="app.js?v=20260816b"></script>
+  <script src="qrcode.min.js?v=20260816c"></script>
+  <script src="words.js?v=20260816c"></script>
+  <script src="store.js?v=20260816c"></script>
+  <script src="charts.js?v=20260816c"></script>
+  <script src="share.js?v=20260816c"></script>
+  <script src="md5.js?v=20260816c"></script>
+  <script src="sentences.js?v=20260816c"></script>
+  <script src="app.js?v=20260816c"></script>
 </body>
 </html>

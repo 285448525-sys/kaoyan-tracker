@@ -849,6 +849,23 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .practice-cn { color: var(--primary); font-weight: 700; }
 .empty-hint { text-align: center; color: var(--muted); font-size: 13px; padding: 18px 0; }
 
+/* ============ 复习/自测 子模式切换 ============ */
+.mode-switch { display: inline-flex; gap: 6px; align-items: center; }
+.mode-btn {
+  border: 1.5px solid var(--line); background: var(--card); color: var(--muted);
+  font-family: inherit; font-size: 12.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  transition: all .15s ease;
+}
+.mode-btn:hover { border-color: var(--primary); color: var(--primary); }
+.mode-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* ============ 高频词折叠进生词记录 ============ */
+.hfwords-fold > summary { cursor: pointer; list-style: none; }
+.hfwords-fold > summary::-webkit-details-marker { display: none; }
+.hfwords-fold[open] .card-sub { margin-top: 8px; }
+.hfwords-fold .hf-list { margin-top: 10px; }
+.hfwords-fold .card-sub { margin: 6px 0 8px; }
+
 /* ============ 章节勾选圆圈（独立完成标记，支持跳跃式学习） ============ */
 .chapter-check {
   width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d1d5db;

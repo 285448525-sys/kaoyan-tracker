@@ -106,9 +106,11 @@ tabs.forEach(function (btn) {
 const interactErrors = [];
 function guard(name, fn) { try { fn(); } catch (e) { interactErrors.push(name + ': ' + e.message); } }
 
-// 词汇练习：切到 practice（已 startPractice），点第一个选项
+// 词汇练习：切到复习/自测 tab 并切到「测验模式」，点第一个选项
 guard('词汇练习-点选项', function () {
-  window.__switchTab('practice');
+  window.__switchTab('review');
+  const mbtn = document.querySelector('.mode-btn[data-mode="practice"]');
+  if (mbtn) mbtn.click();
   const opt = document.querySelector('#practice-box .practice-opt');
   if (opt) opt.click();
   const next = Array.from(document.querySelectorAll('#practice-box button')).find(function (b) { return /下一题|查看结果/.test(b.textContent); });
@@ -169,9 +171,9 @@ guard('长难句-分析', function () {
   const btn = document.querySelector('#btn-analyze');
   if (inp && btn) { inp.value = 'The book which I read yesterday was very interesting.'; btn.click(); }
 });
-// 高频词搜索
+// 高频词搜索（已并入「生词记录」tab 内的折叠区）
 guard('高频词-搜索', function () {
-  window.__switchTab('hfwords');
+  window.__switchTab('words');
   const inp = document.querySelector('#hf-search');
   if (inp) { inp.value = 'analy'; inp.dispatchEvent(new window.Event('input')); }
 });
