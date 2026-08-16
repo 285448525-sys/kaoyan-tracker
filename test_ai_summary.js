@@ -72,7 +72,7 @@ ok(!!document.getElementById('wrong-ai-summary'), '错词本存在 AI 归纳结�
   document.getElementById('btn-ai-summarize-wrong').dispatchEvent(new window.Event('click'));
   setTimeout(function () {
     const box = document.getElementById('wrong-ai-summary');
-    ok(!!box && box.textContent.indexOf('暂无错词') >= 0, '空错词本点击给出「暂无错词」提示（不崩溃）');
+    ok(!!box && box.textContent.indexOf('暂无查词记录') >= 0, '空查词记录点击给出「暂无查词记录」提示（不崩溃）');
     ok(runtimeErrors.length === 0, '空本点击不抛运行时错误（实际 ' + runtimeErrors.length + '）');
 
     // ================= 3) 有 key + 错词 → 渲染归纳文本 =================

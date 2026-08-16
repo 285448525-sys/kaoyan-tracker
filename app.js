@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816e';
+  var APP_VERSION = '20260816f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2403,8 +2403,8 @@
         return;
       }
       Store.addWrongWord(res.src || word, res.dst, 'translate');
-      refs.transQueryStatus.textContent = '✓ 已翻译并自动归档到错词本';
-      refs.transResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(res.src || word) + '</div><div class="w-cn">' + escapeHtml(res.dst) + ' · 已存入错词本</div></div>';
+      refs.transQueryStatus.textContent = '✓ 已翻译并自动归档到查词记录';
+      refs.transResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(res.src || word) + '</div><div class="w-cn">' + escapeHtml(res.dst) + ' · 已存入查词记录</div></div>';
       renderWrongBook();
     });
   }
@@ -2412,7 +2412,7 @@
     var list = Store.getWrongWords();
     refs.wrongCount.textContent = list.length;
     refs.wrongList.innerHTML = '';
-    if (!list.length) { refs.wrongList.appendChild(el('div', 'empty-hint', '错词本还是空的，去上方「翻译并归档」试试')); return; }
+    if (!list.length) { refs.wrongList.appendChild(el('div', 'empty-hint', '查词记录还是空的，去上方「翻译并归档」试试')); return; }
     list.forEach(function (w) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2421,7 +2421,7 @@
       var aiBtn = el('button', 'plan-del ai-explain-btn', '🤖 AI 讲解');
       aiBtn.addEventListener('click', function () { explainWrongWord(w, aiBtn); });
       var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWrongBook(); showToast('已从错词本删除'); });
+      del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWrongBook(); showToast('已从查词记录删除'); });
       top.appendChild(aiBtn); top.appendChild(toVocab); top.appendChild(del);
       item.appendChild(top);
       item.appendChild(el('div', 'mistake-content', w.word + (w.cn ? '　' + w.cn : '')));
@@ -2459,7 +2459,7 @@
     var list = Store.getWrongWords();
     if (!list.length) {
       box.textContent = '';
-      box.appendChild(el('div', 'empty-hint', '暂无错词，先去翻译查询或刷题积累错词吧'));
+      box.appendChild(el('div', 'empty-hint', '暂无查词记录，先去翻译查询或刷题积累吧'));
       return;
     }
     var c = Store.getAiConfig();
@@ -2469,11 +2469,11 @@
       return;
     }
     box.textContent = '';
-    box.appendChild(el('div', 'ai-loading', '🤖 AI 归纳全书错词中…'));
+    box.appendChild(el('div', 'ai-loading', '🤖 AI 归纳全书查词中…'));
     var words = list.map(function (w) { return (w.word || '') + (w.cn ? '（' + w.cn + '）' : ''); }).join('、');
     aiChat([
       { role: 'system', content: '你是英语学习助教，面向考研/雅思备考学生。用简体中文，条理清晰，按要点输出。' },
-      { role: 'user', content: '以下是我的错词本全部单词：' + words + '。请帮我归纳：1) 高频/易混词聚类；2) 共性薄弱点（如词性、拼写、搭配）；3) 接下来一周的复习节奏建议。' }
+      { role: 'user', content: '以下是我的查词记录全部单词：' + words + '。请帮我归纳：1) 高频/易混词聚类；2) 共性薄弱点（如词性、拼写、搭配）；3) 接下来一周的复习节奏建议。' }
     ], { maxTokens: 1200 }).then(function (res) {
       box.textContent = '';
       var pre = el('pre', 'ai-explain-text'); pre.textContent = res.content.trim();
@@ -2648,7 +2648,7 @@
     var pool = buildPracticePool(ps.scope);
     if (!pool.length) {
       practiceSession = null;
-      var hint = ps.scope === 'vocab' ? '生词本为空，先记录几个生词再来练吧' : ps.scope === 'wrong' ? '错词本为空，练习中答错会自动归档' : '词库为空';
+      var hint = ps.scope === 'vocab' ? '生词本为空，先记录几个生词再来练吧' : ps.scope === 'wrong' ? '查词记录为空，练习中答错会自动归档' : '词库为空';
       refs.practiceBox.innerHTML = '<div class="empty-hint">' + hint + '</div>';
       return;
     }
@@ -3196,7 +3196,7 @@
       { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
       { t: '⚙️ 配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
       { t: '☁️ 云端同步', b: '用手机号作为唯一账号：首次填写即注册并把数据上传到云端；换设备登录只需输入同一手机号即可同步，无需记密码。注册/登录二合一，下方状态会提示成功与否。' },
-      { t: '🌐 翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到错词本。' },
+      { t: '🌐 翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到查词记录。' },
       { t: '🤖 AI 助手', b: '在「配置」填你自己的大模型 API Key（OpenAI 兼容接口），即可启用长难句深度分析、错题智能归纳等能力。密钥仅存本机、经云端函数中转，不暴露到前端。' }
     ]}
   ];
@@ -4126,10 +4126,10 @@
     refs.btnPomoStart.addEventListener('click', startPomodoro);
     refs.btnPomoReset.addEventListener('click', resetPomodoro);
     refs.btnClearWrong.addEventListener('click', function () {
-      if (!Store.getWrongWords().length) { showToast('错词本已是空的', 'info'); return; }
-      confirmDelete('确定清空错词本？所有错词将被永久删除，无法恢复。', function () {
+      if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }
+      confirmDelete('确定清空查词记录？所有查词将被永久删除，无法恢复。', function () {
         Store.clearWrongWords(); renderWrongBook();
-        showToast('已清空错词本', 'ok');
+        showToast('已清空查词记录', 'ok');
       });
     });
     refs.btnAiSummarizeWrong = $('btn-ai-summarize-wrong');
