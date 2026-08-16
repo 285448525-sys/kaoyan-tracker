@@ -565,7 +565,6 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   --grad-cta:  linear-gradient(120deg, var(--primary), var(--primary-l));
   --glass-fill: color-mix(in srgb, var(--card) 72%, transparent);
   --glass-line: color-mix(in srgb, var(--primary) 14%, transparent);
-  --primary-08: color-mix(in srgb, var(--primary) 8%, transparent);
   --primary-25: color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
