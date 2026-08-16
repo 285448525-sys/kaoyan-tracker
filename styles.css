@@ -1034,6 +1034,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* ============ 空状态增强 ============ */
 .empty-hint { text-align: center; padding: 24px 16px; color: var(--muted); font-size: 13px; }
 .empty-hint::before { content: '📭'; display: block; font-size: 32px; margin-bottom: 8px; opacity: .7; }
+.empty-hint .empty-msg { margin: 0 0 12px; line-height: 1.5; }
+.empty-hint .empty-act { margin-top: 4px; }
 
 /* ============ 回到顶部按钮 ============ */
 .back-top {

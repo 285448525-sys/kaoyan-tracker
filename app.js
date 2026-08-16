@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816l';
+  var APP_VERSION = '20260816m';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -20,6 +20,19 @@
     if (cls) e.className = cls;
     if (text !== undefined && text !== null) e.textContent = String(text);
     return e;
+  }
+  // 空状态：一句话说明 + 可选「去 XX」行动按钮（文案走 textContent 防 XSS）
+  function emptyHint(box, msg, action) {
+    box.innerHTML = '';
+    var d = el('div', 'empty-hint');
+    if (msg) d.appendChild(el('div', 'empty-msg', msg));
+    if (action && action.label) {
+      var b = el('button', 'btn btn-primary empty-act', action.label);
+      b.type = 'button';
+      b.addEventListener('click', action.fn);
+      d.appendChild(b);
+    }
+    box.appendChild(d);
   }
   function setText(node, text) {
     if (!node) return;
@@ -482,7 +495,7 @@
   function renderDayList() {
     refs.dayList.innerHTML = '';
     var keys = Object.keys(Store.getDays()).filter(function (k) { return Store.totalMinutesForDay(Store.getDays()[k]) > 0; }).sort().reverse().slice(0, 12);
-    if (!keys.length) { refs.dayList.appendChild(el('div', 'empty-hint', '暂无学习记录')); return; }
+    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { label: '去记录学习', fn: function () { switchTab('record'); } }); return; }
     keys.forEach(function (ds) {
       var d = Store.getDays()[ds];
       var item = el('div', 'list-item');
@@ -494,7 +507,7 @@
   function renderExamList() {
     refs.examList.innerHTML = '';
     var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { refs.examList.appendChild(el('div', 'empty-hint', '暂无模考成绩')); return; }
+    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('record'); } }); return; }
     exams.forEach(function (ex) {
       var item = el('div', 'list-item');
       item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
@@ -521,7 +534,7 @@
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
     refs.planList.innerHTML = '';
-    if (!plan.length) { refs.planList.appendChild(el('div', 'empty-hint', '还没有计划，点上方按钮生成吧')); return; }
+    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { label: '去制定计划', fn: function () { switchTab('plan'); } }); return; }
     var subs = Store.getSubjects();
     var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
@@ -1024,7 +1037,7 @@
     });
 
     refs.mistakeList.innerHTML = '';
-    if (!list.length) { refs.mistakeList.appendChild(el('div', 'empty-hint', '还没有整理内容')); return; }
+    if (!list.length) { emptyHint(refs.mistakeList, '还没有整理错题，做过的题觉得重要就记下来', { label: '记一道错题', fn: function () { switchTab('mistakes'); } }); return; }
     list.forEach(function (m) {
       var isDue = m.scope === 'math'
         ? (!m.nextReview || m.nextReview <= today)
@@ -2179,7 +2192,7 @@
     var list = Store.getVocab();
     refs.vocabCount.textContent = list.length;
     refs.vocabList.innerHTML = '';
-    if (!list.length) { refs.vocabList.appendChild(el('div', 'empty-hint', '生词本还是空的，去「背单词」或上面记录一个吧')); return; }
+    if (!list.length) { emptyHint(refs.vocabList, '生词本还是空的，在上方输入框记一个吧', { label: '去记生词', fn: function () { switchTab('review'); } }); return; }
     list.forEach(function (v) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2412,7 +2425,7 @@
     var list = Store.getWrongWords();
     refs.wrongCount.textContent = list.length;
     refs.wrongList.innerHTML = '';
-    if (!list.length) { refs.wrongList.appendChild(el('div', 'empty-hint', '查词记录还是空的，去上方「翻译并归档」试试')); return; }
+    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { label: '去翻译查询', fn: function () { switchTab('review'); } }); return; }
     list.forEach(function (w) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
