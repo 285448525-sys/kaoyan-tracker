@@ -1424,3 +1424,35 @@ input:focus, select:focus, textarea:focus {
   .app-main { padding-bottom: 64px; }
 }
 }
+/* ===== 配置页折叠分组（设置页精简 2026-08-16） ===== */
+.config-fold {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.fold-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+  user-select: none;
+}
+.fold-summary::-webkit-details-marker { display: none; }
+.fold-summary:hover { background: rgba(79, 70, 229, 0.04); }
+.fold-content {
+  padding: 4px 18px 18px;
+  border-top: 1px solid var(--line);
+}
+.sub-card { padding: 16px 0; border-top: 1px dashed var(--line); }
+.sub-card:first-child { padding-top: 0; border-top: none; }
+.sub-card > .card-sub:first-child { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 0; }
+/* 必填 / 选填 标记 */
+.req { color: #dc2626; font-size: 12px; font-weight: 600; margin-left: 4px; }
+.opt { color: var(--muted); font-size: 12px; font-weight: 500; margin-left: 4px; }
+:root[data-theme="dark"] .opt { color: #9ca3af; }
+:root[data-theme="dark"] .fold-summary:hover { background: rgba(165, 180, 252, 0.08); }

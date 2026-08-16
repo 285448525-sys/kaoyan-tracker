@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260815i';
+  var APP_VERSION = '20260816a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3332,6 +3332,8 @@
   function highlightTourTarget(selector) {
     var t = document.querySelector(selector);
     if (!t) { showToast('该页面暂未找到对应设置项'); return; }
+    // 目标可能位于折叠的 <details> 内（如「连接与密钥」），先展开父折叠区再高亮，否则用户看不到
+    try { var dPar = t.closest('details'); if (dPar) dPar.setAttribute('open', ''); } catch (e) {}
     t.classList.add('tour-target');
     if (typeof t.scrollIntoView === 'function') {
       try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { try { t.scrollIntoView(); } catch (e2) {} }
@@ -3585,6 +3587,18 @@
              (snap.subjects && snap.subjects.length);
     } catch (e) { return false; }
   }
+  // 云端快照是否含真实内容（与 localHasData 对称，用于防止「空云端覆盖满本地」）
+  function cloudHasData(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    return (obj.vocab && obj.vocab.length) ||
+           (obj.wrongWords && obj.wrongWords.length) ||
+           (obj.days && Object.keys(obj.days).length) ||
+           (obj.mathChapters && obj.mathChapters.length) ||
+           (obj.plans && obj.plans.length) ||
+           (obj.mistakes && obj.mistakes.length) ||
+           (obj.cs408Chapters && obj.cs408Chapters.length) ||
+           (obj.subjectChapters && Object.keys(obj.subjectChapters).length);
+  }
 
   /* ---- 自动同步（默认开启，用户无感） ---- */
   var autoSyncEnabled = false;
@@ -3603,6 +3617,9 @@
     var p = '0';
     try { p = localStorage.getItem('kaoyan_tracker_v1:auto_sync_push_at') || '0'; } catch (e) {}
     lastPushAt = Number(p) || 0;
+    var e0 = '0';
+    try { e0 = localStorage.getItem('kaoyan_tracker_v1:auto_sync_edit_at') || '0'; } catch (e) {}
+    lastLocalEditAt = Number(e0) || 0;
     if (autoSyncEnabled) startAutoSyncPolling();
   }
   function scheduleAutoPush() {
@@ -3610,6 +3627,7 @@
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) return;
     lastLocalEditAt = Date.now();
+    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt)); } catch (e) {}
     if (autoPushTimer) clearTimeout(autoPushTimer);
     autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
   }
@@ -3620,7 +3638,9 @@
     syncApi('PUT', payload, (force || !lastSyncVersion) ? {} : { baseVersion: lastSyncVersion })
       .then(function () {
         lastPushAt = Date.now();
+        lastLocalEditAt = lastPushAt; // 推送成功后本地无未同步改动
         try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+        try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt)); } catch (e) {}
       })
       .catch(function (err) {
         // 409 冲突：云端已被其他设备修改（版本不一致）。征询用户：强制覆盖云端 or 拉取云端覆盖本机
@@ -3664,6 +3684,12 @@
       // B1：用 max(上次推送, 本地最近编辑) 比较，而非仅 lastPushAt；避免本地未同步编辑被静默整份覆盖
       var localLatest = Math.max(lastPushAt, lastLocalEditAt);
       if (cloudUpdated > localLatest) {
+        // 【关键修复】云端时间戳更新，但本地有真实数据而云端为空/近乎空 →
+        // 绝不能「以空覆盖满」把本地清空。以本地为准把本地推上去对齐云端，保护用户资料。
+        if (localHasData() && !cloudHasData(res.data)) {
+          doAutoPush(code);
+          return;
+        }
         // 本地存在未同步编辑（编辑后还没推上去），云端又有更新 → 不静默覆盖，征询用户
         if (lastLocalEditAt > lastPushAt) {
           var proceed = confirm('云端数据已于 ' + new Date(cloudUpdated).toLocaleString() + ' 更新，但本机也有未保存的改动。\n确定用云端覆盖本机吗？（本机未保存改动将丢失）\n点「取消」保留本机改动、稍后手动同步。');

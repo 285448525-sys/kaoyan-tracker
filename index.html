@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260815i" />
+  <link rel="stylesheet" href="styles.css?v=20260816a" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -72,14 +72,24 @@
   <main class="app-main">
     <!-- 配置 -->
     <section id="tab-config" class="tab-panel">
+      <!-- ① 基础设置（首屏唯一主卡） -->
       <div class="card">
-        <h2 class="card-title">基础信息配置</h2>
+        <h2 class="card-title">基础设置</h2>
         <div class="field-row">
-          <label>你的昵称</label>
+          <label>考研日期 <span class="req">必填</span></label>
+          <input type="date" id="exam-date" />
+        </div>
+        <div class="field-row">
+          <label>考试科目组合 <span class="req">必填</span></label>
+        </div>
+        <div id="toggles" class="toggles"></div>
+        <div id="subject-detail" class="subject-detail"></div>
+        <div class="field-row">
+          <label>你的昵称 <span class="opt">选填</span></label>
           <input type="text" id="nickname-input" placeholder="用于打卡卡展示（如：小明同学）" />
         </div>
         <div class="field-row">
-          <label>报考专业</label>
+          <label>报考专业 <span class="opt">选填</span></label>
           <select id="major-select">
             <option value="">请选择 / 自定义</option>
             <option value="408 计算机学科专业基础">408 计算机学科专业基础</option>
@@ -93,54 +103,12 @@
           </select>
         </div>
         <div class="field-row">
-          <label>考研日期</label>
-          <input type="date" id="exam-date" />
-        </div>
-        <div class="field-row">
-          <label>目标总分</label>
+          <label>目标总分 <span class="opt">选填</span></label>
           <input type="number" id="target-total" min="0" placeholder="例如 380" />
         </div>
-        <label class="switch-row">
-          <input type="checkbox" id="auto-plan" />
-          <span>启用每日自动制定计划</span>
-        </label>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">考试科目组合</h2>
-        <div id="toggles" class="toggles"></div>
-        <div id="subject-detail" class="subject-detail"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">🎯 得分权重配置</h2>
-        <p class="card-hint">近 30 天每日得分按以下权重实时重算。默认 时长50 / 计划20 / 生词15 / 错题15；不考英语词汇的 408 考生可把「生词复习」调低或归零。</p>
-        <div class="weight-row">
-          <label>学习时长</label>
-          <input type="range" id="w-duration" min="0" max="50" />
-          <input type="number" id="w-duration-num" min="0" max="100" class="weight-num" />
-        </div>
-        <div class="weight-row">
-          <label>计划完成</label>
-          <input type="range" id="w-plan" min="0" max="50" />
-          <input type="number" id="w-plan-num" min="0" max="100" class="weight-num" />
-        </div>
-        <div class="weight-row">
-          <label>生词复习</label>
-          <input type="range" id="w-vocab" min="0" max="50" />
-          <input type="number" id="w-vocab-num" min="0" max="100" class="weight-num" />
-        </div>
-        <div class="weight-row">
-          <label>错题整理</label>
-          <input type="range" id="w-mistake" min="0" max="50" />
-          <input type="number" id="w-mistake-num" min="0" max="100" class="weight-num" />
-        </div>
-        <div class="weight-total" id="weight-total"></div>
-        <div class="btn-row">
-          <button id="btn-reset-weights" class="btn btn-ghost">恢复默认</button>
-        </div>
-      </div>
-
+      <!-- ② 数据备份（固定第 2 张卡） -->
       <div class="card">
         <h2 class="card-title">数据备份</h2>
         <div class="btn-row">
@@ -152,51 +120,92 @@
         </div>
       </div>
 
-      <div class="card cloud-sync-card">
-        <h2 class="card-title">☁️ 云端账号（手机号）</h2>
-        <p class="card-sub">用手机号作为唯一账号：首次填写即注册并上传数据；换设备登录只需输入同一手机号即可同步。无需记密码。</p>
-        <div class="field-row">
-          <label>手机号码</label>
-          <input type="tel" id="sync-code" inputmode="numeric" placeholder="请输入你的手机号，如：13800138000" autocomplete="off" style="width:100%;box-sizing:border-box;letter-spacing:1px;font-family:'JetBrains Mono',consolas,monospace" />
+      <!-- ③ 高级（默认折叠） -->
+      <details class="config-fold">
+        <summary class="fold-summary">▸ 高级：得分计算与计划</summary>
+        <div class="fold-content">
+          <h3 class="card-sub">🎯 得分权重配置</h3>
+          <p class="card-hint">近 30 天每日得分按以下权重实时重算。默认 时长50 / 计划20 / 生词15 / 错题15；不考英语词汇的 408 考生可把「生词复习」调低或归零。</p>
+          <div class="weight-row">
+            <label>学习时长</label>
+            <input type="range" id="w-duration" min="0" max="50" />
+            <input type="number" id="w-duration-num" min="0" max="100" class="weight-num" />
+          </div>
+          <div class="weight-row">
+            <label>计划完成</label>
+            <input type="range" id="w-plan" min="0" max="50" />
+            <input type="number" id="w-plan-num" min="0" max="100" class="weight-num" />
+          </div>
+          <div class="weight-row">
+            <label>生词复习</label>
+            <input type="range" id="w-vocab" min="0" max="50" />
+            <input type="number" id="w-vocab-num" min="0" max="100" class="weight-num" />
+          </div>
+          <div class="weight-row">
+            <label>错题整理</label>
+            <input type="range" id="w-mistake" min="0" max="50" />
+            <input type="number" id="w-mistake-num" min="0" max="100" class="weight-num" />
+          </div>
+          <div class="weight-total" id="weight-total"></div>
+          <div class="btn-row">
+            <button id="btn-reset-weights" class="btn btn-ghost">恢复默认</button>
+          </div>
+          <label class="switch-row">
+            <input type="checkbox" id="auto-plan" />
+            <span>启用每日自动制定计划</span>
+          </label>
         </div>
-        <p class="sync-hint">💡 手机号即账号，无需密码。换设备登录时输入同一手机号即可访问你的数据。</p>
-        <div class="btn-row">
-          <button id="btn-sync-confirm" class="btn btn-primary">📱 注册 / 登录</button>
-        </div>
-        <div id="sync-status" class="import-status"></div>
-      </div>
+      </details>
 
-      <div class="card translator-card">
-        <h2 class="card-title">🔑 翻译 API 密钥（自行申请填写）</h2>
-        <div class="field-row">
-          <label>APP ID</label>
-          <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
+      <!-- ④ 连接与密钥（可选，默认折叠） -->
+      <details class="config-fold">
+        <summary class="fold-summary">▸ 连接与密钥（可选）</summary>
+        <div class="fold-content">
+          <div class="sub-card cloud-sync-card">
+            <h3 class="card-sub">☁️ 云端账号（手机号 · 可选 · 多设备同步）</h3>
+            <p class="card-sub">用手机号作为唯一账号：首次填写即注册并上传数据；换设备登录只需输入同一手机号即可同步。无需记密码。</p>
+            <div class="field-row">
+              <label>手机号码</label>
+              <input type="tel" id="sync-code" inputmode="numeric" placeholder="请输入你的手机号，如：13800138000" autocomplete="off" style="width:100%;box-sizing:border-box;letter-spacing:1px;font-family:'JetBrains Mono',consolas,monospace" />
+            </div>
+            <p class="sync-hint">💡 手机号即账号，无需密码。不填也能正常使用，仅本机保存。换设备登录时输入同一手机号即可访问你的数据。</p>
+            <div class="btn-row">
+              <button id="btn-sync-confirm" class="btn btn-primary">📱 注册 / 登录</button>
+            </div>
+            <div id="sync-status" class="import-status"></div>
+          </div>
+          <div class="sub-card translator-card">
+            <h3 class="card-sub">🔑 翻译 API 密钥（自行申请填写 · 可选）</h3>
+            <div class="field-row">
+              <label>APP ID</label>
+              <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
+            </div>
+            <div class="field-row">
+              <label>密钥 Secret</label>
+              <input type="password" id="trans-key" placeholder="百度翻译开放平台 密钥（Secret Key）" autocomplete="off" />
+            </div>
+            <div class="btn-row">
+              <button id="btn-save-translator" class="btn btn-primary">保存密钥</button>
+              <button id="btn-test-translator" class="btn btn-ghost">测试连接</button>
+              <span id="trans-status" class="import-status"></span>
+            </div>
+          </div>
+          <div class="sub-card ai-card">
+            <h3 class="card-sub">🤖 AI 能力（可选）</h3>
+            <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
+            <div class="field-row">
+              <label>DeepSeek API Key</label>
+              <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
+              <div class="field-hint">在 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a> 生成，以 sk- 开头。</div>
+            </div>
+            <div class="btn-row">
+              <button id="btn-save-ai" class="btn btn-primary">保存配置</button>
+              <button id="btn-test-ai" class="btn btn-ghost">测试连接</button>
+              <span id="ai-status" class="import-status"></span>
+            </div>
+          </div>
         </div>
-        <div class="field-row">
-          <label>密钥 Secret</label>
-          <input type="password" id="trans-key" placeholder="百度翻译开放平台 密钥（Secret Key）" autocomplete="off" />
-        </div>
-        <div class="btn-row">
-          <button id="btn-save-translator" class="btn btn-primary">保存密钥</button>
-          <button id="btn-test-translator" class="btn btn-ghost">测试连接</button>
-          <span id="trans-status" class="import-status"></span>
-        </div>
-      </div>
-
-      <div class="card ai-card">
-        <h2 class="card-title">🤖 AI 能力（计划 / 错词归纳 / 学习总结 / 长难句分析）</h2>
-        <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
-        <div class="field-row">
-          <label>DeepSeek API Key</label>
-          <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
-          <div class="field-hint">在 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a> 生成，以 sk- 开头。</div>
-        </div>
-        <div class="btn-row">
-          <button id="btn-save-ai" class="btn btn-primary">保存配置</button>
-          <button id="btn-test-ai" class="btn btn-ghost">测试连接</button>
-          <span id="ai-status" class="import-status"></span>
-        </div>
-      </div>
+      </details>
     </section>
 
     <!-- 今日：聚合 + 计划 + 总结分享 -->
@@ -889,13 +898,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260815i"></script>
-  <script src="words.js?v=20260815i"></script>
-  <script src="store.js?v=20260815i"></script>
-  <script src="charts.js?v=20260815i"></script>
-  <script src="share.js?v=20260815i"></script>
-  <script src="md5.js?v=20260815i"></script>
-  <script src="sentences.js?v=20260815i"></script>
-  <script src="app.js?v=20260815i"></script>
+  <script src="qrcode.min.js?v=20260816a"></script>
+  <script src="words.js?v=20260816a"></script>
+  <script src="store.js?v=20260816a"></script>
+  <script src="charts.js?v=20260816a"></script>
+  <script src="share.js?v=20260816a"></script>
+  <script src="md5.js?v=20260816a"></script>
+  <script src="sentences.js?v=20260816a"></script>
+  <script src="app.js?v=20260816a"></script>
 </body>
 </html>

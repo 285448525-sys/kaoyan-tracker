@@ -164,7 +164,25 @@ setTimeout(function () {
               .then(function (arr) {
                 ok(arr[0].status === 409, 'B1 过期 baseVersion PUT → 返回 409 冲突');
                 ok(/conflict/.test(arr[1].error || ''), 'B1 409 响应含 conflict 标记');
-                finish();
+
+                // ---- #56 回归：空云端（时间戳更新）不得「以空覆盖满」本地 ----
+                // 复现根因：刷新后 lastLocalEditAt 归零 → doAutoPullCheck 判定 cloudUpdated>0 即整份 restoreSnapshot(空云端)
+                const localWord56 = 'local_keep_' + Date.now();
+                if (typeof Store.addVocab === 'function') Store.addVocab(localWord56, '本地资料');
+                dbg.setPushAt(1000);
+                dbg.setLocalEditAt(2000); // 本地有未同步编辑
+                window.__cloudVersion = 'v20';
+                window.__cloudData = { vocab: [], days: {}, plans: [], mathChapters: [] }; // 空云端（时间戳更新但内容为空）
+                window.__cloudMeta = { device: 'other', updatedAt: new Date(5000).toISOString() }; // cloudUpdated=5000 > max(1000,2000)=2000
+                fetchCalls = [];
+                dbg.doAutoPullCheck();
+                setTimeout(function () {
+                  const put56 = fetchCalls.find(function (c) { return c.method === 'PUT'; });
+                  ok(!!put56, '#56 空云端(时间戳更新) → 触发 doAutoPush 把本地推上去对齐，而非静默覆盖');
+                  const stillLocal56 = (typeof Store.getVocab === 'function') && Store.getVocab().some(function (v) { return v.word === localWord56; });
+                  ok(stillLocal56, '#56 本地资料未被空云端清空（Dashboard 刷新数据消失根因已修复）');
+                  finish();
+                }, 60);
               });
           }, 60);
         }, 60);
