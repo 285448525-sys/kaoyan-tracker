@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816g';
+  var APP_VERSION = '20260816h';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3058,6 +3058,22 @@
     var today = Store.getDay(Store.todayStr()) || {};
     var minutes = Store.totalMinutesForDay(today);
     refs.aggMinutes.textContent = minutes;
+    // 错题复习主动提醒（记忆曲线）：今日待复习错题数（数学+408），点击跳错题本
+    var mrBody = document.getElementById('mistake-review-body');
+    if (mrBody) {
+      var mrToday = Store.todayStr();
+      var mrDue = Store.getMathDueMistakes(mrToday).length + Store.get408DueMistakes(mrToday).length;
+      mrBody.innerHTML = '';
+      if (mrDue > 0) {
+        var mrLine = el('div', 'mr-line', '今天有 ' + mrDue + ' 道错题待复习（记忆曲线）');
+        var mrGo = el('button', 'btn btn-primary mr-go', '去复习 →');
+        mrGo.onclick = function () { switchTab('mistakes'); };
+        mrBody.appendChild(mrLine);
+        mrBody.appendChild(mrGo);
+      } else {
+        mrBody.appendChild(el('div', 'mr-line ok', '✅ 今日错题已全部复习，继续保持～'));
+      }
+    }
     // 今日学习得分
     var todayScore = scoreForDay(Store.todayStr(), today);
     if (refs.aggScore) refs.aggScore.textContent = todayScore;

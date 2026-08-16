@@ -1499,3 +1499,8 @@ input:focus, select:focus, textarea:focus {
 .mistake-scope { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--primary-08, #eef2ff); color: var(--primary); margin-right: 6px; }
 .mistake-scope.math { background: #e0f2fe; color: #0369a1; }
 .mistake-scope.cs408 { background: #dcfce7; color: #15803d; }
+
+/* 错题复习主动提醒卡 */
+.mistake-review-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mistake-review-body .mr-line { font-size: 14px; color: var(--ink); }
+.mistake-review-body .mr-line.ok { color: #16a34a; }
