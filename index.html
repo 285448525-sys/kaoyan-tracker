@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260816d" />
+  <link rel="stylesheet" href="styles.css?v=20260816e" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -372,14 +372,6 @@
           <label>完成内容</label>
           <textarea id="manual-completed" rows="2" placeholder="今天做了什么（将展示在打卡图）"></textarea>
         </div>
-        <div class="field">
-          <label>学习总结</label>
-          <textarea id="manual-summary" rows="2" placeholder="今日总结"></textarea>
-        </div>
-        <div class="field">
-          <label>心得笔记</label>
-          <textarea id="manual-note" rows="2" placeholder="心得 / 反思"></textarea>
-        </div>
         <div class="btn-row">
           <button id="btn-save-manual" class="btn btn-primary">保存记录</button>
           <button id="btn-reset-day" class="btn btn-ghost">清空当日</button>
@@ -683,7 +675,14 @@
       <div class="card">
         <h2 class="card-title">📋 今日学习总结</h2>
         <div id="summary-body"></div>
-        <div class="btn-row" style="margin-top:14px">
+        <div class="field" style="margin-top:14px">
+          <label>写总结 / 心得（也会出现在分享卡）</label>
+          <textarea id="summary-edit" rows="3" placeholder="今天学得怎么样？写点总结或心得……"></textarea>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button id="btn-save-summary" class="btn btn-primary">💾 保存总结</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px">
           <button id="btn-share-summary" class="btn btn-primary">📤 分享今日卡片</button>
           <button id="btn-ai-summary" class="btn btn-ghost">🤖 AI 生成学习总结</button>
         </div>
@@ -868,13 +867,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260816d"></script>
-  <script src="words.js?v=20260816d"></script>
-  <script src="store.js?v=20260816d"></script>
-  <script src="charts.js?v=20260816d"></script>
-  <script src="share.js?v=20260816d"></script>
-  <script src="md5.js?v=20260816d"></script>
-  <script src="sentences.js?v=20260816d"></script>
-  <script src="app.js?v=20260816d"></script>
+  <script src="qrcode.min.js?v=20260816e"></script>
+  <script src="words.js?v=20260816e"></script>
+  <script src="store.js?v=20260816e"></script>
+  <script src="charts.js?v=20260816e"></script>
+  <script src="share.js?v=20260816e"></script>
+  <script src="md5.js?v=20260816e"></script>
+  <script src="sentences.js?v=20260816e"></script>
+  <script src="app.js?v=20260816e"></script>
 </body>
 </html>

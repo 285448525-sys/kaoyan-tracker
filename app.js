@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816d';
+  var APP_VERSION = '20260816e';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -455,9 +455,13 @@
       if (v > 0) durations[s.key] = v;
     });
     Store.setDayDurations(ds, durations);
-    Store.saveDayMeta(ds, { completed: refs.manualCompleted.value, summary: refs.manualSummary.value, note: refs.manualNote.value });
+    Store.saveDayMeta(ds, { completed: refs.manualCompleted.value });
     showToast('已保存 ' + ds + ' 的学习记录 ✅');
     renderManual(); renderData(); renderToday();
+  }
+  function onSaveSummary() {
+    Store.saveDayMeta(Store.todayStr(), { summary: (refs.summaryEdit ? refs.summaryEdit.value : '') });
+    showToast('已保存今日总结 ✅');
   }
   function onSaveExam() {
     var name = refs.examName.value.trim();
@@ -1257,6 +1261,7 @@
     body.appendChild(sLine('待复习生词(记忆曲线)', due + ' 个'));
     body.appendChild(sLine('连续打卡', Store.consecutiveStreak() + ' 天'));
     renderCheckinCard();
+    if (refs.summaryEdit) refs.summaryEdit.value = (day.summary || '');
   }
   /* 统一的打卡逻辑：今日页大按钮 + 总结页按钮共用 */
   function doCheckin() {
@@ -3769,8 +3774,8 @@
     refs.manualDate = $('manual-date');
     refs.manualDurations = $('manual-durations');
     refs.manualCompleted = $('manual-completed');
-    refs.manualSummary = $('manual-summary');
-    refs.manualNote = $('manual-note');
+    refs.summaryEdit = $('summary-edit');
+    refs.btnSaveSummary = $('btn-save-summary');
     refs.btnSaveManual = $('btn-save-manual');
     refs.btnResetDay = $('btn-reset-day');
     refs.examName = $('exam-name');
@@ -4207,6 +4212,7 @@
     bindTap(refs.btnCheckinToday, doCheckin);
     refs.btnShareSummary.addEventListener('click', onShareToday);
     if (refs.btnAiSummary) refs.btnAiSummary.addEventListener('click', onAiSummary);
+    if (refs.btnSaveSummary) refs.btnSaveSummary.addEventListener('click', onSaveSummary);
 
     // 学习计划：模块掌握
     refs.btnAddModule.addEventListener('click', function () {
