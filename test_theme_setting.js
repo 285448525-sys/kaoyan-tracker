@@ -1,4 +1,4 @@
-/* 回归测试：主题设置迁移到设置页 + 新增 "auto" 跟随系统 */
+/* 回归测试：主题设置迁移到设置页（仅 浅色 / 深色，无「跟随系统」） */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -23,47 +23,39 @@ const Store = window.Store;
 let failures = 0;
 function assert(cond, msg) { if (!cond) { failures++; console.error('  ✗ ' + msg); } else { console.log('  ✓ ' + msg); } }
 
-// ---- 1) store.js 支持 auto ----
-Store.setTheme('auto');
-assert(Store.getTheme() === 'auto', 'Store 可读写 auto');
+// ---- 1) store.js 仅支持 light / dark ----
+Store.setTheme('dark');
+assert(Store.getTheme() === 'dark', 'Store 可写 dark');
 Store.setTheme('light');
 assert(Store.getTheme() === 'light', 'Store 可切回 light');
 
-// ---- 2) resolveTheme 解析 auto ----
-const origMatchMedia = window.matchMedia;
-window.matchMedia = function (q) { return { matches: true, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }; };
-assert(window.resolveTheme('auto') === 'dark', 'auto 在系统深色时解析为 dark');
-window.matchMedia = function (q) { return { matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }; };
-assert(window.resolveTheme('auto') === 'light', 'auto 在系统浅色时解析为 light');
-window.matchMedia = origMatchMedia;
-assert(window.resolveTheme('dark') === 'dark', 'dark 保持 dark');
-assert(window.resolveTheme('light') === 'light', 'light 保持 light');
-
-// ---- 3) applyTheme 设置 data-theme 并高亮对应 chip ----
+// ---- 2) applyTheme 设置 data-theme 并高亮对应 chip ----
 window.switchTab('settings');
 Store.setTheme('dark');
 window.applyTheme();
 assert(document.documentElement.getAttribute('data-theme') === 'dark', 'applyTheme 把 dark 写到 <html>');
 const chips = Array.from(document.querySelectorAll('#theme-mode-group .chip'));
-assert(chips.length === 3, '设置页有 3 个主题 chip');
+assert(chips.length === 2, '设置页只有 2 个主题 chip（浅色/深色，无跟随系统）');
 assert(chips.find(c => c.getAttribute('data-theme') === 'dark').classList.contains('active'), 'dark chip 为 active');
 assert(!chips.find(c => c.getAttribute('data-theme') === 'light').classList.contains('active'), 'light chip 不为 active');
 
-// ---- 4) cycleTheme 循环 light → dark → auto → light ----
+// ---- 3) toggleTheme 在 light/dark 间切换 ----
 Store.setTheme('light');
-window.cycleTheme(); assert(Store.getTheme() === 'dark', 'cycle 1: light→dark');
-window.cycleTheme(); assert(Store.getTheme() === 'auto', 'cycle 2: dark→auto');
-window.cycleTheme(); assert(Store.getTheme() === 'light', 'cycle 3: auto→light');
+window.toggleTheme(); assert(Store.getTheme() === 'dark', 'toggle 1: light→dark');
+window.toggleTheme(); assert(Store.getTheme() === 'light', 'toggle 2: dark→light');
 
-// ---- 5) 点击 chip 切换主题 ----
-const autoChip = chips.find(c => c.getAttribute('data-theme') === 'auto');
-autoChip.click();
-assert(Store.getTheme() === 'auto', '点击 auto chip 切换到 auto');
-assert(autoChip.classList.contains('active'), 'auto chip 被高亮');
+// ---- 4) 点击 chip 切换主题 ----
+const darkChip = chips.find(c => c.getAttribute('data-theme') === 'dark');
+darkChip.click();
+assert(Store.getTheme() === 'dark', '点击 dark chip 切换到 dark');
+assert(darkChip.classList.contains('active'), 'dark chip 被高亮');
 
-// ---- 6) 侧边栏不再有 theme-toggle / help-btn ----
+// ---- 5) 侧边栏不再有 theme-toggle / help-btn ----
 assert(!document.getElementById('themeToggle'), '侧边栏 themeToggle 已移除');
 assert(!document.getElementById('btnHelp'), '侧边栏 btnHelp 已移除');
+
+// ---- 6) 设置页无「跟随系统」字样 ----
+assert(!/跟随系统/.test(document.getElementById('theme-mode-group').textContent), '设置页无「跟随系统」选项');
 
 console.log(failures === 0 ? '\nALL PASS ✅' : '\nFAILED ❌ (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);

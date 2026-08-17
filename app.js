@@ -3702,16 +3702,9 @@
     if (confirm(msg || '确定删除？此操作不可恢复。')) { okFn && okFn(); }
   }
 
-  function resolveTheme(theme) {
-    if (theme === 'auto') {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-      return 'light';
-    }
-    return theme === 'dark' ? 'dark' : 'light';
-  }
   function applyTheme() {
     var theme = Store.getTheme();
-    document.documentElement.setAttribute('data-theme', resolveTheme(theme));
+    document.documentElement.setAttribute('data-theme', theme);
     updateThemeChips(theme);
   }
   function updateThemeChips(theme) {
@@ -3722,10 +3715,8 @@
       else chip.classList.remove('active');
     });
   }
-  function cycleTheme() {
-    var order = ['light', 'dark', 'auto'];
-    var idx = order.indexOf(Store.getTheme());
-    var next = order[(idx + 1) % order.length];
+  function toggleTheme() {
+    var next = Store.getTheme() === 'dark' ? 'light' : 'dark';
     Store.setTheme(next);
     applyTheme();
   }
@@ -3742,13 +3733,6 @@
     });
     updateThemeChips(Store.getTheme());
   }
-  function watchSystemTheme() {
-    if (!window.matchMedia) return;
-    var q = window.matchMedia('(prefers-color-scheme: dark)');
-    var handler = function () { if (Store.getTheme() === 'auto') applyTheme(); };
-    if (q.addEventListener) q.addEventListener('change', handler);
-    else if (q.addListener) q.addListener(handler);
-  }
 
   function initKeyboardShortcuts() {
     var KEY_MAP = { '1': 'config', '2': 'today', '3': 'plan', '4': 'summary', '5': 'record', '6': 'data', '7': 'mistakes', '8': 'math', '9': 'cs408', '0': 'websites' };
@@ -3759,7 +3743,7 @@
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       var k = e.key;
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
-      if (k === 't' || k === 'T') { e.preventDefault(); cycleTheme(); }
+      if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
       /* N：新建任务 → 跳到计划页并聚焦添加框 */
       if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','progress'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
@@ -4711,9 +4695,8 @@
     refs.mistakeCs408Cat.innerHTML = '';
     CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mistakeCs408Cat.appendChild(o); });
 
-    // 主题初始化 + 设置面板绑定 + 系统主题监听 + 键盘快捷键 + 今日聚合
+    // 主题初始化 + 设置面板绑定 + 键盘快捷键 + 今日聚合
     initThemeSetting();
-    watchSystemTheme();
     applyTheme();
     initKeyboardShortcuts();
 
@@ -4727,10 +4710,9 @@
     window.__switchTab = switchTab;
     window.switchTab = switchTab;
     window.showSub = showSub;
-    // 主题设置暴露（供 test_theme_setting.js 验证 auto 解析与循环）
+    // 主题设置暴露（供 test_theme_setting.js 验证）
     window.applyTheme = applyTheme;
-    window.cycleTheme = cycleTheme;
-    window.resolveTheme = resolveTheme;
+    window.toggleTheme = toggleTheme;
     // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
     window.computeSmartPlan = computeSmartPlan;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务

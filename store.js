@@ -133,7 +133,7 @@
       cs408Knowledge: [],    // 408 知识点速查卡 [{id,subject,title,content,created}]
       cs408Years: [],        // 408 历年真题年份记录 [{id,year,score,total,note}]
       aiSolved: [],          // 拍题自动解答记录 [{id,image(压缩dataURL),answer,model,created}]
-      theme: 'light',        // 主题：'light' | 'dark' | 'auto'（auto 跟随系统）
+      theme: 'light',        // 主题：'light' | 'dark'
       timer: { subjectKey: null, startTs: 0, accumulated: 0, running: false },
       _seq: 1
     };
@@ -195,7 +195,7 @@
         cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
-        theme: (p.theme === 'dark' || p.theme === 'auto') ? p.theme : 'light',
+        theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
@@ -703,7 +703,7 @@
         cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
-        theme: (p.theme === 'dark' || p.theme === 'auto') ? p.theme : 'light',
+        theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
@@ -786,8 +786,8 @@
   function remove408Year(id) { state.cs408Years = (state.cs408Years || []).filter(function (x) { return x.id !== id; }); save(); }
 
   /* ---------- 主题 ---------- */
-  function getTheme() { return (state.theme === 'dark' || state.theme === 'auto') ? state.theme : 'light'; }
-  function setTheme(t) { state.theme = (t === 'dark' || t === 'auto') ? t : 'light'; save(); }
+  function getTheme() { return state.theme === 'dark' ? 'dark' : 'light'; }
+  function setTheme(t) { state.theme = (t === 'dark') ? 'dark' : 'light'; save(); }
 
   /* ---------- 云同步：本地快照 ---------- */
   function snapshot() {
