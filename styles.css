@@ -376,6 +376,15 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ===== 离线横幅：顶部固定，断网时提示，联网自动隐藏 ===== */
+.offline-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 90;
+  background: var(--warn); color: #1f2937;
+  font-size: 13px; font-weight: 600; text-align: center;
+  padding: 8px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.offline-bar[hidden] { display: none; }
+
 .tab-panel { display: none; }
 .tab-panel.active { display: block; animation: fade .2s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

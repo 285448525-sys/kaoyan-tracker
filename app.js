@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817f';
+  var APP_VERSION = '20260817g';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3888,6 +3888,7 @@
     autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
   }
   function doAutoPush(code, force) {
+    if (!navigator.onLine) return;                  // 离线不空转、不报错
     if (!autoSyncEnabled || isApplyingRemote) return;
     var payload = Store.snapshot();
     // B1：携带 baseVersion 供服务端乐观并发比对；force=true 时省略（强制覆盖冲突版本）
@@ -3928,6 +3929,7 @@
     }, 30000);
   }
   function doAutoPullCheck() {
+    if (!navigator.onLine) return;                  // 离线不空转、不报错
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code || isApplyingRemote) return;
     syncApi('GET').then(function (res) {
@@ -4728,6 +4730,31 @@
         if (node) node.textContent = fmt(currentElapsed());
       }
     });
+
+    // ===== PWA：离线识别 + 联网自动同步 + 离线横幅 + SW 注册 =====
+    function setOffline(off) {
+      var bar = document.getElementById('offline-bar');
+      if (bar) bar.hidden = !off;
+    }
+    function tryCatchUpSync() {
+      if (!navigator.onLine) return;
+      var code = (refs.syncCode && refs.syncCode.value.trim().toUpperCase()) || '';
+      if (!code || !autoSyncEnabled) return;
+      doAutoPush(code);          // 先把离线期间的本地改动推上去
+      doAutoPullCheck();         // 再拉云端最新（含冲突征询）
+    }
+    window.addEventListener('online', function () { setOffline(false); tryCatchUpSync(); });
+    window.addEventListener('offline', function () { setOffline(true); });
+    setOffline(!navigator.onLine);   // 首屏按当前状态显示
+
+    // SW 注册（必须协议守卫，保护"双击 index.html" file:// 场景）
+    function registerSW() {
+      if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});   // file:// 下不注册，应用照常在线跑
+      }
+    }
+    if (document.readyState === 'complete') registerSW();
+    else window.addEventListener('load', registerSW);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

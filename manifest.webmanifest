@@ -1,0 +1,13 @@
+{
+  "name": "考研学习记录",
+  "short_name": "考研打卡",
+  "description": "计时、计划、模考、词汇、错题本，支持离线刷题与计时、联网自动同步。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9edf4",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
