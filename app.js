@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817n';
+  var APP_VERSION = '20260817o';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -4256,12 +4256,17 @@
       });
     });
 
-    /* ===== FAB 悬浮按钮：回到首页（计时器已上移为首页块） ===== */
+    /* ===== FAB 悬浮按钮：拍题（高频功能，置于右下角拇指易达区） ===== */
     var fab = document.getElementById('fabAction');
     if (fab) {
       fab.addEventListener('click', function () {
-        var sideBtn = document.querySelector('.tab-btn[data-tab="home"]');
-        if (sideBtn) sideBtn.click();
+        // 先跳到「错题」页的拍题卡片，预览/求解 UI 才可见
+        var activeBtn = document.querySelector('.tab-btn.active');
+        var onMistakes = activeBtn && activeBtn.getAttribute('data-tab') === 'mistakes';
+        if (!onMistakes) switchTab('mistakes');
+        // 拉起相机/相册（与错题页「拍照」按钮同逻辑，复用已有 capture 流程）
+        var camBtn = document.getElementById('btn-capture-cam');
+        if (camBtn) camBtn.click();
       });
     }
 
