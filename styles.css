@@ -1075,7 +1075,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* ============ 小屏卡边距微调 ============ */
 @media (max-width: 560px) {
   .card { padding: 14px; border-radius: 14px; }
-  .app-main { padding: 64px 12px 24px; }
+  .app-main { padding: 64px 12px 88px; }
 }
 
 /* ---- 自动同步开关 ---- */
@@ -1474,7 +1474,7 @@ input:focus, select:focus, textarea:focus {
   .bottom-tabbar .btb-btn span:first-child { font-size: 18px; }
   .checkin-btn { width: 96px; height: 96px; }
   .checkin-btn .ci-label { font-size: 15px; }
-  .app-main { padding-bottom: 64px; }
+  .app-main { padding-bottom: 72px; }
 }
 }
 /* ===== 配置页折叠分组（设置页精简 2026-08-16） ===== */
@@ -1528,4 +1528,10 @@ input:focus, select:focus, textarea:focus {
 @media (min-width: 861px) and (max-width: 1080px) {
   .today-stats { grid-template-columns: 1fr 1fr; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ===== 移动端悬浮层重排（20260816o · 修复回到顶部与底部 Tab 重叠） ===== */
+@media (max-width: 860px) {
+  .back-top { right: 16px; bottom: 134px; z-index: 81; }
+  .sg-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
