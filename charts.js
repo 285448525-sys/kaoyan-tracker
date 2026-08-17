@@ -9,9 +9,38 @@
     return e;
   }
 
+  /* ---------- 空状态引导插图（内联 SVG，浅色主题，离线可用） ---------- */
+  var ILL_TREND = '<svg viewBox="0 0 120 120" width="96" height="96" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 96 H104" opacity=".35"/><path d="M20 92 C40 88 48 64 64 60 C80 56 88 36 102 30"/><path d="M64 60 C64 50 70 44 80 44 C76 54 70 60 64 60Z" fill="var(--primary)" fill-opacity=".12"/><circle cx="102" cy="30" r="4" fill="var(--primary)"/></svg>';
+  var ILL_WEAK = '<svg viewBox="0 0 120 120" width="96" height="96" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="64" width="48" height="10" rx="2" opacity=".5"/><rect x="28" y="52" width="48" height="10" rx="2" opacity=".7"/><circle cx="74" cy="56" r="22"/><path d="M90 72 L104 86"/></svg>';
+  var ILL_GOAL = '<svg viewBox="0 0 120 120" width="96" height="96" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="60" cy="60" r="38"/><circle cx="60" cy="60" r="22" opacity=".6"/><circle cx="60" cy="60" r="8" fill="var(--primary)" fill-opacity=".15"/><path d="M60 8 V24 M60 96 V112 M8 60 H24 M96 60 H112" opacity=".4"/></svg>';
+
+  /* ---------- 空状态引导组件（图表/统计专用，不改动列表空态 emptyHint） ---------- */
+  function chartEmptyState(box, opts) {
+    opts = opts || {};
+    box.innerHTML = '';
+    var d = document.createElement('div'); d.className = 'chart-empty';
+    if (opts.ill) {                       // 内联 SVG 字符串（静态、无用户数据 → 安全，直接 innerHTML）
+      var ill = document.createElement('div'); ill.className = 'empty-illust';
+      ill.innerHTML = opts.ill;
+      d.appendChild(ill);
+    }
+    if (opts.title) { var t = document.createElement('div'); t.className = 'empty-title'; t.textContent = opts.title; d.appendChild(t); }
+    if (opts.hint) { var h = document.createElement('div'); h.className = 'empty-hint'; h.textContent = opts.hint; d.appendChild(h); }  // 复用既有 .empty-hint 样式
+    if (opts.ctaLabel) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-primary empty-act'; b.textContent = opts.ctaLabel;
+      if (typeof opts.ctaFn === 'function') b.addEventListener('click', opts.ctaFn);
+      d.appendChild(b);
+    }
+    box.appendChild(d);
+  }
+
   /* ---------- 单月热力图（支持月份切换，由 app 传入 year/month） ---------- */
   function renderMonthHeatmap(container, year, month, days) {
     container.innerHTML = '';
+    if (!days || !Object.keys(days).length) {
+      chartEmptyState(container, { ill: ILL_TREND, title: '热力图还是空白', hint: '每天来计时/打卡，格子会被点亮成你的努力地图', ctaLabel: '去计时学习', ctaFn: function () { global.switchTab('dashboard'); } });
+      return;
+    }
     var monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
     var first = new Date(year, month, 1);
     var start = new Date(first);
@@ -62,7 +91,7 @@
   function renderTrend(container, exams, targetTotal, examDate) {
     container.innerHTML = '';
     if (!exams || exams.length < 2) {
-      container.appendChild(el('div', 'empty-hint', '至少需要 2 次模考成绩，才能生成成绩趋势图。'));
+      chartEmptyState(container, { ill: ILL_TREND, title: '还没有成绩趋势', hint: '录入至少 2 场模考，就能看到分数走势与目标差距', ctaLabel: '去记一场模考', ctaFn: function () { global.switchTab('data'); global.showSub('data', 'records'); } });
       return;
     }
     var W = 640, H = 300, padL = 44, padR = 16, padT = 16, padB = 36;
@@ -135,7 +164,7 @@
   function renderSubjectBars(container, subjects) {
     container.innerHTML = '';
     if (!subjects || !subjects.length) {
-      container.appendChild(el('div', 'empty-hint', '暂无科目学习数据'));
+      chartEmptyState(container, { ill: ILL_GOAL, title: '还没有科目时长', hint: '先配置考试科目，计时后这里会按科目汇总时长', ctaLabel: '去设置科目', ctaFn: function () { global.switchTab('settings'); global.showSub('settings', 'base'); } });
       return;
     }
     var maxMin = 0;
@@ -161,13 +190,10 @@
   /* ---------- D3：今日各科时长 SVG 环形饼图 ---------- */
   function renderTodayPie(container, items) {
     container.innerHTML = '';
-    if (!items || !items.length) {
-      container.appendChild(el('div', 'empty-hint', '今日还没有学习记录，去「记录」页计时吧'));
-      return;
-    }
-    var total = 0; items.forEach(function (i) { total += i.min; });
-    if (total <= 0) {
-      container.appendChild(el('div', 'empty-hint', '今日还没有学习时长数据'));
+    var total = 0;
+    if (items) items.forEach(function (i) { total += i.min; });
+    if (!items || !items.length || total <= 0) {
+      chartEmptyState(container, { ill: ILL_TREND, title: '今天还没开始学', hint: '打开首页点「计时器」记一科，这里就亮起来', ctaLabel: '去计时学习', ctaFn: function () { global.switchTab('dashboard'); } });
       return;
     }
     var W = 220, H = 220, cx = W / 2, cy = H / 2, R = 90, r = 54;
@@ -217,7 +243,7 @@
   function renderRadar(container, items) {
     container.innerHTML = '';
     if (!items || items.length < 3) {
-      container.appendChild(el('div', 'empty-hint', '至少需要 3 个科目数据，才能绘制掌握度雷达图'));
+      chartEmptyState(container, { ill: ILL_WEAK, title: '掌握度雷达空着', hint: '配置 ≥3 个科目并开始刷题，雷达自动绘制', ctaLabel: '去刷题积累', ctaFn: function () { global.switchTab('practice'); global.showSub('practice', 'cs408'); } });
       return;
     }
     var W = 420, H = 420, cx = W / 2, cy = H / 2, R = 150;
@@ -280,7 +306,7 @@
   function renderScoreBars(container, items) {
     container.innerHTML = '';
     if (!items || !items.length) {
-      container.appendChild(el('div', 'empty-hint', '还没有学习记录，先去「记录」页计时吧'));
+      chartEmptyState(container, { ill: ILL_TREND, title: '还没有得分数据', hint: '计时或模考后，这里显示各模块得分', ctaLabel: '去计时学习', ctaFn: function () { global.switchTab('dashboard'); } });
       return;
     }
     var wrap = el('div', 'scorebars');
@@ -304,6 +330,10 @@
     renderSubjectBars: renderSubjectBars,
     renderTodayPie: renderTodayPie,
     renderRadar: renderRadar,
-    renderScoreBars: renderScoreBars
+    renderScoreBars: renderScoreBars,
+    chartEmptyState: chartEmptyState,
+    ILL_TREND: ILL_TREND,
+    ILL_WEAK: ILL_WEAK,
+    ILL_GOAL: ILL_GOAL
   };
 })(typeof window !== 'undefined' ? window : this);

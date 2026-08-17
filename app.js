@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817b';
+  var APP_VERSION = '20260817c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -792,7 +792,7 @@
     var mathKeys = Object.keys(mathStats);
     var csKeys = Object.keys(csStats);
     if (!mathKeys.length && !csKeys.length) {
-      box.appendChild(el('div', 'empty-hint', '还没有刷题记录，去「数学 · 分类选择题刷题」或「408 · 分类刷题」做题后，这里会自动生成薄弱点分析。'));
+      Charts.chartEmptyState(box, { ill: Charts.ILL_WEAK, title: '还没有薄弱分析', hint: '做几道分类选择题，自动算出最该补的章节', ctaLabel: '去刷 5 道题生成薄弱分析', ctaFn: function () { switchTab('practice'); showSub('practice', 'cs408'); } });
       return;
     }
     function rateOf(s) { return s.total ? s.correct / s.total : 0; }
@@ -858,7 +858,7 @@
     refs.goalProgress.innerHTML = '';
     var subs = Store.getSubjects();
     var exams = Store.getExams();
-    if (!subs.length) { refs.goalProgress.appendChild(el('div', 'empty-hint', '请先配置考试科目与目标分')); return; }
+    if (!subs.length) { Charts.chartEmptyState(refs.goalProgress, { ill: Charts.ILL_GOAL, title: '还没设目标', hint: '配置考试科目与目标分，随时看差距', ctaLabel: '去设置科目目标', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); return; }
     var totalCur = 0;
     subs.forEach(function (s) {
       var cur = latestScoreIn(exams, s.key);
@@ -892,7 +892,7 @@
     var days = Store.getDays();
     // H4：各科目累计时长 横向条形图
     if (refs.subjectBars) {
-      if (!subs.length) { refs.subjectBars.innerHTML = '<div class="empty-hint">暂无科目数据</div>'; }
+      if (!subs.length) { Charts.chartEmptyState(refs.subjectBars, { ill: Charts.ILL_GOAL, title: '还没有科目时长', hint: '先配置考试科目，计时后这里会按科目汇总时长', ctaLabel: '去设置科目', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); }
       else {
         var data = [];
         subs.forEach(function (s) {
@@ -907,7 +907,7 @@
       }
     }
     refs.subjectStats.innerHTML = '';
-    if (!subs.length) { refs.subjectStats.appendChild(el('div', 'empty-hint', '暂无数据')); return; }
+    if (!subs.length) { Charts.chartEmptyState(refs.subjectStats, { ill: Charts.ILL_GOAL, title: '暂无科目统计', hint: '配置科目并计时后，这里显示累计/日均时长', ctaLabel: '去设置科目', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); return; }
     subs.forEach(function (s) {
       var total = 0, daysCount = 0;
       Object.keys(days).forEach(function (ds) {
@@ -3436,12 +3436,12 @@
   var MANUAL_GROUPS = [
     { cat: '🚀 快速上手', items: [
       { t: '第一次使用', b: '点上方「🚀 重看新手完整引导」：引导会带你先配置考试科目、翻译 API 与 AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
-      { t: '每天的核心 4 步', b: '① 打开「今日」看总览 → ② 在「计划」安排任务 → ③ 在「记录」按模块计时 → ④ 睡前在「总结」打卡、在「数据」看趋势。' }
+      { t: '每天的核心 4 步', b: '① 打开「今日学习」看总览 → ② 在「数据复盘 · 进度」安排任务 → ③ 在「今日学习」按模块计时 → ④ 睡前在「数据复盘 · 总结」打卡、在「数据复盘」看趋势。' }
     ]},
     { cat: '📅 核心流程', items: [
       { t: '📅 今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
-      { t: '🗺️ 计划', b: '「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项；计划与「记录」页计时联动，完成会自动勾掉。' },
-      { t: '⏱ 记录 · 计时 / 番茄钟 / 倒计时', b: '每科一条独立计时器，开始/结束把时长记到今日；番茄钟默认 25+5 分钟可调，休息/结束弹提醒；倒计时适合套卷限时训练。' },
+      { t: '🗺️ 计划', b: '「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项；计划与「数据复盘 · 记录」计时联动，完成会自动勾掉。' },
+      { t: '⏱ 今日学习 · 计时 / 番茄钟 / 倒计时', b: '每科一条独立计时器，开始/结束把时长记到今日；番茄钟默认 25+5 分钟可调，休息/结束弹提醒；倒计时适合套卷限时训练。' },
       { t: '📋 总结 · 打卡分享', b: '写今日总结、生成打卡卡片分享到群（带二维码，朋友扫码可一起打卡）。' },
       { t: '📊 数据 · 看板', b: '含：近 30 天得分、单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、薄弱点分析报告。全部来自你的本地记录。' }
     ]},
@@ -4617,6 +4617,8 @@
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
+    window.switchTab = switchTab;
+    window.showSub = showSub;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
     window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
     // B1 测试钩子（仅供 test_sync_phone.js 验证并发/本地保护逻辑，不影响生产行为）

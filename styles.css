@@ -1592,3 +1592,15 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .
   .sub-tab-btn { font-size: 13px; padding: 8px 4px; min-height: 40px; }
   .sub-tabs { gap: 4px; }
 }
+
+/* ===== 图表/统计空状态引导（内联 SVG 插图 + 标题 + 说明 + 按钮）===== */
+.chart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 16px; text-align: center; }
+.empty-illust { width: 96px; height: 96px; opacity: .9; margin-bottom: 2px; }
+.empty-illust svg { width: 100%; height: 100%; display: block; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+.empty-hint { margin: 0; }            /* 复用现有 .empty-hint 基础样式，保证引导说明可读 */
+.chart-empty .empty-act { margin-top: 6px; min-height: 42px; }
+@media (max-width: 560px) {
+  .empty-illust { width: 80px; height: 80px; }
+  .empty-title { font-size: 15px; }
+}
