@@ -23,7 +23,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260817l" />
+  <link rel="stylesheet" href="styles.css?v=20260817m" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -353,50 +353,60 @@
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="mistakes">错题</button><button class="sub-tab-btn" data-sub="sentences">长难句</button></div>
       <div id="sub-mistakes" class="sub-panel active">
       <div class="section">
-<div class="card">
+      <div class="card">
         <h2 class="card-title">📌 错题 / 感悟整理</h2>
-        <div class="field-row">
-          <label>范围</label>
-          <select id="mistake-scope">
-            <option value="general">通用（感悟 / 通用错题）</option>
-            <option value="math">数学</option>
-            <option value="cs408">408</option>
-          </select>
-        </div>
-        <div id="mistake-scope-general">
-          <div class="chip-row" id="mistake-types"></div>
-          <div class="field-row">
-            <label>科目</label>
-            <select id="mistake-subject"><option value="">不指定</option></select>
-          </div>
-        </div>
-        <div id="mistake-scope-math" hidden>
-          <div class="field-row">
-            <label>分类</label>
-            <select id="mistake-math-cat"></select>
-          </div>
-        </div>
-        <div id="mistake-scope-cs408" hidden>
-          <div class="field-row">
-            <label>分类</label>
-            <select id="mistake-cs408-cat"></select>
-          </div>
-        </div>
+        <p class="card-hint">把题目 / 感悟直接粘贴到下面，三步搞定：① 🪄 <b>智能整理</b>（AI 自动归类到 通用 / 数学 / 408）；② <b>直接存为感悟</b>；③ <b>手动归档</b>（自定义范围与分类）。</p>
         <div class="field">
-          <label>内容</label>
-          <textarea id="mistake-content" rows="3" placeholder="记录错题、问题或今日感悟……"></textarea>
+          <label>内容（粘贴题目 / 感悟）</label>
+          <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
         </div>
-        <div class="field">
-          <label>备注（可选）</label>
-          <input type="text" id="mistake-note" placeholder="如：对应知识点 / 错误原因" />
+        <div class="btn-row" style="margin-top:10px">
+          <button id="btn-smart-organize" class="btn btn-primary" type="button">🪄 智能整理</button>
+          <button id="btn-save-direct" class="btn btn-ghost" type="button">直接存为感悟</button>
+          <button id="btn-manual-organize" class="btn btn-ghost" type="button">手动归档 ▾</button>
         </div>
-        <button id="btn-add-mistake" class="btn btn-primary full">保存</button>
+        <div id="mistake-smart-status" class="ai-status" style="margin-top:8px"></div>
+        <details id="mistake-manual-details" class="vocab-extra" style="margin-top:12px">
+          <summary class="card-sub">手动归档（选范围 / 分类 / 备注后点保存）</summary>
+          <div class="field-row" style="margin-top:10px">
+            <label>范围</label>
+            <select id="mistake-scope">
+              <option value="general">通用（感悟 / 通用错题）</option>
+              <option value="math">数学</option>
+              <option value="cs408">408</option>
+            </select>
+          </div>
+          <div id="mistake-scope-general">
+            <div class="chip-row" id="mistake-types"></div>
+            <div class="field-row">
+              <label>科目</label>
+              <select id="mistake-subject"><option value="">不指定</option></select>
+            </div>
+          </div>
+          <div id="mistake-scope-math" hidden>
+            <div class="field-row">
+              <label>分类</label>
+              <select id="mistake-math-cat"></select>
+            </div>
+          </div>
+          <div id="mistake-scope-cs408" hidden>
+            <div class="field-row">
+              <label>分类</label>
+              <select id="mistake-cs408-cat"></select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:8px">
+            <label>备注（可选）</label>
+            <input type="text" id="mistake-note" placeholder="如：对应知识点 / 错误原因" />
+          </div>
+          <button id="btn-add-mistake" class="btn btn-primary full" style="margin-top:10px">保存（手动归档）</button>
+        </details>
       </div></div>
 
       <div class="section">
 <div class="card" id="ai-solve-card">
         <h2 class="card-title">📷 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
-        <p class="card-hint">需要在「配置」里把 AI 模型换成支持看图的（如豆包视觉 <code>doubao-vision</code> 或 <code>gpt-4o-mini</code>）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
+        <p class="card-hint">拍照前请先在 <a href="javascript:void(0)" id="link-open-vision">「设置 → 连接与密钥 → AI 能力 → 视觉模型」</a> 填好支持看图的模型（豆包 / 通义千问VL / GPT-4o）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
         <div class="ai-solve-row">
           <button id="btn-capture-cam" class="btn btn-primary" type="button">📷 拍照</button>
           <button id="btn-capture-lib" class="btn btn-ghost" type="button">🖼 相册</button>
@@ -948,6 +958,36 @@
               <span id="ai-status" class="import-status"></span>
             </div>
           </div>
+          <div class="sub-card vision-card">
+            <h3 class="card-sub">👁 视觉模型配置（拍照 / 智能整理错题 · 独立一轨）</h3>
+            <p class="hint">拍照解答、智能整理错题走这一轨（看图的模型）。与上方文本 AI 互不干扰，可分别填不同服务商。选预设会自动带出接口地址与模型名，再填 Key 即可。</p>
+            <div class="field-row">
+              <label>服务商预设</label>
+              <select id="vision-provider">
+                <option value="">自定义 / 手动填</option>
+                <option value="doubao">豆包 doubao-1.5-vision-pro</option>
+                <option value="qwen">通义千问 VL qwen-vl-max</option>
+                <option value="openai">OpenAI gpt-4o-mini</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>接口地址</label>
+              <input type="text" id="vision-baseurl" placeholder="如 https://ark.cn-beijing.volces.com/api/v3" autocomplete="off" />
+            </div>
+            <div class="field-row">
+              <label>模型名</label>
+              <input type="text" id="vision-model" placeholder="如 doubao-1.5-vision-pro" autocomplete="off" />
+            </div>
+            <div class="field-row">
+              <label>API Key</label>
+              <input type="password" id="vision-key" placeholder="粘贴你的视觉模型 Key" autocomplete="off" />
+            </div>
+            <div class="btn-row">
+              <button id="btn-save-vision" class="btn btn-primary">保存视觉配置</button>
+              <button id="btn-test-vision" class="btn btn-ghost">测试连接</button>
+              <span id="vision-status" class="import-status"></span>
+            </div>
+          </div>
         </div>
       </details>
     </div>
@@ -1014,13 +1054,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260817l"></script>
-  <script src="words.js?v=20260817l"></script>
-  <script src="store.js?v=20260817l"></script>
-  <script src="charts.js?v=20260817l"></script>
-  <script src="share.js?v=20260817l"></script>
-  <script src="md5.js?v=20260817l"></script>
-  <script src="sentences.js?v=20260817l"></script>
-  <script src="app.js?v=20260817l"></script>
+  <script src="qrcode.min.js?v=20260817m"></script>
+  <script src="words.js?v=20260817m"></script>
+  <script src="store.js?v=20260817m"></script>
+  <script src="charts.js?v=20260817m"></script>
+  <script src="share.js?v=20260817m"></script>
+  <script src="md5.js?v=20260817m"></script>
+  <script src="sentences.js?v=20260817m"></script>
+  <script src="app.js?v=20260817m"></script>
 </body>
 </html>

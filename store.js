@@ -110,6 +110,7 @@
       vocab: [],    // {id,word,cn,phonetic,pos,example,note,category,box,next,added,wrong,last}
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
       aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
+      visionConfig: { provider: '', baseUrl: '', model: '', key: '' }, // 👁 视觉模型配置（拍照/智能整理错题走此轨；provider 可选 doubao/qwen/openai/'' 自定义；仅存本机浏览器，key 经 /api/ai 中转不暴露）
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
       wrongWords: [], // 查词记录（独立）{id,word,cn,created,src}
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
@@ -141,6 +142,20 @@
 
   var state = load();
 
+  /* 视觉模型配置归一化（provider/baseUrl/model/key 全部字符串化，避免旧备份缺字段） */
+  function normalizeVisionConfig(v) {
+    v = v || {};
+    var allowed = ['doubao', 'qwen', 'openai', ''];
+    var prov = (typeof v.provider === 'string') ? v.provider : '';
+    if (allowed.indexOf(prov) < 0) prov = '';
+    return {
+      provider: prov,
+      baseUrl: (typeof v.baseUrl === 'string') ? v.baseUrl.trim() : '',
+      model: (typeof v.model === 'string') ? v.model.trim() : '',
+      key: (typeof v.key === 'string') ? v.key.trim() : ''
+    };
+  }
+
   function load() {
     try {
       var raw = global.localStorage.getItem(KEY);
@@ -171,6 +186,8 @@
         vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
         translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
         aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
+      visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
+        visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
         practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
           ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
           : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
@@ -550,6 +567,22 @@
     };
     save();
   }
+  /* 👁 视觉模型配置（独立一轨：拍照/智能整理错题使用；不影响文本 AI） */
+  function getVisionConfig() {
+    var vc = state.visionConfig || {};
+    var d = defaults().visionConfig;
+    return {
+      provider: (vc.provider !== undefined) ? vc.provider : d.provider,
+      baseUrl: (vc.baseUrl || '') || '',
+      model: (vc.model || '') || '',
+      key: (vc.key || '') || ''
+    };
+  }
+  function setVisionConfig(cfg) {
+    cfg = cfg || {};
+    state.visionConfig = normalizeVisionConfig(cfg);
+    save();
+  }
   /* ---------- 拍题自动解答记录（图 base64 + AI 解答，纯本地） ---------- */
   function getAiSolved() {
     return (state.aiSolved || []).slice().sort(function (a, b) { return (b.created || '').localeCompare(a.created || ''); });
@@ -679,6 +712,7 @@
       }) : [],
       translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
+      visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
       practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
         ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
         : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
@@ -873,6 +907,7 @@
     getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab,
     getTranslator: getTranslator, setTranslator: setTranslator,
     getAiConfig: getAiConfig, setAiConfig: setAiConfig,
+    getVisionConfig: getVisionConfig, setVisionConfig: setVisionConfig,
     getAiSolved: getAiSolved, addAiSolved: addAiSolved, removeAiSolved: removeAiSolved,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
     getPracticeSettings: getPracticeSettings, setPracticeSettings: setPracticeSettings,

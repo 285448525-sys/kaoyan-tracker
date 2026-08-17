@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817l';
+  var APP_VERSION = '20260817m';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2360,22 +2360,190 @@
         if (btn) { btn.disabled = false; btn.textContent = '测试连接'; }
       });
   }
-  // 通用 AI 对话：调本站 /api/ai 中转（key 走请求头，不出现在前端网络面板）
-  function aiChat(messages, opts) {
-    opts = opts || {};
-    return new Promise(function (resolve, reject) {
+  /* ============ 👁 视觉模型双轨（拍照 / 智能整理错题，独立于文本 AI） ============ */
+  // 服务商预设 → 自动带出接口地址与模型名（用户只需补 Key）
+  var VISION_PRESETS = {
+    doubao: { baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', model: 'doubao-1.5-vision-pro' },
+    qwen:   { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-vl-max' },
+    openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' }
+  };
+  function renderVisionConfig() {
+    var c = Store.getVisionConfig();
+    if (refs.visionProvider) refs.visionProvider.value = c.provider || '';
+    if (refs.visionBaseurl) refs.visionBaseurl.value = c.baseUrl || '';
+    if (refs.visionModel) refs.visionModel.value = c.model || '';
+    if (refs.visionKey) refs.visionKey.value = c.key || '';
+  }
+  function onVisionProviderChange() {
+    var prov = (refs.visionProvider && refs.visionProvider.value) || '';
+    var p = VISION_PRESETS[prov];
+    if (p) {
+      if (refs.visionBaseurl) refs.visionBaseurl.value = p.baseUrl;
+      if (refs.visionModel) refs.visionModel.value = p.model;
+    }
+  }
+  function onSaveVisionConfig() {
+    var btn = refs.btnSaveVision;
+    if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
+    var restore = function () { if (btn) { btn.disabled = false; btn.textContent = '保存视觉配置'; } };
+    try {
+      var prov = (refs.visionProvider && refs.visionProvider.value) || '';
+      var base = ((refs.visionBaseurl && refs.visionBaseurl.value) || '').trim();
+      var model = ((refs.visionModel && refs.visionModel.value) || '').trim();
+      var key = ((refs.visionKey && refs.visionKey.value) || '').trim();
+      Store.setVisionConfig({ provider: prov, baseUrl: base, model: model, key: key });
+      if (refs.visionStatus) { refs.visionStatus.textContent = '✓ 已保存（Key 仅存本机，经服务器中转）'; refs.visionStatus.className = 'import-status ai-status ok'; }
+      showToast('视觉模型配置已保存', 'ok');
+    } catch (e) {
+      if (refs.visionStatus) { refs.visionStatus.textContent = '✗ 保存失败'; refs.visionStatus.className = 'import-status ai-status err'; }
+      showToast('保存失败：' + (e && e.message || '未知错误'), 'err');
+    } finally { restore(); }
+  }
+  function onTestVisionConfig() {
+    var base = ((refs.visionBaseurl && refs.visionBaseurl.value) || '').trim();
+    var model = ((refs.visionModel && refs.visionModel.value) || '').trim();
+    var key = ((refs.visionKey && refs.visionKey.value) || '').trim();
+    if (!key) { showToast('请填写视觉模型 API Key', 'err'); if (refs.visionStatus) { refs.visionStatus.textContent = '✗ API Key 未填写'; refs.visionStatus.className = 'import-status ai-status err'; } return; }
+    // 先落库再测，确保用最新填写值（不依赖切换 tab 才保存）
+    Store.setVisionConfig({ provider: (refs.visionProvider && refs.visionProvider.value) || '', baseUrl: base, model: model, key: key });
+    renderVisionConfig();
+    var btn = refs.btnTestVision;
+    if (btn) { btn.disabled = true; btn.textContent = '测试中…'; }
+    if (refs.visionStatus) { refs.visionStatus.textContent = '测试中…'; refs.visionStatus.className = 'import-status ai-status pending'; }
+    aiChat([{ role: 'user', content: '你好，请只回复"连接成功"四个字' }], { maxTokens: 32, which: 'vision' })
+      .then(function (res) {
+        if (refs.visionStatus) { refs.visionStatus.textContent = '✓ 连接成功：' + (res.content || '').slice(0, 30); refs.visionStatus.className = 'import-status ai-status ok'; }
+        showToast('视觉模型连接成功 ✅', 'ok');
+        if (btn) { btn.disabled = false; btn.textContent = '测试连接'; }
+      })
+      .catch(function (err) {
+        var msg = (err && err.msg) || '测试失败';
+        if (refs.visionStatus) { refs.visionStatus.textContent = '✗ ' + msg; refs.visionStatus.className = 'import-status ai-status err'; }
+        showToast('视觉模型连接失败：' + msg, 'err');
+        if (btn) { btn.disabled = false; btn.textContent = '测试连接'; }
+      });
+  }
+  // 跳到设置页并展开「连接与密钥」折叠，定位视觉模型卡
+  function openVisionConfig() {
+    try {
+      var fold = document.querySelector('.config-fold');
+      if (fold) fold.open = true;
+      if (refs.visionProvider) refs.visionProvider.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
+  }
+
+  /* ============ 错题录入简化（1 框 + 3 按钮） ============ */
+  function onManualOrganize() {
+    var d = refs.mistakeManualDetails;
+    if (d && d.tagName === 'DETAILS') d.open = true;
+    if (refs.mistakeScope) refs.mistakeScope.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function onSaveDirectMistake() {
+    var content = (refs.mistakeContent && refs.mistakeContent.value || '').trim();
+    if (!content) { showToast('请先粘贴内容', 'err'); return; }
+    Store.addMistake({ type: '今日感悟', content: content, subject: '', date: Store.todayStr(), note: '' });
+    if (refs.mistakeContent) refs.mistakeContent.value = '';
+    if (refs.mistakeSmartStatus) { refs.mistakeSmartStatus.textContent = '✓ 已存为通用感悟'; refs.mistakeSmartStatus.className = 'ai-status ok'; }
+    showToast('已存为通用感悟 ✅', 'ok');
+    renderMistakeList();
+  }
+  function onSmartOrganizeMistake() {
+    var content = (refs.mistakeContent && refs.mistakeContent.value || '').trim();
+    if (!content) { showToast('请先粘贴内容', 'err'); return; }
+    var vc = Store.getVisionConfig();
+    var useVision = !!(vc.baseUrl && vc.model && vc.key);
+    if (refs.mistakeSmartStatus) { refs.mistakeSmartStatus.textContent = '🪄 整理中…'; refs.mistakeSmartStatus.className = 'ai-status pending'; }
+    var sysPrompt = '你是考研错题整理助手。根据用户提供的题目/感悟文本，判断它属于哪一类，并给出结构化结果。只返回 JSON，不要多余文字。格式：{"scope":"general|math|cs408","category":"分类名(数学/408 时填具体章名如 高数·导数,通用时可为空)","type":"题型标签(如 知识点盲区/易错点/今日感悟)","note":"一句话薄弱点/错误原因(可为空)"}。';
+    var userText = '请整理这条内容：\n' + content;
+    var messages, which;
+    if (useVision) {
+      // 视觉模型也接受纯文本（带一个占位 image_url 以兼容 VL 接口），失败自动提示改用「手动归档」
+      messages = [{ role: 'user', content: [
+        { type: 'text', text: sysPrompt + '\n' + userText },
+        { type: 'image_url', image_url: { url: 'data:image/png;base64,' } }
+      ] }];
+      which = 'vision';
+    } else {
+      messages = [{ role: 'system', content: sysPrompt }, { role: 'user', content: userText }];
+      which = 'text';
+    }
+    var doAi = function () {
+      aiChat(messages, { maxTokens: 400, which: which, temperature: 0.2 })
+        .then(function (res) { applySmartOrganize(res.content || '', content); })
+        .catch(function (err) {
+          var msg = (err && err.msg) || '整理失败';
+          if (refs.mistakeSmartStatus) { refs.mistakeSmartStatus.textContent = '✗ ' + msg + '（可改用「手动归档」）'; refs.mistakeSmartStatus.className = 'ai-status err'; }
+          showToast('智能整理失败：' + msg, 'err');
+        });
+    };
+    if (useVision) {
+      doAi();
+    } else {
       var c = Store.getAiConfig();
       if (!c.baseUrl || !c.model || !c.key) {
-        reject({ error: 'NO_CONFIG', msg: '请先在「配置」页填写 AI 接口地址、模型与 Key' }); return;
+        if (refs.mistakeSmartStatus) { refs.mistakeSmartStatus.textContent = '✗ 未配置 AI（文本/视觉均可），请先到「设置 → 连接与密钥 → AI 能力」填写'; refs.mistakeSmartStatus.className = 'ai-status err'; }
+        showToast('请先在设置页填写 AI 配置（文本或视觉）', 'err');
+        switchTab('settings'); showSub('settings', 'base'); openVisionConfig();
+        return;
+      }
+      doAi();
+    }
+  }
+  function applySmartOrganize(aiText, fallbackContent) {
+    var parsed = null;
+    try {
+      var s = (aiText || '').trim();
+      var i = s.indexOf('{'); var j = s.lastIndexOf('}');
+      if (i >= 0 && j > i) s = s.slice(i, j + 1);
+      parsed = JSON.parse(s);
+    } catch (e) { parsed = null; }
+    if (!parsed || !parsed.scope) {
+      if (refs.mistakeSmartStatus) { refs.mistakeSmartStatus.textContent = '⚠️ AI 未给出明确分类，已按通用感悟保存（可「手动归档」改分类）'; refs.mistakeSmartStatus.className = 'ai-status err'; }
+      Store.addMistake({ type: '今日感悟', content: fallbackContent, subject: '', date: Store.todayStr(), note: '' });
+      if (refs.mistakeContent) refs.mistakeContent.value = '';
+      renderMistakeList();
+      showToast('已按通用感悟保存', 'ok');
+      return;
+    }
+    var scope = (parsed.scope === 'math' || parsed.scope === 'cs408') ? parsed.scope : 'general';
+    var note = parsed.note || '';
+    var type = parsed.type || '今日感悟';
+    var cat = parsed.category || '';
+    if (scope === 'math') {
+      Store.addMathMistake({ category: cat || '未分类', content: fallbackContent, note: note });
+    } else if (scope === 'cs408') {
+      Store.add408Mistake({ category: cat || '未分类', content: fallbackContent, note: note });
+    } else {
+      Store.addMistake({ type: type, content: fallbackContent, subject: '', date: Store.todayStr(), note: note });
+    }
+    if (refs.mistakeContent) refs.mistakeContent.value = '';
+    if (refs.mistakeSmartStatus) {
+      var scopeName = scope === 'math' ? '数学' : (scope === 'cs408' ? '408' : '通用');
+      refs.mistakeSmartStatus.innerHTML = '🪄 AI 分类：<b>' + escapeHtml(scopeName) + (cat ? ' · ' + escapeHtml(cat) : '') + '</b>' + (type ? ' · ' + escapeHtml(type) : '') + ' ✓ 已归档';
+      refs.mistakeSmartStatus.className = 'ai-status ok';
+    }
+    showToast('智能整理完成 ✓', 'ok');
+    renderMistakeList();
+  }
+
+  // 通用 AI 对话：调本站 /api/ai 中转（key 走请求头，不出现在前端网络面板）
+  // opts.which：'text'（默认，文本 AI） | 'vision'（视觉模型，拍照/智能整理走此轨）
+  function aiChat(messages, opts) {
+    opts = opts || {};
+    var cfg = (opts.which === 'vision') ? Store.getVisionConfig() : Store.getAiConfig();
+    var cfgLabel = (opts.which === 'vision') ? '视觉模型' : '文本 AI 模型';
+    return new Promise(function (resolve, reject) {
+      if (!cfg.baseUrl || !cfg.model || !cfg.key) {
+        reject({ error: 'NO_CONFIG', msg: '请先在「配置」页填写' + cfgLabel + '接口地址、模型与 Key' }); return;
       }
       if (location.protocol === 'file:') {
         reject({ error: 'OFFLINE', msg: '本地打开时 AI 功能不可用，请访问线上地址（kaoyan-tracker.pages.dev）使用' }); return;
       }
       fetch('/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-AI-Key': c.key },
+        headers: { 'Content-Type': 'application/json', 'X-AI-Key': cfg.key },
         body: JSON.stringify({
-          baseUrl: c.baseUrl, model: c.model, messages: messages,
+          baseUrl: cfg.baseUrl, model: cfg.model, messages: messages,
           max_tokens: opts.maxTokens || 1024,
           temperature: (typeof opts.temperature === 'number') ? opts.temperature : undefined
         })
@@ -2442,10 +2610,10 @@
   }
   function onAiSolve() {
     if (!aiPendingDataUrl) { showToast('请先选择图片', 'err'); return; }
-    var c = Store.getAiConfig();
+    var c = Store.getVisionConfig();
     if (!c.baseUrl || !c.model || !c.key) {
-      showToast('请先在「配置」页填写支持看图的 AI 模型与 Key', 'err');
-      switchTab('settings'); showSub('settings','base'); return;
+      showToast('请先在「设置 → 连接与密钥 → AI 能力 → 视觉模型」填写支持看图的模型与 Key', 'err');
+      switchTab('settings'); showSub('settings', 'base'); openVisionConfig(); return;
     }
     if (refs.btnSolve) { refs.btnSolve.disabled = true; refs.btnSolve.textContent = '求解中…'; }
     if (refs.aiAnswer) {
@@ -2456,7 +2624,7 @@
       { type: 'text', text: '这是一道题的图片。请识别题目并给出解答，包含：1) 题目转述；2) 解题步骤；3) 最终答案；4) 涉及的考点。用中文、条理清晰。' },
       { type: 'image_url', image_url: { url: aiPendingDataUrl } }
     ] }];
-    aiChat(messages, { maxTokens: 1500 })
+    aiChat(messages, { maxTokens: 1500, which: 'vision' })
       .then(function (res) { renderAiAnswer(res.content || ''); showToast('解答完成 ✅', 'ok'); })
       .catch(function (err) {
         var msg = (err && err.msg) || '未知错误';
@@ -2473,7 +2641,7 @@
     var save = el('button', 'btn btn-primary', '💾 存入本地');
     save.type = 'button';
     save.addEventListener('click', function () {
-      var c = Store.getAiConfig();
+      var c = Store.getVisionConfig();
       Store.addAiSolved({ id: 'ai' + Store.nextSeq(), image: aiPendingDataUrl, answer: text, model: c.model, created: Store.todayStr() });
       renderAiSolvedList();
       showToast('已存到本地 ✅', 'ok');
@@ -3353,7 +3521,6 @@
     syncStatZero('.stat-focus', minutes);
     syncStatZero('.stat-streak', refs.aggStreak.textContent);
     syncStatZero('.stat-plan', plan.length === 0 ? 0 : done);
-    syncStatZero('.stat-trend', weeklyHours);
     // 倒计时分阶段
     if (refs.aggPhase) {
       var ph = phaseInfo(examDate);
@@ -3960,6 +4127,7 @@
     populateMistakeSubjects();
     renderTranslatorConfig();
     renderAiConfig();
+    renderVisionConfig();
     renderSyncConfig();
     updateTranslateButton();
     renderPomodoro();
@@ -3998,7 +4166,7 @@
     if (target === 'vocab') { showSub('vocab', 'words'); renderWrongBook(); renderWords(); }
     if (target === 'mock') { renderExamCard(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
-    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderHelpManual(); renderSmartPlan(); }
+    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); renderHelpManual(); renderSmartPlan(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
   }
   function showSub(container, sub) {
@@ -4025,7 +4193,7 @@
       else if (sub === 'progress') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
       else if (sub === 'summary') { renderSummary(); }
     } else if (container === 'settings') {
-      if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); }
+      if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); }
       else if (sub === 'sites') { renderSites(); }
       else if (sub === 'manual') { renderHelpManual(); }
       else if (sub === 'guide') { renderTodayOnboarding(); }
@@ -4169,6 +4337,21 @@
     refs.mistakeFlashScope = $('mistake-flash-scope');
     refs.btnMistakeFlashStart = $('btn-mistake-flash-start');
     refs.mistakeFlashcardBox = $('mistake-flashcard-box');
+    // 错题录入简化：1 框 + 3 按钮
+    refs.btnSmartOrganize = $('btn-smart-organize');
+    refs.btnSaveDirect = $('btn-save-direct');
+    refs.btnManualOrganize = $('btn-manual-organize');
+    refs.mistakeSmartStatus = $('mistake-smart-status');
+    refs.mistakeManualDetails = $('mistake-manual-details');
+    // 👁 视觉模型双轨
+    refs.visionProvider = $('vision-provider');
+    refs.visionBaseurl = $('vision-baseurl');
+    refs.visionModel = $('vision-model');
+    refs.visionKey = $('vision-key');
+    refs.btnSaveVision = $('btn-save-vision');
+    refs.btnTestVision = $('btn-test-vision');
+    refs.visionStatus = $('vision-status');
+    refs.linkOpenVision = $('link-open-vision');
 
     // 拍题自动解答
     refs.btnCaptureCam = $('btn-capture-cam');
@@ -4461,6 +4644,10 @@
       }
       refs.mistakeContent.value = ''; refs.mistakeNote.value = ''; renderMistakeList(); showToast('已整理 ✅');
     });
+    // 错题录入简化：🪄 智能整理 / 直接存感想 / 手动归档
+    if (refs.btnSmartOrganize) refs.btnSmartOrganize.addEventListener('click', onSmartOrganizeMistake);
+    if (refs.btnSaveDirect) refs.btnSaveDirect.addEventListener('click', onSaveDirectMistake);
+    if (refs.btnManualOrganize) refs.btnManualOrganize.addEventListener('click', onManualOrganize);
 
     // 拍题自动解答：相机/相册 + 求解
     if (refs.btnCaptureCam && refs.aiFileCam) {
@@ -4495,6 +4682,11 @@
     refs.btnTestTranslator.addEventListener('click', onTestTranslator);
     refs.btnSaveAi.addEventListener('click', onSaveAi);
     refs.btnTestAi.addEventListener('click', onTestAi);
+    // 👁 视觉模型双轨
+    if (refs.btnSaveVision) refs.btnSaveVision.addEventListener('click', onSaveVisionConfig);
+    if (refs.btnTestVision) refs.btnTestVision.addEventListener('click', onTestVisionConfig);
+    if (refs.visionProvider) refs.visionProvider.addEventListener('change', onVisionProviderChange);
+    if (refs.linkOpenVision) refs.linkOpenVision.addEventListener('click', function (e) { e.preventDefault(); switchTab('settings'); showSub('settings', 'base'); openVisionConfig(); });
     // 即时翻译 / 查词记录
     refs.btnTranslate.addEventListener('click', onTranslate);
     refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
