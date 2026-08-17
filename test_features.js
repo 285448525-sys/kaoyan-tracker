@@ -75,8 +75,9 @@ setTimeout(function () {
     // 点击前往 → 应切到 config tab 并高亮目标卡
     gotoBtn && gotoBtn.click();
     setTimeout(function () {
-      const configActive = document.querySelector('#tab-config') && document.querySelector('#tab-config').classList.contains('active');
-      ok(!!configActive, '「前往配置」切换到配置页');
+      const settingsActive = document.querySelector('#tab-settings') && document.querySelector('#tab-settings').classList.contains('active');
+      const baseActive = document.querySelector('#sub-base') && document.querySelector('#sub-base').classList.contains('active');
+      ok(!!settingsActive && !!baseActive, '「前往配置」切换到设置页（基础子标签）');
       const target = document.querySelector('.ai-card.tour-target');
       ok(!!target, 'AI 配置卡被高亮（tour-target）');
       // 清理：关闭引导并标记完成，避免后续干扰

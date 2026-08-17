@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817a';
+  var APP_VERSION = '20260817b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -495,7 +495,7 @@
   function renderDayList() {
     refs.dayList.innerHTML = '';
     var keys = Object.keys(Store.getDays()).filter(function (k) { return Store.totalMinutesForDay(Store.getDays()[k]) > 0; }).sort().reverse().slice(0, 12);
-    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { label: '去记录学习', fn: function () { switchTab('record'); } }); return; }
+    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { label: '去记录学习', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
     keys.forEach(function (ds) {
       var d = Store.getDays()[ds];
       var item = el('div', 'list-item');
@@ -507,7 +507,7 @@
   function renderExamList() {
     refs.examList.innerHTML = '';
     var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('record'); } }); return; }
+    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
     exams.forEach(function (ex) {
       var item = el('div', 'list-item');
       item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
@@ -534,7 +534,7 @@
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
     refs.planList.innerHTML = '';
-    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { label: '去制定计划', fn: function () { switchTab('plan'); } }); return; }
+    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } }); return; }
     var subs = Store.getSubjects();
     var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
@@ -1257,16 +1257,28 @@
   }
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
-  function switchTab(target) { var btn = document.querySelector('.tab-btn[data-tab="' + target + '"]'); if (btn) btn.click(); else showTab(target); }
+  function switchTab(target) {
+    var map = { today:'dashboard', record:'data', plan:'data', summary:'data', math:'practice', cs408:'practice', sentences:'practice', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes' };
+    var real = map[target] || target;
+    var btn = document.querySelector('.tab-btn[data-tab="' + real + '"]');
+    if (btn) { btn.click(); } else { showTab(real); }
+    if (real === 'practice') { showSub('practice', target === 'cs408' ? 'cs408' : (target === 'sentences' ? 'sentences' : 'math')); }
+    else if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
+    else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
+    else if (real === 'settings') { showSub('settings', target === 'sites' ? 'sites' : (target === 'manual' ? 'manual' : 'base')); }
+  }
   function updateMathTabVisibility() {
     var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
-    var btn = document.querySelector('.tab-btn[data-tab="math"]');
-    var panel = document.getElementById('tab-math');
+    var btn = document.querySelector('.sub-tab-btn[data-sub="math"]');
+    var panel = document.getElementById('sub-math');
     if (btn) btn.classList.toggle('nav-hidden', !hasMath);
     if (panel) panel.classList.toggle('nav-hidden', !hasMath);
     if (!hasMath) {
-      var active = document.querySelector('.tab-btn.active');
-      if (active && active.getAttribute('data-tab') === 'math') switchTab('today');
+      var active = document.querySelector('.tab-panel.active');
+      if (active && active.id === 'tab-practice') {
+        var as = active.querySelector('.sub-panel.active');
+        if (as && as.id === 'sub-math') showSub('practice', 'cs408');
+      }
     }
   }
   function renderSummary() {
@@ -2164,13 +2176,16 @@
       var major = Store.getConfig().major || '';
       hasCs408 = major.indexOf('408') >= 0;
     }
-    var btn = document.querySelector('.tab-btn[data-tab="cs408"]');
-    var panel = document.getElementById('tab-cs408');
+    var btn = document.querySelector('.sub-tab-btn[data-sub="cs408"]');
+    var panel = document.getElementById('sub-cs408');
     if (btn) btn.classList.toggle('nav-hidden', !hasCs408);
     if (panel) panel.classList.toggle('nav-hidden', !hasCs408);
     if (!hasCs408) {
-      var active = document.querySelector('.tab-btn.active');
-      if (active && active.getAttribute('data-tab') === 'cs408') switchTab('today');
+      var active = document.querySelector('.tab-panel.active');
+      if (active && active.id === 'tab-practice') {
+        var as = active.querySelector('.sub-panel.active');
+        if (as && as.id === 'sub-cs408') showSub('practice', 'math');
+      }
     }
   }
 
@@ -2236,7 +2251,7 @@
     var list = filterVocab(raw);
     refs.vocabCount.textContent = raw.length;
     refs.vocabList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词', { label: '去记生词', fn: function () { switchTab('review'); } }); return; }
+    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词', { label: '去记生词', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
     list.forEach(function (v) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2451,7 +2466,7 @@
     var c = Store.getAiConfig();
     if (!c.baseUrl || !c.model || !c.key) {
       showToast('请先在「配置」页填写支持看图的 AI 模型与 Key', 'err');
-      switchTab('config'); return;
+      switchTab('settings'); showSub('settings','base'); return;
     }
     if (refs.btnSolve) { refs.btnSolve.disabled = true; refs.btnSolve.textContent = '求解中…'; }
     if (refs.aiAnswer) {
@@ -2605,7 +2620,7 @@
     var list = Store.getWrongWords();
     refs.wrongCount.textContent = list.length;
     refs.wrongList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { label: '去翻译查询', fn: function () { switchTab('review'); } }); return; }
+    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { label: '去翻译查询', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
     list.forEach(function (w) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -3658,7 +3673,7 @@
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
       if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
       /* N：新建任务 → 跳到计划页并聚焦添加框 */
-      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('plan'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
+      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','progress'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
       if (k === '/') { e.preventDefault(); var si = document.querySelector('.tab-panel.active input[type="text"], .tab-panel.active input[type="search"]'); if (si) si.focus(); }
     });
@@ -3947,25 +3962,65 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'review') setReviewMode(reviewMode);
-    if (target === 'summary') renderSummary();
-    if (target === 'config') { renderTranslatorConfig(); renderAiConfig(); }
-    if (target === 'words') renderWrongBook();
-    if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
-    if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
-    if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+    if (target === 'dashboard') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); }
+    if (target === 'practice') { showSub('practice', 'math'); renderSubOnDemand('practice', 'math'); }
     if (target === 'mistakes') { renderMistakeList(); renderAiSolvedList(); }
-    if (target === 'data') { renderData(); }
-    if (target === 'today') renderTodayAggregate();
-    if (target === 'manual') renderHelpManual();
+    if (target === 'vocab') { showSub('vocab', 'words'); renderWrongBook(); renderWords(); }
+    if (target === 'data') { showSub('data', 'overview'); renderData(); }
+    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderHelpManual(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
   }
+  function showSub(container, sub) {
+    var root = document.getElementById('tab-' + container);
+    if (!root) return;
+    var btns = root.querySelectorAll('.sub-tab-btn');
+    var tgt = sub;
+    var tbtn = root.querySelector('.sub-tab-btn[data-sub="' + tgt + '"]');
+    if (tbtn && tbtn.classList.contains('nav-hidden')) {
+      var vis = Array.prototype.slice.call(btns).filter(function (b) { return !b.classList.contains('nav-hidden'); })[0];
+      if (vis) tgt = vis.getAttribute('data-sub');
+    }
+    btns.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-sub') === tgt); });
+    root.querySelectorAll('.sub-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'sub-' + tgt); });
+  }
+  function renderSubOnDemand(container, sub) {
+    if (container === 'practice') {
+      if (sub === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
+      else if (sub === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+    } else if (container === 'vocab') {
+      if (sub === 'words') { renderWrongBook(); renderWords(); }
+      else if (sub === 'review') { setReviewMode(reviewMode); }
+      else if (sub === 'hf') { renderHfWords(); }
+    } else if (container === 'data') {
+      if (sub === 'overview') { renderData(); }
+      else if (sub === 'records') { renderManual(); }
+      else if (sub === 'progress') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
+      else if (sub === 'summary') { renderSummary(); }
+    } else if (container === 'settings') {
+      if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); }
+      else if (sub === 'sites') { renderSites(); }
+      else if (sub === 'manual') { renderHelpManual(); }
+      else if (sub === 'guide') { renderTodayOnboarding(); }
+    }
+  }
+  function renderDashboardDigest() { renderTodayAggregate(); }
   function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { showTab(btn.getAttribute('data-tab')); });
     });
     updateMathTabVisibility();
     update408TabVisibility();
+
+    /* ===== 内层子标签切换（practice / vocab / data / settings） ===== */
+    document.querySelectorAll('.sub-tab-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var root = b.closest('.tab-panel');
+        var container = root ? root.id.replace('tab-', '') : '';
+        var sub = b.getAttribute('data-sub');
+        showSub(container, sub);
+        renderSubOnDemand(container, sub);
+      });
+    });
 
     /* ===== 移动端底部 Tab Bar 交互 ===== */
     var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
@@ -3977,18 +4032,17 @@
       });
     });
 
-    /* ===== FAB 悬浮按钮：切换到记录页开始计时 ===== */
+    /* ===== FAB 悬浮按钮：回到首页 Dashboard（计时器已上移为首页块） ===== */
     var fab = document.getElementById('fabAction');
     if (fab) {
       fab.addEventListener('click', function () {
-        var sideBtn = document.querySelector('.tab-btn[data-tab="record"]');
+        var sideBtn = document.querySelector('.tab-btn[data-tab="dashboard"]');
         if (sideBtn) sideBtn.click();
       });
     }
 
     /* ===== 底部 Tab Bar 高亮同步 ===== */
     var sideTabBtns = document.querySelectorAll('.tab-btn');
-    var origTabHandler = sideTabBtns.length ? sideTabBtns[0].onclick : null;
     sideTabBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var target = btn.getAttribute('data-tab');
@@ -4531,7 +4585,7 @@
     if (refs.pomoCountdownOnly) refs.pomoCountdownOnly.addEventListener('change', function () { applyCountdownOnlyUI(); readPomoCountdownOnly(); renderPomodoro(); });
     // 主题切换
     if (refs.themeToggle) refs.themeToggle.addEventListener('click', toggleTheme);
-    if (refs.btnHelp) refs.btnHelp.addEventListener('click', function () { switchTab('manual'); });
+    if (refs.btnHelp) refs.btnHelp.addEventListener('click', function () { switchTab('settings'); showSub('settings','manual'); });
 
     refs.manualDate.value = Store.todayStr();
     refs.examDate2.value = Store.todayStr();

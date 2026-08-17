@@ -1579,3 +1579,16 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .
   .ai-solved-thumb { width: 68px; height: 68px; }
   .ai-preview-img { max-height: 240px; }
 }
+
+/* ===== 内层子标签（导航重构 · 六标签） ===== */
+.sub-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+.sub-tab-btn { flex: 1 1 auto; min-height: 42px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; font-size: 14px; cursor: pointer; padding: 8px 10px; transition: background .15s, color .15s, border-color .15s; }
+.sub-tab-btn:hover { border-color: var(--primary); }
+.sub-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.sub-panel { display: none; }
+.sub-panel.active { display: block; animation: fade .2s ease; }
+.sub-panel > .card:first-child { margin-top: 0; }
+@media (max-width: 560px) {
+  .sub-tab-btn { font-size: 13px; padding: 8px 4px; min-height: 40px; }
+  .sub-tabs { gap: 4px; }
+}
