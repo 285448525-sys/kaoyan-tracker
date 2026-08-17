@@ -1,4 +1,4 @@
-/* 移动端核心流程适配专项验证（v20260817d）：拍题相机双按钮/双 input、触控目标高度、FAB 安全区定位、CSS 括号配对 */
+/* 移动端核心流程适配专项验证（v20260817e 仍适用）：拍题相机双按钮/双 input、触控目标高度、FAB 安全区定位、CSS 括号配对 */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');

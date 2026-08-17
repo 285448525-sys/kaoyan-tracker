@@ -1,5 +1,5 @@
 :root {
-  --bg: #f8fafc;
+  --bg: #e9edf4;
   --card: #ffffff;
   --ink: #0f172a;
   --muted: #64748b;
@@ -15,9 +15,12 @@
   --radius-sm: 8px;
   --radius-lg: 16px;
   /* 设计方案阴影分层 */
-  --shadow: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.1);
-  --shadow-hover: 0 4px 6px -2px rgba(15,23,42,.05), 0 12px 24px -4px rgba(15,23,42,.1);
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.06);
+  --shadow: 0 1px 3px rgba(15,23,42,.08), 0 6px 16px -6px rgba(15,23,42,.12);
+  --shadow-hover: 0 4px 8px -2px rgba(15,23,42,.06), 0 16px 32px -6px rgba(15,23,42,.14);
   --shadow-modal: 0 20px 40px -12px rgba(15,23,42,.25);
+  /* 分区底色带令牌 */
+  --section-bg: #f3f6fb;
   /* 科目语义色 */
   --c-politics: #f97316;
   --c-english: #3b82f6;
@@ -71,6 +74,37 @@ body {
 .card-title { font-size: 16px; margin: 0 0 14px; font-weight: 700; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .card-head .card-title { margin-bottom: 0; }
+
+/* ===== 分区底色带：把相关模块归到一个"组"视觉容器 ===== */
+.section {
+  background: var(--section-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 13px; font-weight: 700; letter-spacing: .04em;
+  color: var(--muted); text-transform: none;
+  margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+  content: ""; width: 4px; height: 14px; border-radius: 999px; background: var(--primary);
+}
+/* 分区内卡片：落在底色带上，用更轻的阴影避免"双重浮起" */
+.section .card {
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+.section .card:last-child { margin-bottom: 0; }
+
+/* ===== 分割线：模块之间的物理分隔 ===== */
+.divider {
+  height: 1px; background: var(--line);
+  border: 0; margin: 20px 0;
+}
+
 .icon-btn {
   background: none; border: 1px solid var(--line); border-radius: 10px;
   width: 34px; height: 34px; font-size: 16px; line-height: 1;
@@ -928,7 +962,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* ============ 深色主题 ============ */
 :root[data-theme="dark"] {
-  --bg: #14161f;
+  --bg: #0d0e16;
   --card: #1e2030;
   --ink: #e4e7ef;
   --muted: #9aa3b2;
@@ -937,7 +971,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   --primary-d: #6366f1;
   --danger: #f87171;
   --ok: #34d399;
-  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --section-bg: #171a26;
+  --shadow: 0 2px 6px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.5);
+  --shadow-hover: 0 6px 24px rgba(0,0,0,.45);
 }
 :root[data-theme="dark"] body { background: var(--bg); color: var(--ink); }
 :root[data-theme="dark"] input,

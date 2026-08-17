@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260817d" />
+  <link rel="stylesheet" href="styles.css?v=20260817e" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -52,7 +52,8 @@
     <!-- 今日学习（Dashboard）：仅三块 待办 / 计时器 / 数据摘要 -->
     <section id="tab-dashboard" class="tab-panel active">
 
-      <div class="card today-aggregate" id="today-aggregate">
+      <div class="section">
+<div class="card today-aggregate" id="today-aggregate">
         <!-- 头部：品牌 eyebrow + 日期 + 加油按钮 -->
         <div class="today-head">
           <div class="today-head-text">
@@ -138,9 +139,11 @@
         <div id="agg-phase" class="agg-phase"></div>
         <!-- 科目进度聚合条（H1 新增） -->
         <div id="agg-subject-progress" class="agg-subject-progress"></div>
-      </div>
+      </div></div>
+
       <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
-      <div class="card checkin-card" id="checkinCard">
+      <div class="section">
+<div class="card checkin-card" id="checkinCard">
         <h2 class="card-title">✅ 今日打卡</h2>
         <div class="checkin-inner">
           <div class="checkin-streak">🔥 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
@@ -150,10 +153,12 @@
           </button>
           <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
         </div>
-      </div>
+      </div></div>
+
 
       <!-- 快速开始引导卡（H3 新增） -->
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📅 今日待办</h2>
         <div class="btn-row">
           <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
@@ -165,20 +170,26 @@
           <input type="number" id="plan-min" placeholder="分钟" min="0" style="max-width:90px" />
           <button id="btn-add-plan" class="btn btn-ghost">添加</button>
         </div>
-      </div>
+      </div></div>
+
 
       <!-- 错题复习主动提醒（记忆曲线） -->
-      <div class="card" id="mistake-review-card">
+      <div class="section">
+<div class="card" id="mistake-review-card">
         <h2 class="card-title">📌 错题复习</h2>
         <div id="mistake-review-body" class="mistake-review-body"></div>
-      </div>
+      </div></div>
+
     
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">⏱ 按模块计时</h2>
         <div id="timer-rows" class="timer-rows"></div>
-      </div>
+      </div></div>
 
-      <div class="card pomodoro-card">
+
+      <div class="section">
+<div class="card pomodoro-card">
         <h2 class="card-title">🍅 番茄钟 / 倒计时（可自定义）</h2>
         <div class="pomo-setup">
           <div class="field-row" style="margin-bottom:8px">
@@ -199,7 +210,8 @@
           <button id="btn-pomo-start" class="btn btn-primary">开始</button>
           <button id="btn-pomo-reset" class="btn btn-ghost">重置</button>
         </div>
-      </div>
+      </div></div>
+
 
           </section>
 
@@ -207,12 +219,15 @@
     <section id="tab-practice" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="math">数学</button><button class="sub-tab-btn" data-sub="cs408">408</button><button class="sub-tab-btn" data-sub="sentences">长难句</button></div>
       <div id="sub-math" class="sub-panel active">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📐 数学章节进度</h2>
         <div id="math-chapters" class="chapter-list"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🧮 分类选择题刷题</h2>
         <div class="field-row">
           <label>分类</label>
@@ -245,15 +260,19 @@
           <input type="text" id="mq-explain" placeholder="解析（可选）" />
           <button id="btn-add-mq" class="btn btn-ghost">添加题目</button>
         </div>
-      </div>
+      </div></div>
+
     </div>
       <div id="sub-cs408" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">💻 408 章节进度</h2>
         <div id="cs408-chapters" class="chapter-list"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🧮 408 分类刷题</h2>
         <div class="field-row">
           <label>分类</label>
@@ -287,9 +306,11 @@
           <input type="text" id="cq-explain" placeholder="解析（可选）" />
           <button id="btn-add-cq" class="btn btn-ghost">添加题目</button>
         </div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🧠 408 知识点速查卡</h2>
         <div class="plan-add">
           <select id="kp-subject" style="max-width:160px">
@@ -307,9 +328,11 @@
         <button id="btn-add-kp" class="btn btn-primary full">添加知识点</button>
         <div class="chip-row" id="kp-filter" style="margin-top:12px"></div>
         <div id="kp-list" class="kp-list"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📅 408 历年真题年份记录</h2>
         <div class="plan-add">
           <input type="number" id="yr-year" placeholder="年份，如 2024" min="2000" max="2099" style="max-width:120px" />
@@ -319,10 +342,12 @@
           <button id="btn-add-yr" class="btn btn-ghost">添加</button>
         </div>
         <div id="yr-list" class="yr-list"></div>
-      </div>
+      </div></div>
+
     </div>
       <div id="sub-sentences" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🧩 长难句分析</h2>
         <textarea id="sentence-input" rows="4" placeholder="粘贴一句长难句，例如：Although the theory has been widely accepted, many researchers still question whether it can explain the phenomenon that we observed."></textarea>
         <div class="btn-row" style="margin-top:10px">
@@ -330,14 +355,16 @@
           <button id="btn-clear-sentence" class="btn btn-ghost">清空</button>
         </div>
         <div id="sentence-result" class="sentence-result"></div>
-      </div>
+      </div></div>
+
     </div>
     </section>
 
     <!-- 错题本 -->
     <section id="tab-mistakes" class="tab-panel">
       <div id="sub-mistakes" class="sub-panel active">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📌 错题 / 感悟整理</h2>
         <div class="field-row">
           <label>范围</label>
@@ -375,8 +402,10 @@
           <input type="text" id="mistake-note" placeholder="如：对应知识点 / 错误原因" />
         </div>
         <button id="btn-add-mistake" class="btn btn-primary full">保存</button>
-      </div>
-      <div class="card" id="ai-solve-card">
+      </div></div>
+
+      <div class="section">
+<div class="card" id="ai-solve-card">
         <h2 class="card-title">📷 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
         <p class="card-hint">需要在「配置」里把 AI 模型换成支持看图的（如豆包视觉 <code>doubao-vision</code> 或 <code>gpt-4o-mini</code>）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
         <div class="ai-solve-row">
@@ -390,13 +419,17 @@
         <div id="ai-answer" class="ai-answer" hidden></div>
         <h3 class="card-title sm">AI 解答记录</h3>
         <div id="ai-solved-list" class="ai-solved-list"></div>
-      </div>
-      <div class="card">
+      </div></div>
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">我的整理 <span id="mistake-due-badge" class="review-badge" style="display:none"></span></h2>
         <div class="chip-row" id="mistake-filter"></div>
         <div id="mistake-list" class="mistake-list"></div>
-      </div>
-      <div class="card flashcard-card">
+      </div></div>
+
+      <div class="section">
+<div class="card flashcard-card">
         <h2 class="card-title">🃏 错题速查卡（记忆曲线复习）</h2>
         <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。数学答对升一箱（间隔拉长），408 标记已回顾；答错回到最短间隔，到期自动提醒。</p>
         <div class="field-row">
@@ -411,7 +444,8 @@
           <button id="btn-mistake-flash-start" class="btn btn-primary">🔄 抽取待复习</button>
         </div>
         <div id="mistake-flashcard-box" class="flashcard-wrap"></div>
-      </div>
+      </div></div>
+
     </div>
     </section>
 
@@ -419,7 +453,8 @@
     <section id="tab-vocab" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="review">复习自测</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
       <div id="sub-words" class="sub-panel active">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📝 生词记录</h2>
         <div class="field-row">
           <label>单词</label>
@@ -450,9 +485,11 @@
           <div class="field-row"><label>释义</label><input type="text" id="word-manual-cn" placeholder="词典未收录，请填写中文释义" /></div>
           <button id="btn-save-manual-word" class="btn btn-primary">保存到生词本</button>
         </div>
-      </div>
+      </div></div>
 
-      <div class="card translator-query-card">
+
+      <div class="section">
+<div class="card translator-query-card">
         <h2 class="card-title">🌐 即时翻译（百度翻译接口）</h2>
         <div class="field-row">
           <label>单词</label>
@@ -464,9 +501,11 @@
           <span id="trans-query-status" class="import-status"></span>
         </div>
         <div id="trans-result" class="word-result"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📥 批量导入生词</h2>
         <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
         <div class="btn-row" style="margin-top:10px">
@@ -475,9 +514,11 @@
           <input type="file" id="import-file" accept=".txt,text/plain" hidden />
           <span id="import-status" class="import-status"></span>
         </div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">我的生词本 <span id="vocab-count" class="count-pill">0</span></h2>
         <div class="vocab-filter-row">
           <select id="vocab-filter">
@@ -492,9 +533,11 @@
           <input type="text" id="vocab-search" placeholder="搜单词/释义/音标/例句/备注" autocomplete="off" />
         </div>
         <div id="vocab-list" class="mistake-list"></div>
-      </div>
+      </div></div>
 
-      <div class="card wrongbook-card">
+
+      <div class="section">
+<div class="card wrongbook-card">
         <h2 class="card-title">📕 查词记录（翻译查词自动归档） <span id="wrong-count" class="count-pill">0</span></h2>
         <div class="btn-row" style="margin-bottom:10px">
           <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
@@ -502,11 +545,13 @@
         </div>
         <div id="wrong-ai-summary" class="ai-summary-box"></div>
         <div id="wrong-list" class="mistake-list"></div>
-      </div>
+      </div></div>
+
 
   </div>
       <div id="sub-review" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <div class="card-head">
           <h2 class="card-title">🔁 复习 / 自测</h2>
           <div class="mode-switch">
@@ -555,14 +600,17 @@
           <button id="btn-review-restart" class="btn btn-ghost">重新抽取待复习词</button>
           <button id="btn-practice-restart" class="btn btn-ghost" style="display:none">换一批</button>
         </div>
-      </div>
+      </div></div>
+
     </div>
-      <div id="sub-hf" class="sub-panel">    <details class="card hfwords-fold">
+      <div id="sub-hf" class="sub-panel">    <div class="section">
+<details class="card hfwords-fold">
         <summary class="card-title">📚 考研真题阅读高频词</summary>
         <p class="card-sub">本地词库共 <span id="hf-count">0</span> 词</p>
         <input type="text" id="hf-search" placeholder="搜索单词或释义，如 affect / 影响" />
         <div id="hf-list" class="hf-list"></div>
-      </details>
+      </details></div>
+
     </div>
     </section>
 
@@ -570,28 +618,37 @@
     <section id="tab-data" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">概览</button><button class="sub-tab-btn" data-sub="records">记录</button><button class="sub-tab-btn" data-sub="progress">进度</button><button class="sub-tab-btn" data-sub="summary">总结</button></div>
       <div id="sub-overview" class="sub-panel active">
-      <div class="card countdown-card"><div id="countdown" class="countdown">未设置考研日期</div></div>
+      <div class="section">
+<div class="card countdown-card"><div id="countdown" class="countdown">未设置考研日期</div></div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📊 近 30 天学习得分</h2>
         <div id="score-summary" class="score-summary"></div>
         <div id="score-bars" class="score-bars"></div>
         <p class="card-sub">得分 = 学习时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，满分 100；没学习的日子记为 0 分，不注水。</p>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🏅 成就与等级</h2>
         <div id="badges-level" class="badges-level"></div>
         <div class="badges-count" id="badges-count"></div>
         <div id="badges-grid" class="badges-grid"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🎯 目标进度与差距</h2>
         <div id="goal-progress" class="goal"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🔥 学习热力图</h2>
         <div class="mheat-nav">
           <button id="heat-prev" class="mini-btn">‹</button>
@@ -600,18 +657,23 @@
           <button id="heat-now" class="mini-btn">本月</button>
         </div>
         <div id="heatmap" class="mheat-wrap"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🧭 综合掌握度雷达图</h2>
         <div id="subject-radar"></div>
-      </div>
+      </div></div>
 
-      <div class="card weakness-card" id="weakness-card">
+
+      <div class="section">
+<div class="card weakness-card" id="weakness-card">
         <h2 class="card-title">📉 薄弱点分析报告（基于刷题正确率）</h2>
         <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
         <div id="weakness-report"></div>
-      </div>
+      </div></div>
+
 
       <details class="charts-fold">
         <summary>📊 更多图表（学习时长分布 · 成绩趋势 · 各科目统计）</summary>
@@ -630,7 +692,8 @@
         </div>
       </details>
     </div>
-      <div id="sub-records" class="sub-panel"><div class="card">
+      <div id="sub-records" class="sub-panel"><div class="section">
+<div class="card">
         <h2 class="card-title">📝 每日学习记录</h2>
         <div class="field-row">
           <label>日期</label>
@@ -645,9 +708,11 @@
           <button id="btn-save-manual" class="btn btn-primary">保存记录</button>
           <button id="btn-reset-day" class="btn btn-ghost">清空当日</button>
         </div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📊 模考成绩</h2>
         <div class="field-row"><label>考试名称</label><input type="text" id="exam-name" placeholder="如 9月模拟考" /></div>
         <div class="field-row"><label>考试日期</label><input type="date" id="exam-date2" /></div>
@@ -657,24 +722,30 @@
         <div id="exam-list" class="list"></div>
         <h3 class="sub-title">近期学习日</h3>
         <div id="day-list" class="list"></div>
-      </div>
+      </div></div>
+
     </div>
       <div id="sub-progress" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🎯 模块掌握情况</h2>
         <div id="mastery-list" class="mastery-list"></div>
         <div class="plan-add">
           <input type="text" id="module-name" placeholder="新增模块名，如 高数·极限" />
           <button id="btn-add-module" class="btn btn-ghost">添加模块</button>
         </div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📚 学科章节进度</h2>
         <div id="subject-chapters"></div>
-      </div>
+      </div></div>
 
-      <div class="card">
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🗺️ 学习计划</h2>
         <div class="btn-row">
           <button id="btn-smart-plan" class="btn btn-primary">⚡ 按进度智能生成计划</button>
@@ -686,10 +757,12 @@
           <input type="text" id="plan-note" placeholder="说明（可选）" />
           <button id="btn-add-plan-item" class="btn btn-ghost">添加</button>
         </div>
-      </div>
+      </div></div>
+
     </div>
       <div id="sub-summary" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📋 今日学习总结</h2>
         <div id="summary-body"></div>
         <div class="field" style="margin-top:14px">
@@ -704,7 +777,8 @@
           <button id="btn-ai-summary" class="btn btn-ghost">🤖 AI 生成学习总结</button>
         </div>
         <div id="ai-summary-out" class="ai-summary-out"></div>
-      </div>
+      </div></div>
+
     </div>
     </section>
 
@@ -713,7 +787,8 @@
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="sites">资源网站</button><button class="sub-tab-btn" data-sub="manual">使用说明</button><button class="sub-tab-btn" data-sub="guide">新手指引</button></div>
       <div id="sub-base" class="sub-panel active">
       <!-- ① 基础设置（首屏唯一主卡） -->
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">基础设置</h2>
         <div class="field-row">
           <label>考研日期 <span class="req">必填</span></label>
@@ -746,10 +821,12 @@
           <label>目标总分 <span class="opt">选填</span></label>
           <input type="number" id="target-total" min="0" placeholder="例如 380" />
         </div>
-      </div>
+      </div></div>
+
 
       <!-- ② 数据备份（固定第 2 张卡） -->
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">数据备份</h2>
         <div class="btn-row">
           <button id="btn-export" class="btn btn-ghost">导出 JSON 备份</button>
@@ -758,7 +835,8 @@
           <input type="file" id="file-import" accept="application/json" hidden />
           <button id="btn-reset-all" class="btn btn-danger">清空全部</button>
         </div>
-      </div>
+      </div></div>
+
 
       <!-- ③ 高级（默认折叠） -->
       <details class="config-fold">
@@ -848,11 +926,14 @@
       </details>
     </div>
       <div id="sub-sites" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">🌐 考研资料与网课网站</h2>
         <div id="curated-sites" class="site-group"></div>
-      </div>
-      <div class="card">
+      </div></div>
+
+      <div class="section">
+<div class="card">
         <h2 class="card-title">我的收藏</h2>
         <div id="user-sites" class="site-group"></div>
         <div class="plan-add">
@@ -860,25 +941,30 @@
           <input type="url" id="site-url" placeholder="https://" />
           <button id="btn-add-site" class="btn btn-ghost">添加</button>
         </div>
-      </div>
+      </div></div>
+
     </div>
       <div id="sub-manual" class="sub-panel">
-      <div class="card">
+      <div class="section">
+<div class="card">
         <h2 class="card-title">📖 考研学习记录 · 使用说明</h2>
         <p class="card-sub">按「快速上手 / 核心流程 / 专项科目 / 英语词汇 / 工具资源」五部分组织。新手引导会带你完整过一遍，之后随时回来查。</p>
         <div class="manual-actions">
           <button id="btn-restart-tour" class="btn btn-primary">🚀 重看新手完整引导</button>
         </div>
         <div id="manual-list" class="manual-list"></div>
-      </div>
+      </div></div>
+
     </div>
-      <div id="sub-guide" class="sub-panel">      <div id="today-onboarding" class="card onboarding-card" hidden>
+      <div id="sub-guide" class="sub-panel">      <div class="section">
+<div id="today-onboarding" class="card onboarding-card" hidden>
         <h2 class="card-title">🚀 30 秒快速开始</h2>
         <div id="onboarding-steps" class="onboarding-steps"></div>
         <div class="onboarding-foot">
           <button id="btn-start-tour" class="btn btn-primary">📚 完整功能引导（带你过一遍所有功能）</button>
         </div>
-      </div>
+      </div></div>
+
 </div>
     </section>
 
@@ -898,13 +984,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260817d"></script>
-  <script src="words.js?v=20260817d"></script>
-  <script src="store.js?v=20260817d"></script>
-  <script src="charts.js?v=20260817d"></script>
-  <script src="share.js?v=20260817d"></script>
-  <script src="md5.js?v=20260817d"></script>
-  <script src="sentences.js?v=20260817d"></script>
-  <script src="app.js?v=20260817d"></script>
+  <script src="qrcode.min.js?v=20260817e"></script>
+  <script src="words.js?v=20260817e"></script>
+  <script src="store.js?v=20260817e"></script>
+  <script src="charts.js?v=20260817e"></script>
+  <script src="share.js?v=20260817e"></script>
+  <script src="md5.js?v=20260817e"></script>
+  <script src="sentences.js?v=20260817e"></script>
+  <script src="app.js?v=20260817e"></script>
 </body>
 </html>
