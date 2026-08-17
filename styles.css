@@ -1691,3 +1691,52 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .
 @media (max-width: 360px) {
   .ai-solve-row .btn { flex: 1 1 100%; }
 }
+
+/* ============================================================
+   背景配色选择器（v20260817n）—— 全部低饱和度
+   仅浅色模式生效；深色模式保持原深色调，不受 data-scheme 影响。
+   mist 为默认（沿用 :root 雾蓝），其余四套为覆盖块。
+   ============================================================ */
+/* 配色选择器的色点预览 */
+.scheme-dot {
+  display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+  margin-right: 6px; vertical-align: -3px; border: 1px solid rgba(0,0,0,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
+}
+
+/* 暖棕（对象指定，醒目但低饱和） */
+:root:not([data-theme="dark"])[data-scheme="brown"] {
+  --bg: #EFE6DA; --card: #FBF7F1; --surface-2: #F6EFE6;
+  --ink: #3A2E22; --ink-2: #6B5743; --muted: #977F68;
+  --line: #E6D9C8; --line-strong: #D4C2AC;
+  --primary: #A9744E; --primary-d: #855031; --primary-l: #C69876;
+  --primary-weak: #F2E8DD; --primary-ink: #5C3A22; --accent: #B98A66;
+  --section-bg: #E9DCCB;
+}
+/* 灰绿（sage） */
+:root:not([data-theme="dark"])[data-scheme="sage"] {
+  --bg: #EDF1EC; --card: #FBFCFB; --surface-2: #F1F4F0;
+  --ink: #2C382F; --ink-2: #566B5B; --muted: #84978A;
+  --line: #DCE6DD; --line-strong: #C6D6C9;
+  --primary: #7C9A82; --primary-d: #5E7C64; --primary-l: #A3BDA7;
+  --primary-weak: #E8F0E9; --primary-ink: #2F4A36; --accent: #93B199;
+  --section-bg: #E1EAE2;
+}
+/* 藕粉（rose） */
+:root:not([data-theme="dark"])[data-scheme="rose"] {
+  --bg: #F6EEEC; --card: #FDFAFA; --surface-2: #F4ECEA;
+  --ink: #3C2E30; --ink-2: #6B555A; --muted: #9A8489;
+  --line: #ECDDDF; --line-strong: #DBC6CA;
+  --primary: #BB8E93; --primary-d: #9A6E73; --primary-l: #D2AFB3;
+  --primary-weak: #F7ECEE; --primary-ink: #5A3A3E; --accent: #C9A1A5;
+  --section-bg: #F0E4E6;
+}
+/* 丁香（lavender） */
+:root:not([data-theme="dark"])[data-scheme="lavender"] {
+  --bg: #F1EEF5; --card: #FDFCFF; --surface-2: #F2EFF6;
+  --ink: #322E3D; --ink-2: #5C5470; --muted: #8B83A0;
+  --line: #E3DEEC; --line-strong: #CFC8DE;
+  --primary: #8E84A8; --primary-d: #6E6488; --primary-l: #B0A7C4;
+  --primary-weak: #EEEAF4; --primary-ink: #423A56; --accent: #A99FC0;
+  --section-bg: #E7E2EF;
+}

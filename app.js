@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817m';
+  var APP_VERSION = '20260817n';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3860,6 +3860,34 @@
     updateThemeChips(Store.getTheme());
   }
 
+  /* 背景配色（低饱和度多套，浅色生效；data-scheme 独立于 data-theme） */
+  function applyColorScheme() {
+    var s = Store.getColorScheme();
+    document.documentElement.setAttribute('data-scheme', s);
+    updateColorSchemeChips(s);
+  }
+  function updateColorSchemeChips(scheme) {
+    var group = document.getElementById('color-scheme-group');
+    if (!group) return;
+    Array.from(group.querySelectorAll('.chip')).forEach(function (chip) {
+      if (chip.getAttribute('data-scheme') === scheme) chip.classList.add('active');
+      else chip.classList.remove('active');
+    });
+  }
+  function initColorSchemeSetting() {
+    var group = document.getElementById('color-scheme-group');
+    if (!group) return;
+    group.addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      var s = chip.getAttribute('data-scheme');
+      if (!s) return;
+      Store.setColorScheme(s);
+      applyColorScheme();
+    });
+    updateColorSchemeChips(Store.getColorScheme());
+  }
+
   function initKeyboardShortcuts() {
     var KEY_MAP = { '1': 'config', '2': 'today', '3': 'plan', '4': 'summary', '5': 'record', '6': 'data', '7': 'mistakes', '8': 'math', '9': 'cs408', '0': 'websites' };
     document.addEventListener('keydown', function (e) {
@@ -4844,6 +4872,8 @@
     // 主题初始化 + 设置面板绑定 + 键盘快捷键 + 今日聚合
     initThemeSetting();
     applyTheme();
+    initColorSchemeSetting();
+    applyColorScheme();
     initKeyboardShortcuts();
 
     initTabs();
@@ -4859,6 +4889,7 @@
     // 主题设置暴露（供 test_theme_setting.js 验证）
     window.applyTheme = applyTheme;
     window.toggleTheme = toggleTheme;
+    window.applyColorScheme = applyColorScheme;
     // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
     window.computeSmartPlan = computeSmartPlan;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
