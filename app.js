@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816o';
+  var APP_VERSION = '20260816p';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2355,6 +2355,135 @@
         .catch(function () { reject({ error: 'NET', msg: '网络错误，请检查是否在线（本地 file:// 打开时 AI 不可用）' }); });
     });
   }
+  /* ============ 拍题自动解答（对标豆包：拍照/选图 → 视觉模型解答 → 存本地） ============ */
+  var aiPendingDataUrl = '';
+  function compressImageFile(file, maxEdge, quality, cb) {
+    var reader = new FileReader();
+    reader.onerror = function () { cb(null); };
+    reader.onload = function () {
+      var img = new Image();
+      img.onerror = function () { cb(null); };
+      img.onload = function () {
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, maxEdge / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, cw, ch);
+        try { cb(canvas.toDataURL('image/jpeg', quality)); } catch (e) { cb(null); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function onAiFileChange() {
+    var f = refs.aiFile && refs.aiFile.files && refs.aiFile.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { showToast('请选择图片文件', 'err'); return; }
+    compressImageFile(f, 900, 0.7, function (dataUrl) {
+      if (!dataUrl) { showToast('图片读取失败', 'err'); return; }
+      aiPendingDataUrl = dataUrl;
+      if (refs.aiPreview) {
+        refs.aiPreview.innerHTML = '';
+        var im = document.createElement('img');
+        im.src = dataUrl; im.alt = '题图预览'; im.className = 'ai-preview-img';
+        refs.aiPreview.appendChild(im);
+        refs.aiPreview.hidden = false;
+      }
+      if (refs.btnSolve) refs.btnSolve.hidden = false;
+      if (refs.aiAnswer) { refs.aiAnswer.hidden = true; refs.aiAnswer.innerHTML = ''; }
+    });
+  }
+  function onAiSolve() {
+    if (!aiPendingDataUrl) { showToast('请先选择图片', 'err'); return; }
+    var c = Store.getAiConfig();
+    if (!c.baseUrl || !c.model || !c.key) {
+      showToast('请先在「配置」页填写支持看图的 AI 模型与 Key', 'err');
+      switchTab('config'); return;
+    }
+    if (refs.btnSolve) { refs.btnSolve.disabled = true; refs.btnSolve.textContent = '求解中…'; }
+    if (refs.aiAnswer) {
+      refs.aiAnswer.hidden = false; refs.aiAnswer.innerHTML = '';
+      refs.aiAnswer.appendChild(el('div', 'ai-answer-loading', 'AI 正在看题…'));
+    }
+    var messages = [{ role: 'user', content: [
+      { type: 'text', text: '这是一道题的图片。请识别题目并给出解答，包含：1) 题目转述；2) 解题步骤；3) 最终答案；4) 涉及的考点。用中文、条理清晰。' },
+      { type: 'image_url', image_url: { url: aiPendingDataUrl } }
+    ] }];
+    aiChat(messages, { maxTokens: 1500 })
+      .then(function (res) { renderAiAnswer(res.content || ''); showToast('解答完成 ✅', 'ok'); })
+      .catch(function (err) {
+        var msg = (err && err.msg) || '未知错误';
+        if (refs.aiAnswer) { refs.aiAnswer.innerHTML = ''; refs.aiAnswer.appendChild(el('div', 'ai-answer-err', '求解失败：' + msg)); }
+        showToast('求解失败：' + msg, 'err');
+      })
+      .finally(function () { if (refs.btnSolve) { refs.btnSolve.disabled = false; refs.btnSolve.textContent = '求解'; } });
+  }
+  function renderAiAnswer(text) {
+    if (!refs.aiAnswer) return;
+    refs.aiAnswer.innerHTML = '';
+    refs.aiAnswer.appendChild(el('div', 'ai-answer-body', text));
+    var row = el('div', 'ai-answer-actions');
+    var save = el('button', 'btn btn-primary', '💾 存入本地');
+    save.type = 'button';
+    save.addEventListener('click', function () {
+      var c = Store.getAiConfig();
+      Store.addAiSolved({ id: 'ai' + Store.nextSeq(), image: aiPendingDataUrl, answer: text, model: c.model, created: Store.todayStr() });
+      renderAiSolvedList();
+      showToast('已存到本地 ✅', 'ok');
+      save.disabled = true; save.textContent = '已存入';
+    });
+    var again = el('button', 'btn btn-ghost', '↻ 重拍');
+    again.type = 'button';
+    again.addEventListener('click', resetAiCapture);
+    row.appendChild(save); row.appendChild(again);
+    refs.aiAnswer.appendChild(row);
+  }
+  function resetAiCapture() {
+    aiPendingDataUrl = '';
+    if (refs.aiFile) refs.aiFile.value = '';
+    if (refs.aiPreview) { refs.aiPreview.hidden = true; refs.aiPreview.innerHTML = ''; }
+    if (refs.aiAnswer) { refs.aiAnswer.hidden = true; refs.aiAnswer.innerHTML = ''; }
+    if (refs.btnSolve) refs.btnSolve.hidden = true;
+  }
+  function saveStoredToMistake(it) {
+    if (!it) return;
+    var ans = (it.answer || '').slice(0, 2000);
+    Store.add408Mistake({ category: '拍题-AI解答', content: ans, note: '模型：' + (it.model || '') + '｜原题图见「AI 解答记录」' });
+    showToast('已存入 408 错题本 ✅', 'ok');
+    renderMistakeList();
+  }
+  function renderAiSolvedList() {
+    if (!refs.aiSolvedList) return;
+    var list = Store.getAiSolved();
+    refs.aiSolvedList.innerHTML = '';
+    if (!list.length) { refs.aiSolvedList.appendChild(el('div', 'ai-solved-empty', '还没有拍题解答记录。')); return; }
+    list.forEach(function (it) {
+      var card = el('div', 'ai-solved-item');
+      if (it.image) {
+        var im = document.createElement('img');
+        im.src = it.image; im.alt = '题图'; im.className = 'ai-solved-thumb';
+        card.appendChild(im);
+      }
+      var right = el('div', 'ai-solved-right');
+      right.appendChild(el('div', 'ai-solved-meta', (it.created || '') + (it.model ? ' · ' + it.model : '')));
+      right.appendChild(el('div', 'ai-solved-ans', (it.answer || '').slice(0, 160) + ((it.answer || '').length > 160 ? '…' : '')));
+      var acts = el('div', 'ai-solved-acts');
+      var toM = el('button', 'btn btn-ghost', '存入错题本');
+      toM.type = 'button';
+      toM.addEventListener('click', function () { saveStoredToMistake(it); });
+      var del = el('button', 'plan-del', '删除');
+      del.type = 'button';
+      del.addEventListener('click', function () {
+        if (confirm('删除这条拍题解答记录？')) { Store.removeAiSolved(it.id); renderAiSolvedList(); showToast('已删除', 'ok'); }
+      });
+      acts.appendChild(toM); acts.appendChild(del);
+      right.appendChild(acts);
+      card.appendChild(right);
+      refs.aiSolvedList.appendChild(card);
+    });
+  }
   // 浏览器直连百度翻译开放平台：用户自带 APP ID + 密钥，前端本地用 md5 签名，JSONP 规避 CORS。无需任何后端。
   function translateWord(word, cb) {
     var t = Store.getTranslator();
@@ -3772,7 +3901,7 @@
     if (target === 'plan') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
-    if (target === 'mistakes') { renderMistakeList(); }
+    if (target === 'mistakes') { renderMistakeList(); renderAiSolvedList(); }
     if (target === 'data') { renderData(); }
     if (target === 'today') renderTodayAggregate();
     if (target === 'manual') renderHelpManual();
@@ -3902,6 +4031,14 @@
     refs.mistakeFlashScope = $('mistake-flash-scope');
     refs.btnMistakeFlashStart = $('btn-mistake-flash-start');
     refs.mistakeFlashcardBox = $('mistake-flashcard-box');
+
+    // 拍题自动解答
+    refs.btnCapture = $('btn-capture');
+    refs.aiFile = $('ai-file');
+    refs.btnSolve = $('btn-solve');
+    refs.aiPreview = $('ai-preview');
+    refs.aiAnswer = $('ai-answer');
+    refs.aiSolvedList = $('ai-solved-list');
 
     refs.curatedSites = $('curated-sites');
     refs.userSites = $('user-sites');
@@ -4167,6 +4304,13 @@
       }
       refs.mistakeContent.value = ''; refs.mistakeNote.value = ''; renderMistakeList(); showToast('已整理 ✅');
     });
+
+    // 拍题自动解答：相机/相册 + 求解
+    if (refs.btnCapture && refs.aiFile) {
+      refs.btnCapture.addEventListener('click', function () { if (refs.aiFile) refs.aiFile.click(); });
+      refs.aiFile.addEventListener('change', onAiFileChange);
+    }
+    if (refs.btnSolve) refs.btnSolve.addEventListener('click', onAiSolve);
 
     // 网站
     refs.btnAddSite.addEventListener('click', function () {

@@ -130,6 +130,7 @@
       cs408Stats: {},        // 408 { 分类: {total, correct} }
       cs408Knowledge: [],    // 408 知识点速查卡 [{id,subject,title,content,created}]
       cs408Years: [],        // 408 历年真题年份记录 [{id,year,score,total,note}]
+      aiSolved: [],          // 拍题自动解答记录 [{id,image(压缩dataURL),answer,model,created}]
       theme: 'light',        // 主题：'light' | 'dark'
       timer: { subjectKey: null, startTs: 0, accumulated: 0, running: false },
       _seq: 1
@@ -189,6 +190,7 @@
         cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
         cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
+        aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
@@ -529,6 +531,18 @@
     };
     save();
   }
+  /* ---------- 拍题自动解答记录（图 base64 + AI 解答，纯本地） ---------- */
+  function getAiSolved() {
+    return (state.aiSolved || []).slice().sort(function (a, b) { return (b.created || '').localeCompare(a.created || ''); });
+  }
+  function addAiSolved(item) {
+    if (!state.aiSolved) state.aiSolved = [];
+    if (item && item.id) { state.aiSolved.push(item); save(); }
+  }
+  function removeAiSolved(id) {
+    state.aiSolved = (state.aiSolved || []).filter(function (x) { return x.id !== id; });
+    save();
+  }
 
   /* ---------- 查词记录（独立，与 vocab 分开） ---------- */
   function getWrongWords() {
@@ -652,6 +666,7 @@
         cs408Stats: (p.cs408Stats && typeof p.cs408Stats === 'object') ? p.cs408Stats : {},
         cs408Knowledge: (p.cs408Knowledge && Array.isArray(p.cs408Knowledge)) ? p.cs408Knowledge : [],
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
+        aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
@@ -820,6 +835,7 @@
     getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab,
     getTranslator: getTranslator, setTranslator: setTranslator,
     getAiConfig: getAiConfig, setAiConfig: setAiConfig,
+    getAiSolved: getAiSolved, addAiSolved: addAiSolved, removeAiSolved: removeAiSolved,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
     getPracticeSettings: getPracticeSettings, setPracticeSettings: setPracticeSettings,
     getTimer: getTimer, setTimer: setTimer,
