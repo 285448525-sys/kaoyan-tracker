@@ -146,11 +146,10 @@ var weakAct = w && w.querySelector('.empty-act');
 if (weakAct) {
   try {
     weakAct.click();
-    var practiceBtn = document.querySelector('.tab-btn[data-tab="practice"]');
-    ok(!!practiceBtn && practiceBtn.classList.contains('active'), '点击「去刷 5 道题」→ practice 标签激活');
-    var cs408Panel = document.getElementById('sub-cs408');
-    // cs408 子面板在空科目下可能被 nav-hidden 兜底，仅当可见时断言
-    ok(true, '点击「去刷 5 道题」→ 路由到 practice（不抛错）');
+    var cs408Btn = document.querySelector('.tab-btn[data-tab="cs408"]');
+    ok(!!cs408Btn && cs408Btn.classList.contains('active'), '点击「去刷 5 道题」→ cs408 标签激活');
+    // cs408 升级为顶层标签，点击 CTA 后 tab-cs408 激活即可；子面板渲染由 render408* 负责
+    ok(true, '点击「去刷 5 道题」→ 路由到 cs408（不抛错）');
   } catch (e) { ok(false, '点击路由不抛错 (' + e.message + ')'); }
 } else {
   ok(false, 'weakness 操作按钮存在');

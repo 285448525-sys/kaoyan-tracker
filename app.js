@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817j';
+  var APP_VERSION = '20260817k';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -449,15 +449,22 @@
       row.appendChild(inp);
       refs.manualDurations.appendChild(row);
     });
-    refs.examScores.innerHTML = '';
-    if (!subs.length) { refs.examScores.appendChild(el('div', 'empty-hint', '请先配置科目')); }
-    subs.forEach(function (s) {
-      var row = el('div', 'field-row');
-      row.appendChild(el('label', null, s.name));
-      var inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.id = 'exam-score-' + s.key; inp.placeholder = '分数';
-      row.appendChild(inp);
-      refs.examScores.appendChild(row);
-    });
+  }
+
+  /* 模考卡片渲染：成绩录入 + 历史模考列表 + 近期学习日（随 tab-mock 独立） */
+  function renderExamCard() {
+    var subs = Store.getSubjects();
+    if (refs.examScores) {
+      refs.examScores.innerHTML = '';
+      if (!subs.length) { refs.examScores.appendChild(el('div', 'empty-hint', '请先配置科目')); }
+      subs.forEach(function (s) {
+        var row = el('div', 'field-row');
+        row.appendChild(el('label', null, s.name));
+        var inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.id = 'exam-score-' + s.key; inp.placeholder = '分数';
+        row.appendChild(inp);
+        refs.examScores.appendChild(row);
+      });
+    }
     renderDayList();
     renderExamList();
   }
@@ -492,7 +499,7 @@
     Store.addExam({ name: name, date: date, scores: scores, total: total });
     refs.examName.value = '';
     Store.getSubjects().forEach(function (s) { var i = $('exam-score-' + s.key); if (i) i.value = ''; });
-    renderManual(); renderData();
+    renderExamCard(); renderData();
   }
   function renderDayList() {
     refs.dayList.innerHTML = '';
@@ -509,7 +516,7 @@
   function renderExamList() {
     refs.examList.innerHTML = '';
     var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
+    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('mock'); } }); return; }
     exams.forEach(function (ex) {
       var item = el('div', 'list-item');
       item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
@@ -794,7 +801,7 @@
     var mathKeys = Object.keys(mathStats);
     var csKeys = Object.keys(csStats);
     if (!mathKeys.length && !csKeys.length) {
-      Charts.chartEmptyState(box, { ill: Charts.ILL_WEAK, title: '还没有薄弱分析', hint: '做几道分类选择题，自动算出最该补的章节', ctaLabel: '去刷 5 道题生成薄弱分析', ctaFn: function () { switchTab('practice'); showSub('practice', 'cs408'); } });
+      Charts.chartEmptyState(box, { ill: Charts.ILL_WEAK, title: '还没有薄弱分析', hint: '做几道分类选择题，自动算出最该补的章节', ctaLabel: '去刷 5 道题生成薄弱分析', ctaFn: function () { switchTab('cs408'); } });
       return;
     }
     function rateOf(s) { return s.total ? s.correct / s.total : 0; }
@@ -1260,28 +1267,17 @@
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
-    var map = { today:'dashboard', record:'data', plan:'data', summary:'data', math:'practice', cs408:'practice', sentences:'practice', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes' };
+    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math', mock:'mock', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
     var btn = document.querySelector('.tab-btn[data-tab="' + real + '"]');
     if (btn) { btn.click(); } else { showTab(real); }
-    if (real === 'practice') { showSub('practice', target === 'cs408' ? 'cs408' : (target === 'sentences' ? 'sentences' : 'math')); }
-    else if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
+    if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
     else if (real === 'settings') { showSub('settings', target === 'sites' ? 'sites' : (target === 'manual' ? 'manual' : 'base')); }
+    else if (real === 'mistakes') { showSub('mistakes', target === 'sentences' ? 'sentences' : 'mistakes'); }
   }
   function updateMathTabVisibility() {
-    var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
-    var btn = document.querySelector('.sub-tab-btn[data-sub="math"]');
-    var panel = document.getElementById('sub-math');
-    if (btn) btn.classList.toggle('nav-hidden', !hasMath);
-    if (panel) panel.classList.toggle('nav-hidden', !hasMath);
-    if (!hasMath) {
-      var active = document.querySelector('.tab-panel.active');
-      if (active && active.id === 'tab-practice') {
-        var as = active.querySelector('.sub-panel.active');
-        if (as && as.id === 'sub-math') showSub('practice', 'cs408');
-      }
-    }
+    // 数学现为顶层 tab（tab-math），始终可见；内容区由对应 render 决定是否为空态
   }
   function renderSummary() {
     var ds = Store.todayStr();
@@ -2168,27 +2164,7 @@
   }
 
   function update408TabVisibility() {
-    var subs = Store.getSubjects();
-    // 408 Tab 显示条件：科目列表里勾选了「408」（专业名包含 408 也算）
-    var hasCs408 = subs.some(function (s) {
-      return s.key === 'cs408' || ((s.name || '').indexOf('408') >= 0);
-    });
-    // 兼容老版本：报考专业字段包含 408 字符串时也显示
-    if (!hasCs408) {
-      var major = Store.getConfig().major || '';
-      hasCs408 = major.indexOf('408') >= 0;
-    }
-    var btn = document.querySelector('.sub-tab-btn[data-sub="cs408"]');
-    var panel = document.getElementById('sub-cs408');
-    if (btn) btn.classList.toggle('nav-hidden', !hasCs408);
-    if (panel) panel.classList.toggle('nav-hidden', !hasCs408);
-    if (!hasCs408) {
-      var active = document.querySelector('.tab-panel.active');
-      if (active && active.id === 'tab-practice') {
-        var as = active.querySelector('.sub-panel.active');
-        if (as && as.id === 'sub-cs408') showSub('practice', 'math');
-      }
-    }
+    // 408 现为顶层 tab（tab-cs408），始终可见；内容区由对应 render 决定是否为空态
   }
 
   /* ============ 学习网站 ============ */
@@ -3336,23 +3312,6 @@
       ];
       cdQuote.textContent = quotes[new Date().getDate() % quotes.length];
     }
-    // ====== 新增：本周学习时长（第 4 张趋势卡） ======
-    var weeklyHours = 0;
-    try {
-      var stats = getStudyStats();
-      var weekMin = 0;
-      var now = new Date(Store.todayStr());
-      for (var i = 0; i < 7; i++) {
-        var d = new Date(now); d.setDate(d.getDate() - i);
-        var ds = d.toISOString().slice(0, 10);
-        var dd = Store.getDay(ds) || {};
-        weekMin += Store.totalMinutesForDay(dd);
-      }
-      weeklyHours = Math.round(weekMin / 60 * 10) / 10;
-    } catch (e) { weeklyHours = 0; }
-    var aggTrend = document.getElementById('agg-trend-hrs');
-    if (aggTrend) aggTrend.textContent = weeklyHours;
-
     // 今日学习时长
     var today = Store.getDay(Store.todayStr()) || {};
     var minutes = Store.totalMinutesForDay(today);
@@ -3885,10 +3844,6 @@
   var autoSyncTimer = null;
   var autoPushTimer = null;
   var isApplyingRemote = false;
-  function autoSyncTimeStr(d) {
-    var h = d.getHours(), m = d.getMinutes();
-    return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
-  }
   function loadAutoSyncPref() {
     try { autoSyncEnabled = localStorage.getItem('kaoyan_tracker_v1:auto_sync') === '1'; } catch (e) { autoSyncEnabled = false; }
     var p = '0';
@@ -4036,12 +3991,14 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'dashboard') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); }
-    if (target === 'practice') { showSub('practice', 'math'); renderSubOnDemand('practice', 'math'); }
-    if (target === 'mistakes') { renderMistakeList(); renderAiSolvedList(); }
+    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); }
+    if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
+    if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+    if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
     if (target === 'vocab') { showSub('vocab', 'words'); renderWrongBook(); renderWords(); }
+    if (target === 'mock') { renderExamCard(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
-    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderHelpManual(); }
+    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderHelpManual(); renderSmartPlan(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
   }
   function showSub(container, sub) {
@@ -4058,10 +4015,7 @@
     root.querySelectorAll('.sub-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'sub-' + tgt); });
   }
   function renderSubOnDemand(container, sub) {
-    if (container === 'practice') {
-      if (sub === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
-      else if (sub === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
-    } else if (container === 'vocab') {
+    if (container === 'vocab') {
       if (sub === 'words') { renderWrongBook(); renderWords(); }
       else if (sub === 'review') { setReviewMode(reviewMode); }
       else if (sub === 'hf') { renderHfWords(); }
@@ -4085,7 +4039,7 @@
     updateMathTabVisibility();
     update408TabVisibility();
 
-    /* ===== 内层子标签切换（practice / vocab / data / settings） ===== */
+    /* ===== 内层子标签切换（vocab / data / settings / mistakes） ===== */
     document.querySelectorAll('.sub-tab-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         var root = b.closest('.tab-panel');
@@ -4106,11 +4060,11 @@
       });
     });
 
-    /* ===== FAB 悬浮按钮：回到首页 Dashboard（计时器已上移为首页块） ===== */
+    /* ===== FAB 悬浮按钮：回到首页（计时器已上移为首页块） ===== */
     var fab = document.getElementById('fabAction');
     if (fab) {
       fab.addEventListener('click', function () {
-        var sideBtn = document.querySelector('.tab-btn[data-tab="dashboard"]');
+        var sideBtn = document.querySelector('.tab-btn[data-tab="home"]');
         if (sideBtn) sideBtn.click();
       });
     }

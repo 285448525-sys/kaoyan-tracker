@@ -23,7 +23,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260817j" />
+  <link rel="stylesheet" href="styles.css?v=20260817k" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -35,11 +35,13 @@
       </div>
     </div>
     <nav class="side-menu">
-      <button class="tab-btn active" data-tab="dashboard"><span>🏠</span><span class="tab-label">今日学习</span></button>
-      <button class="tab-btn" data-tab="practice"><span>✍️</span><span class="tab-label">刷题中心</span></button>
-      <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题本</span></button>
+      <button class="tab-btn active" data-tab="home"><span>🏠</span><span class="tab-label">首页</span></button>
+      <button class="tab-btn" data-tab="math"><span>📐</span><span class="tab-label">数学</span></button>
+      <button class="tab-btn" data-tab="cs408"><span>💻</span><span class="tab-label">408</span></button>
       <button class="tab-btn" data-tab="vocab"><span>📝</span><span class="tab-label">词汇</span></button>
-      <button class="tab-btn" data-tab="data"><span>📊</span><span class="tab-label">数据复盘</span></button>
+      <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题</span></button>
+      <button class="tab-btn" data-tab="mock"><span>📊</span><span class="tab-label">模考</span></button>
+      <button class="tab-btn" data-tab="data"><span>📈</span><span class="tab-label">数据</span></button>
       <button class="tab-btn" data-tab="settings"><span>⚙️</span><span class="tab-label">设置</span></button>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
@@ -49,8 +51,8 @@
 
   <main class="app-main">
 
-    <!-- 今日学习（Dashboard）：仅三块 待办 / 计时器 / 数据摘要 -->
-    <section id="tab-dashboard" class="tab-panel active">
+    <!-- 首页（Home）：仅「今日」四件套 -->
+    <section id="tab-home" class="tab-panel active">
 
       <div class="section">
 <div class="card today-aggregate" id="today-aggregate">
@@ -63,8 +65,6 @@
           <button id="btn-cheer" class="today-cheer" type="button" title="点一下，给自己一点鼓励">💪 加油！</button>
         </div>
 
-        <!-- 智能计划：每日学习量建议（反推模型） -->
-        <div id="smart-plan" class="smart-plan"></div>
 
         <!-- 倒计时独立卡片：深色渐变紫（设计方案核心视觉） -->
         <div class="today-countdown-card" id="today-countdown-card">
@@ -112,14 +112,6 @@
               <span class="num" id="agg-plan-total">0</span>
             </div>
             <div class="stat-label">计划项完成</div>
-          </div>
-          <div class="stat-block stat-trend" data-zero-toggle>
-            <div class="stat-icon">📈</div>
-            <div class="stat-value">
-              <span class="num" id="agg-trend-hrs">0</span>
-              <span class="unit">h</span>
-            </div>
-            <div class="stat-label">本周学习时长</div>
           </div>
         </div>
 
@@ -215,13 +207,16 @@
         </div>
       </div></div>
 
+      <details class="smart-plan-fold">
+        <summary class="card-title">⚡ 智能计划（每日学习量建议）</summary>
+        <div id="smart-plan" class="smart-plan"></div>
+      </details>
 
           </section>
 
-    <!-- 刷题中心 -->
-    <section id="tab-practice" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="math">数学</button><button class="sub-tab-btn" data-sub="cs408">408</button><button class="sub-tab-btn" data-sub="sentences">长难句</button></div>
-      <div id="sub-math" class="sub-panel active">
+    <!-- 数学 -->
+    <section id="tab-math" class="tab-panel">
+
       <div class="section">
 <div class="card">
         <h2 class="card-title">📐 数学章节进度</h2>
@@ -265,8 +260,11 @@
         </div>
       </div></div>
 
-    </div>
-      <div id="sub-cs408" class="sub-panel">
+    </section>
+
+    <!-- 408 -->
+    <section id="tab-cs408" class="tab-panel">
+
       <div class="section">
 <div class="card">
         <h2 class="card-title">💻 408 章节进度</h2>
@@ -347,24 +345,12 @@
         <div id="yr-list" class="yr-list"></div>
       </div></div>
 
-    </div>
-      <div id="sub-sentences" class="sub-panel">
-      <div class="section">
-<div class="card">
-        <h2 class="card-title">🧩 长难句分析</h2>
-        <textarea id="sentence-input" rows="4" placeholder="粘贴一句长难句，例如：Although the theory has been widely accepted, many researchers still question whether it can explain the phenomenon that we observed."></textarea>
-        <div class="btn-row" style="margin-top:10px">
-          <button id="btn-analyze" class="btn btn-primary">开始分析</button>
-          <button id="btn-clear-sentence" class="btn btn-ghost">清空</button>
-        </div>
-        <div id="sentence-result" class="sentence-result"></div>
-      </div></div>
-
-    </div>
     </section>
+
 
     <!-- 错题本 -->
     <section id="tab-mistakes" class="tab-panel">
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="mistakes">错题</button><button class="sub-tab-btn" data-sub="sentences">长难句</button></div>
       <div id="sub-mistakes" class="sub-panel active">
       <div class="section">
 <div class="card">
@@ -450,6 +436,21 @@
       </div></div>
 
     </div>
+
+      <div id="sub-sentences" class="sub-panel">
+      <div class="section">
+<div class="card">
+        <h2 class="card-title">🧩 长难句分析</h2>
+        <textarea id="sentence-input" rows="4" placeholder="粘贴一句长难句，例如：Although the theory has been widely accepted, many researchers still question whether it can explain the phenomenon that we observed."></textarea>
+        <div class="btn-row" style="margin-top:10px">
+          <button id="btn-analyze" class="btn btn-primary">开始分析</button>
+          <button id="btn-clear-sentence" class="btn btn-ghost">清空</button>
+        </div>
+        <div id="sentence-result" class="sentence-result"></div>
+      </div></div>
+
+      </div>
+
     </section>
 
     <!-- 词汇 -->
@@ -617,7 +618,23 @@
     </div>
     </section>
 
-    <!-- 数据复盘 -->
+    <!-- 模考 -->
+    <section id="tab-mock" class="tab-panel">
+      <div class="section">
+<div class="card">
+        <h2 class="card-title">📊 模考成绩</h2>
+        <div class="field-row"><label>考试名称</label><input type="text" id="exam-name" placeholder="如 9月模拟考" /></div>
+        <div class="field-row"><label>考试日期</label><input type="date" id="exam-date2" /></div>
+        <div id="exam-scores" class="dyn-grid"></div>
+        <button id="btn-save-exam" class="btn btn-primary full">保存模考</button>
+        <h3 class="sub-title">历史模考</h3>
+        <div id="exam-list" class="list"></div>
+        <h3 class="sub-title">近期学习日</h3>
+        <div id="day-list" class="list"></div>
+      </div></div>
+    </section>
+
+        <!-- 数据复盘 -->
     <section id="tab-data" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">概览</button><button class="sub-tab-btn" data-sub="records">记录</button><button class="sub-tab-btn" data-sub="progress">进度</button><button class="sub-tab-btn" data-sub="summary">总结</button></div>
       <div id="sub-overview" class="sub-panel active">
@@ -714,18 +731,7 @@
       </div></div>
 
 
-      <div class="section">
-<div class="card">
-        <h2 class="card-title">📊 模考成绩</h2>
-        <div class="field-row"><label>考试名称</label><input type="text" id="exam-name" placeholder="如 9月模拟考" /></div>
-        <div class="field-row"><label>考试日期</label><input type="date" id="exam-date2" /></div>
-        <div id="exam-scores" class="dyn-grid"></div>
-        <button id="btn-save-exam" class="btn btn-primary full">保存模考</button>
-        <h3 class="sub-title">历史模考</h3>
-        <div id="exam-list" class="list"></div>
-        <h3 class="sub-title">近期学习日</h3>
-        <div id="day-list" class="list"></div>
-      </div></div>
+
 
     </div>
       <div id="sub-progress" class="sub-panel">
@@ -996,23 +1002,25 @@
 
   <!-- 移动端底部 Tab Bar -->
   <nav class="bottom-tabbar" id="bottomTabbar" aria-label="底部导航">
-    <button class="btb-btn active" data-tab="dashboard"><span>🏠</span><span>今日</span></button>
-    <button class="btb-btn" data-tab="practice"><span>✍️</span><span>刷题</span></button>
-    <button class="btb-btn" data-tab="mistakes"><span>📌</span><span>错题</span></button>
+    <button class="btb-btn active" data-tab="home"><span>🏠</span><span>首页</span></button>
+    <button class="btb-btn" data-tab="math"><span>📐</span><span>数学</span></button>
+    <button class="btb-btn" data-tab="cs408"><span>💻</span><span>408</span></button>
     <button class="btb-btn" data-tab="vocab"><span>📝</span><span>词汇</span></button>
-    <button class="btb-btn" data-tab="data"><span>📊</span><span>数据</span></button>
+    <button class="btb-btn" data-tab="mistakes"><span>📌</span><span>错题</span></button>
+    <button class="btb-btn" data-tab="mock"><span>📊</span><span>模考</span></button>
+    <button class="btb-btn" data-tab="data"><span>📈</span><span>数据</span></button>
     <button class="btb-btn" data-tab="settings"><span>⚙️</span><span>设置</span></button>
   </nav>
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260817j"></script>
-  <script src="words.js?v=20260817j"></script>
-  <script src="store.js?v=20260817j"></script>
-  <script src="charts.js?v=20260817j"></script>
-  <script src="share.js?v=20260817j"></script>
-  <script src="md5.js?v=20260817j"></script>
-  <script src="sentences.js?v=20260817j"></script>
-  <script src="app.js?v=20260817j"></script>
+  <script src="qrcode.min.js?v=20260817k"></script>
+  <script src="words.js?v=20260817k"></script>
+  <script src="store.js?v=20260817k"></script>
+  <script src="charts.js?v=20260817k"></script>
+  <script src="share.js?v=20260817k"></script>
+  <script src="md5.js?v=20260817k"></script>
+  <script src="sentences.js?v=20260817k"></script>
+  <script src="app.js?v=20260817k"></script>
 </body>
 </html>

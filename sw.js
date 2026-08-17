@@ -1,8 +1,8 @@
-/* 考研学习记录 · Service Worker（v20260817g）
+/* 考研学习记录 · Service Worker（v20260817k）
  * cache-first（stale-while-revalidate）同源静态资源；排除 /api/* 与跨域，保证同步/AI 实时走网络。
  * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步），否则旧 SW 不更新、用户拿不到新外壳。
  */
-const SW_VERSION = '20260817g';
+const SW_VERSION = '20260817k';
 const CACHE = 'kaoyan-pwa-' + SW_VERSION;
 const PRECACHE = ['./', './index.html', './manifest.webmanifest'];
 

@@ -1,4 +1,5 @@
-/* 导航重构（六标签）专项验证：13 个旧 tab-* 外壳 → 6 个新容器 + 内层 sub 面板 + 子标签切换 */
+/* 导航重构（八标签）专项验证：6 标签 → 8 标签（home/math/cs408/vocab/mistakes/mock/data/settings）
+ * 取代旧版六标签断言；内部 id 全部保留（防 refs 断裂）。 */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -40,58 +41,51 @@ window.addEventListener('unhandledrejection', function (e) { runtimeErrors.push(
 const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
-  try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
+  try { window.eval(code); } catch (e) { console.error('??? 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
 }
 if (typeof window.__switchTab !== 'function') {
-  try { document.dispatchEvent(new window.Event('DOMContentLoaded')); } catch (e) { console.error('❌ init 触发失败: ' + e.message); process.exit(1); }
+  try { document.dispatchEvent(new window.Event('DOMContentLoaded')); } catch (e) { console.error('??? init 触发失败: ' + e.message); process.exit(1); }
 }
 
 let pass = 0, fail = 0;
 function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else { fail++; console.log('❌ ' + name); } }
 
-// ---- 0) 启用 math / cs408 科目（真实 408 用户场景），并解除初始 nav-hidden ----
 try {
   window.Store.setConfig({ subjects: [
     { key: 'math', name: '数学', color: '#6366f1' },
     { key: 'cs408', name: '408', color: '#8b5cf6' }
   ] });
 } catch (e) {}
-['math', 'cs408'].forEach(function (s) {
-  var b = document.querySelector('.sub-tab-btn[data-sub="' + s + '"]');
-  var p = document.getElementById('sub-' + s);
-  if (b) b.classList.remove('nav-hidden');
-  if (p) p.classList.remove('nav-hidden');
-});
 
-// ---- 1) 6 个新 tab-panel 容器存在且唯一 ----
-const containers = ['dashboard', 'practice', 'mistakes', 'vocab', 'data', 'settings'];
+// ---- 1) 8 个顶层容器存在且唯一 ----
+const containers = ['home', 'math', 'cs408', 'vocab', 'mistakes', 'mock', 'data', 'settings'];
 containers.forEach(function (c) {
   const el = document.querySelectorAll('#tab-' + c);
   ok(el.length === 1 && el[0].classList.contains('tab-panel'), '容器 tab-' + c + ' 存在且仅一个 tab-panel');
 });
 
-// ---- 2) 旧外壳 tab-* 已全部改名 sub-*（不得残留；data/mistakes 是新容器，不在列表） ----
-const oldShells = ['config', 'today', 'record', 'words', 'review', 'sentences', 'summary', 'plan', 'math', 'cs408', 'manual', 'websites'];
-oldShells.forEach(function (o) {
-  const el = document.querySelectorAll('#tab-' + o);
-  ok(el.length === 0, '旧外壳 tab-' + o + ' 已不存在');
+// ---- 2) 旧外壳不得残留 ----
+['dashboard', 'practice', 'today', 'config', 'record', 'plan', 'summary', 'manual', 'websites', 'translate'].forEach(function (o) {
+  ok(document.querySelectorAll('#tab-' + o).length === 0, '旧外壳 tab-' + o + ' 已不存在');
 });
 
-// ---- 3) 底部 Tab Bar 有 6 个 btb-btn ----
-const btb = document.querySelectorAll('.bottom-tabbar .btb-btn');
-ok(btb.length === 6, '底部 Tab Bar 有 6 个 btb-btn（实际 ' + btb.length + '）');
+// ---- 3) 底部 Tab Bar 8 个 btb-btn，data-tab 集合与容器一致 ----
+const btb = Array.prototype.slice.call(document.querySelectorAll('.bottom-tabbar .btb-btn'));
+ok(btb.length === 8, '底部 Tab Bar 有 8 个 btb-btn（实际 ' + btb.length + '）');
+const btbTabs = btb.map(function (b) { return b.getAttribute('data-tab'); }).sort();
+ok(JSON.stringify(btbTabs) === JSON.stringify(containers.slice().sort()), '底部 data-tab 集合 = 8 容器');
 
-// ---- 4) 侧栏 6 个 tab-btn ----
+// ---- 4) 侧栏 8 个 tab-btn ----
 const sbtn = document.querySelectorAll('.side-menu .tab-btn');
-ok(sbtn.length === 6, '侧栏有 6 个 tab-btn（实际 ' + sbtn.length + '）');
+ok(sbtn.length === 8, '侧栏有 8 个 tab-btn（实际 ' + sbtn.length + '）');
 
 // ---- 5) sub-panel / sub-tab-btn 数量合理 ----
 const subPanels = document.querySelectorAll('.sub-panel');
 const subBtns = document.querySelectorAll('.sub-tab-btn');
-ok(subPanels.length >= 12, 'sub-panel 数量 >= 12（实际 ' + subPanels.length + '）');
-ok(subBtns.length >= 12, 'sub-tab-btn 数量 >= 12（实际 ' + subBtns.length + '）');
+ok(subPanels.length >= 13, 'sub-panel 数量 >= 13（实际 ' + subPanels.length + '）');
+ok(subBtns.length >= 13, 'sub-tab-btn 数量 >= 13（实际 ' + subBtns.length + '）');
 
-// ---- 6) 点击子标签切换 .sub-panel.active ----
+// ---- 6) 子标签切换 .sub-panel.active ----
 function clickSub(container, sub) {
   const btn = document.querySelector('#tab-' + container + ' .sub-tab-btn[data-sub="' + sub + '"]');
   if (!btn) return false;
@@ -99,29 +93,31 @@ function clickSub(container, sub) {
   const panel = document.getElementById('sub-' + sub);
   return !!(panel && panel.classList.contains('active'));
 }
-ok(clickSub('practice', 'cs408'), 'practice 切到 cs408 子标签 → sub-cs408 active');
 ok(clickSub('vocab', 'review'), 'vocab 切到 review 子标签 → sub-review active');
 ok(clickSub('data', 'progress'), 'data 切到 progress 子标签 → sub-progress active');
 ok(clickSub('settings', 'manual'), 'settings 切到 manual 子标签 → sub-manual active');
+ok(clickSub('mistakes', 'sentences'), 'mistakes 切到 sentences 子标签 → sub-sentences active');
 
-// ---- 7) 旧 tab 名经 switchTab 仍能正确路由（向后兼容） ----
-function routeActive(real, sub) {
-  window.__switchTab(real === 'today' ? 'dashboard' : real); // 直接验证容器
-  return document.querySelector('#tab-' + real) && document.querySelector('#tab-' + real).classList.contains('active');
-}
-['dashboard', 'practice', 'mistakes', 'vocab', 'data', 'settings'].forEach(function (c) {
-  ok(routeActive(c), 'switchTab 容器 ' + c + ' 可激活');
+// ---- 7) 八标签均可经 switchTab 激活 ----
+containers.forEach(function (c) {
+  window.__switchTab(c);
+  const active = document.querySelector('#tab-' + c) && document.querySelector('#tab-' + c).classList.contains('active');
+  ok(active, 'switchTab("' + c + '") 可激活 tab-' + c);
 });
 
-// 旧名映射：math→practice(math)、review→vocab(review)、config→settings(base)、record→data(records)
+// ---- 8) 向后兼容旧名映射 ----
 function oldRoute(oldName, container, sub) {
   window.__switchTab(oldName);
   const cOk = document.querySelector('#tab-' + container) && document.querySelector('#tab-' + container).classList.contains('active');
-  const sOk = document.getElementById('sub-' + sub) && document.getElementById('sub-' + sub).classList.contains('active');
+  const sOk = !sub || (document.getElementById('sub-' + sub) && document.getElementById('sub-' + sub).classList.contains('active'));
   return cOk && sOk;
 }
-ok(oldRoute('math', 'practice', 'math'), 'switchTab("math") → practice / sub-math');
-ok(oldRoute('cs408', 'practice', 'cs408'), 'switchTab("cs408") → practice / sub-cs408');
+ok(oldRoute('dashboard', 'home'), 'switchTab("dashboard") → home');
+ok(oldRoute('today', 'home'), 'switchTab("today") → home');
+ok(oldRoute('practice', 'math'), 'switchTab("practice") → math');
+ok(oldRoute('math', 'math'), 'switchTab("math") → math');
+ok(oldRoute('cs408', 'cs408'), 'switchTab("cs408") → cs408');
+ok(oldRoute('sentences', 'mistakes', 'sentences'), 'switchTab("sentences") → mistakes / sub-sentences');
 ok(oldRoute('review', 'vocab', 'review'), 'switchTab("review") → vocab / sub-review');
 ok(oldRoute('words', 'vocab', 'words'), 'switchTab("words") → vocab / sub-words');
 ok(oldRoute('config', 'settings', 'base'), 'switchTab("config") → settings / sub-base');
@@ -131,18 +127,31 @@ ok(oldRoute('record', 'data', 'records'), 'switchTab("record") → data / sub-re
 ok(oldRoute('sites', 'settings', 'sites'), 'switchTab("sites") → settings / sub-sites');
 ok(oldRoute('translate', 'vocab', 'words'), 'switchTab("translate") → vocab / sub-words');
 
-// ---- 8) 计时器已在 Dashboard（首页可见） ----
-ok(!!document.querySelector('#tab-dashboard #timer-rows'), '计时器 DOM 已上移至 Dashboard');
-ok(!!document.querySelector('#tab-dashboard #pomo-time'), '番茄钟 DOM 已上移至 Dashboard');
-
-// ---- 9) 内部关键 id 未丢失（防 refs 断裂） ----
-const keepIds = ['math-chapters', 'cs408-practice', 'vocab-list', 'review-box', 'practice-box', 'summary-edit', 'plan-items', 'exam-list', 'curated-sites', 'manual-list', 'mistake-list', 'today-onboarding', 'hf-search'];
+// ---- 9) 内部关键 id 未丢失 ----
+const keepIds = ['math-chapters', 'cs408-practice', 'vocab-list', 'review-box', 'practice-box', 'summary-edit', 'plan-items', 'exam-list', 'exam-name', 'exam-scores', 'day-list', 'curated-sites', 'manual-list', 'mistake-list', 'today-onboarding', 'hf-search', 'manual-date', 'btn-save-exam'];
 keepIds.forEach(function (id) { ok(!!document.getElementById(id), '内部 id 保留：#' + id); });
 
-// ---- 10) 运行时无错误 ----
+// ---- 10) 模考已拆出到 tab-mock（且不在 data 的 sub-records）----
+ok(!!document.querySelector('#tab-mock #exam-name'), 'tab-mock 含 #exam-name');
+ok(!!document.querySelector('#tab-mock #exam-list'), 'tab-mock 含 #exam-list');
+const rec = document.getElementById('sub-records');
+ok(rec && !!rec.querySelector('#manual-date'), 'tab-data 的 sub-records 含 #manual-date');
+ok(rec && !rec.querySelector('#exam-name'), 'tab-data 的 sub-records 不含 #exam-name');
+
+// ---- 11) 长难句归并到 tab-mistakes ----
+ok(!!document.querySelector('#tab-mistakes #sub-sentences'), 'tab-mistakes 含 #sub-sentences');
+
+// ---- 12) 首页零设置控件（倒计时只读除外）----
+['exam-date', 'ai-key', 'sync-code', 'goal-hours', 'btn-export', 'w-duration'].forEach(function (id) {
+  ok(!document.querySelector('#tab-home #' + id), 'tab-home 不含设置控件 #' + id);
+});
+ok(!!document.querySelector('#tab-home #timer-rows'), '计时器 DOM 保留在首页');
+ok(!!document.querySelector('#tab-home #pomo-time'), '番茄钟 DOM 保留在首页');
+
+// ---- 13) 运行时无错误 ----
 ok(runtimeErrors.length === 0, 'window 运行时错误 0（实际 ' + runtimeErrors.length + '）');
 ok(jsdomErrors.length === 0, 'jsdom 内部错误 0（实际 ' + jsdomErrors.length + '）');
 
-console.log('\n========== 导航重构测试结果 ==========');
+console.log('\n========== 导航重构（八标签）测试结果 ==========');
 console.log('通过 ' + pass + ' / 失败 ' + fail);
 process.exit(fail ? 1 : 0);

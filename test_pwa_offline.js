@@ -1,4 +1,4 @@
-/* PWA 离线支持专项验证（v20260817g）：sw.js / manifest / index 引入 / SW 注册协议守卫 / online-offline 监听 + onLine 守卫 */
+/* PWA 离线支持专项验证：sw.js / manifest / index 引入 / SW 注册协议守卫 / online-offline 监听 + onLine 守卫 */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -12,7 +12,12 @@ const sw = fs.existsSync(path.join(ROOT, 'sw.js')) ? fs.readFileSync(path.join(R
 ok(!!sw, 'sw.js 存在');
 ok(/caches\.open/.test(sw), 'sw.js 使用 caches.open（缓存 API）');
 ok(/pathname\.indexOf\('\/api\/'\)\s*===\s*0/.test(sw) || /'\/api\/'/.test(sw), 'sw.js 排除 /api/*（同步/AI 走网络不缓存）');
-ok(/SW_VERSION/.test(sw) && /'20260817g'/.test(sw), 'sw.js 含 SW_VERSION=\'20260817g\'（与 APP_VERSION 同步）');
+
+// SW_VERSION 必须与 app.js 的 APP_VERSION 同步（动态读取，避免版本号写死导致回归）
+const appForVer = fs.existsSync(path.join(ROOT, 'app.js')) ? fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8') : '';
+const appVersion = (appForVer.match(/APP_VERSION\s*=\s*'([^']+)'/) || [])[1] || '';
+ok(!!appVersion, '从 app.js 读取到 APP_VERSION（' + appVersion + '）');
+ok(/SW_VERSION/.test(sw) && new RegExp("'" + appVersion + "'").test(sw), 'sw.js 含 SW_VERSION 与 APP_VERSION 同步（' + (appVersion || '未读取') + '）');
 ok(/self\.addEventListener\('fetch'/.test(sw) && /method !== 'GET'/.test(sw), 'sw.js fetch 事件仅拦截同源 GET');
 
 const mfRaw = fs.existsSync(path.join(ROOT, 'manifest.webmanifest')) ? fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8') : '';
