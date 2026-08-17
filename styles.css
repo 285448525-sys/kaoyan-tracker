@@ -648,20 +648,6 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   .pomo-display.done .pomo-time, .pomodoro-card:has(.pomo-display.done) { animation: none; }
 }
 
-/* ============ 深色 / 浅色主题切换按钮 ============ */
-.theme-toggle {
-  margin-left: auto; flex: none; width: 36px; height: 36px; border-radius: 10px;
-  border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 18px;
-  cursor: pointer; display: grid; place-items: center; transition: background .15s ease;
-}
-.theme-toggle:hover { background: rgba(255,255,255,.3); }
-.help-btn {
-  flex: none; width: 36px; height: 36px; border-radius: 10px; margin-left: 6px;
-  border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 19px; font-weight: 700;
-  cursor: pointer; display: grid; place-items: center; transition: background .15s ease;
-}
-.help-btn:hover { background: rgba(255,255,255,.3); }
-
 /* ============ 今日聚合卡片（模块 #1 美化重构 · 依据 UI配色规范 v1）============ */
 /* --- 0. 本模块新增令牌（并入 :root，配色规范 v1 N1） --- */
 :root {

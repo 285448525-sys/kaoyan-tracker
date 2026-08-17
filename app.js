@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817i';
+  var APP_VERSION = '20260817j';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3702,15 +3702,52 @@
     if (confirm(msg || '确定删除？此操作不可恢复。')) { okFn && okFn(); }
   }
 
+  function resolveTheme(theme) {
+    if (theme === 'auto') {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+      return 'light';
+    }
+    return theme === 'dark' ? 'dark' : 'light';
+  }
   function applyTheme() {
     var theme = Store.getTheme();
-    document.documentElement.setAttribute('data-theme', theme);
-    if (refs.themeToggle) refs.themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    document.documentElement.setAttribute('data-theme', resolveTheme(theme));
+    updateThemeChips(theme);
   }
-  function toggleTheme() {
-    var next = Store.getTheme() === 'dark' ? 'light' : 'dark';
+  function updateThemeChips(theme) {
+    var group = document.getElementById('theme-mode-group');
+    if (!group) return;
+    Array.from(group.querySelectorAll('.chip')).forEach(function (chip) {
+      if (chip.getAttribute('data-theme') === theme) chip.classList.add('active');
+      else chip.classList.remove('active');
+    });
+  }
+  function cycleTheme() {
+    var order = ['light', 'dark', 'auto'];
+    var idx = order.indexOf(Store.getTheme());
+    var next = order[(idx + 1) % order.length];
     Store.setTheme(next);
     applyTheme();
+  }
+  function initThemeSetting() {
+    var group = document.getElementById('theme-mode-group');
+    if (!group) return;
+    group.addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      var t = chip.getAttribute('data-theme');
+      if (!t) return;
+      Store.setTheme(t);
+      applyTheme();
+    });
+    updateThemeChips(Store.getTheme());
+  }
+  function watchSystemTheme() {
+    if (!window.matchMedia) return;
+    var q = window.matchMedia('(prefers-color-scheme: dark)');
+    var handler = function () { if (Store.getTheme() === 'auto') applyTheme(); };
+    if (q.addEventListener) q.addEventListener('change', handler);
+    else if (q.addListener) q.addListener(handler);
   }
 
   function initKeyboardShortcuts() {
@@ -3722,7 +3759,7 @@
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       var k = e.key;
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
-      if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
+      if (k === 't' || k === 'T') { e.preventDefault(); cycleTheme(); }
       /* N：新建任务 → 跳到计划页并聚焦添加框 */
       if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','progress'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
@@ -4269,7 +4306,6 @@
     refs.btnShareSummary = $('btn-share-summary');
     refs.btnAiSummary = $('btn-ai-summary');
     refs.aiSummaryOut = $('ai-summary-out');
-    refs.btnHelp = $('btnHelp');
 
     // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）
     refs.btnCheckinToday = $('btn-checkin-today');
@@ -4340,8 +4376,7 @@
     refs.pomoWorkSec = $('pomo-work-sec');
     refs.pomoSecLabel = $('pomo-sec-label');
 
-    // 主题切换 + 今日聚合
-    refs.themeToggle = $('themeToggle');
+    // 今日聚合
     refs.aggCountdown = $('agg-countdown');
     refs.aggMinutes = $('agg-minutes');
     refs.aggScore = $('agg-score');
@@ -4658,10 +4693,6 @@
 
     // 仅倒计时开关
     if (refs.pomoCountdownOnly) refs.pomoCountdownOnly.addEventListener('change', function () { applyCountdownOnlyUI(); readPomoCountdownOnly(); renderPomodoro(); });
-    // 主题切换
-    if (refs.themeToggle) refs.themeToggle.addEventListener('click', toggleTheme);
-    if (refs.btnHelp) refs.btnHelp.addEventListener('click', function () { switchTab('settings'); showSub('settings','manual'); });
-
     refs.manualDate.value = Store.todayStr();
     refs.examDate2.value = Store.todayStr();
 
@@ -4680,7 +4711,9 @@
     refs.mistakeCs408Cat.innerHTML = '';
     CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mistakeCs408Cat.appendChild(o); });
 
-    // 主题初始化 + 键盘快捷键 + 今日聚合
+    // 主题初始化 + 设置面板绑定 + 系统主题监听 + 键盘快捷键 + 今日聚合
+    initThemeSetting();
+    watchSystemTheme();
     applyTheme();
     initKeyboardShortcuts();
 
@@ -4694,6 +4727,10 @@
     window.__switchTab = switchTab;
     window.switchTab = switchTab;
     window.showSub = showSub;
+    // 主题设置暴露（供 test_theme_setting.js 验证 auto 解析与循环）
+    window.applyTheme = applyTheme;
+    window.cycleTheme = cycleTheme;
+    window.resolveTheme = resolveTheme;
     // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
     window.computeSmartPlan = computeSmartPlan;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务

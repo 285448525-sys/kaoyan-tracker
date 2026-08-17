@@ -67,10 +67,13 @@ ok(/body\s*\{[^}]*font-size:\s*var\(--fs-base\)/.test(css), 'body 使用 var(--f
 
 console.log('===== 版本一致 =====');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const vCount = (html.match(/\?v=20260817h/g) || []).length;
-ok(vCount === 9, 'index.html 含 9 处 ?v=20260817h（实际 ' + vCount + '）');
 const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-ok(/var APP_VERSION = '20260817h';/.test(app), 'app.js APP_VERSION === \'20260817h\'');
+const versionMatch = app.match(/var APP_VERSION = '([^']+)';/);
+const expectedVersion = versionMatch ? versionMatch[1] : null;
+ok(expectedVersion, 'app.js APP_VERSION 已定义（实际 ' + expectedVersion + '）');
+const vRe = new RegExp('\\?v=' + expectedVersion, 'g');
+const vCount = (html.match(vRe) || []).length;
+ok(vCount === 9, 'index.html 含 9 处 ?v=' + expectedVersion + '（实际 ' + vCount + '）');
 
 console.log('\n===== 结果 =====');
 console.log('PASS ' + pass + ' / FAIL ' + fail);
