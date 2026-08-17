@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817h';
+  var APP_VERSION = '20260817i';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3241,8 +3241,8 @@
   function computeSmartPlan(cfg, doneHours, daysLeft) {
     var goal = Number(cfg.goalHours) || 0;
     if (!cfg.examDate || daysLeft == null) return { status: 'noExam' };
-    if (goal <= 0) return { status: 'unset', daysLeft: daysLeft, doneHours: doneHours };
-    if (daysLeft <= 0) return { status: 'ended', daysLeft: 0, doneHours: doneHours, goalHours: goal };
+    if (goal <= 0) return { status: 'unset', daysLeft: daysLeft, doneHours: +doneHours.toFixed(1) };
+    if (daysLeft <= 0) return { status: 'ended', daysLeft: 0, doneHours: +doneHours.toFixed(1), goalHours: goal };
     var remaining = Math.max(0, +(goal - doneHours).toFixed(1));
     var daily = +(remaining / daysLeft).toFixed(1);
     return {
@@ -3262,7 +3262,7 @@
     var daysLeft = cfg.examDate ? Math.ceil((new Date(cfg.examDate) - new Date(Store.todayStr())) / 86400000) : null;
     var doneMin = 0; var days = Store.getDays();
     Object.keys(days).forEach(function (ds) { doneMin += Store.totalMinutesForDay(days[ds]); });
-    var doneHours = doneMin / 60;
+    var doneHours = Math.round(doneMin / 60 * 10) / 10; // 显示用的已学时长，统一保留 1 位小数，避免长浮点（如 12.083333…）
     var r = computeSmartPlan(cfg, doneHours, daysLeft);
     var html = '';
     if (r.status === 'noExam') {
