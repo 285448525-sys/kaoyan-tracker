@@ -105,6 +105,19 @@ body {
   border: 0; margin: 20px 0;
 }
 
+/* ===== 智能计划：每日学习量建议条幅 ===== */
+.smart-plan {
+  background: linear-gradient(120deg, rgba(79,70,229,.10), rgba(99,102,241,.06));
+  border: 1px solid var(--line); border-left: 4px solid var(--primary);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px;
+  font-size: 15px; line-height: 1.6; color: var(--ink);
+}
+.smart-plan b { color: var(--primary); font-weight: 800; }
+.smart-plan .sp-key { font-size: 20px; }
+.smart-plan .sp-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+.smart-plan .sp-link:hover { text-decoration: underline; }
+.smart-plan .sp-warn { color: var(--warn); font-size: 13px; }
+
 .icon-btn {
   background: none; border: 1px solid var(--line); border-radius: 10px;
   width: 34px; height: 34px; font-size: 16px; line-height: 1;

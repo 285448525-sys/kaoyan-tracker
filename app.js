@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817e';
+  var APP_VERSION = '20260817f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -213,6 +213,8 @@
     refs.nicknameInput.value = cfg.nickname || '';
     refs.examDate.value = cfg.examDate || '';
     refs.targetTotal.value = cfg.targetTotal || '';
+    refs.goalHours.value = cfg.goalHours || '';
+    refs.estimatorK.value = cfg.estimatorK || 6;
     refs.autoPlan.checked = !!cfg.autoPlan;
 
     refs.toggles.innerHTML = '';
@@ -3235,6 +3237,52 @@
     if (Number(val) === 0) el.classList.add('is-zero'); else el.classList.remove('is-zero');
   }
 
+  /* ============ 智能计划：基于剩余天数 + 目标累计时长反推每日学习量 ============ */
+  function computeSmartPlan(cfg, doneHours, daysLeft) {
+    var goal = Number(cfg.goalHours) || 0;
+    if (!cfg.examDate || daysLeft == null) return { status: 'noExam' };
+    if (goal <= 0) return { status: 'unset', daysLeft: daysLeft, doneHours: doneHours };
+    if (daysLeft <= 0) return { status: 'ended', daysLeft: 0, doneHours: doneHours, goalHours: goal };
+    var remaining = Math.max(0, +(goal - doneHours).toFixed(1));
+    var daily = +(remaining / daysLeft).toFixed(1);
+    return {
+      status: remaining <= 0 ? 'done' : 'ok',
+      daysLeft: daysLeft,
+      doneHours: +doneHours.toFixed(1),
+      goalHours: goal,
+      remaining: remaining,
+      dailyNeed: daily
+    };
+  }
+
+  function renderSmartPlan() {
+    var box = document.getElementById('smart-plan');
+    if (!box) return;
+    var cfg = Store.getConfig();
+    var daysLeft = cfg.examDate ? Math.ceil((new Date(cfg.examDate) - new Date(Store.todayStr())) / 86400000) : null;
+    var doneMin = 0; var days = Store.getDays();
+    Object.keys(days).forEach(function (ds) { doneMin += Store.totalMinutesForDay(days[ds]); });
+    var doneHours = doneMin / 60;
+    var r = computeSmartPlan(cfg, doneHours, daysLeft);
+    var html = '';
+    if (r.status === 'noExam') {
+      html = '📅 先设置考研日期，才能为你规划每日学习量 · <a href="#" class="sp-link" data-go="config">去设置</a>';
+    } else if (r.status === 'unset') {
+      html = '📅 距考研 <b>' + r.daysLeft + '</b> 天 · 已学 <b>' + r.doneHours + '</b>h · 设置目标时长后为你计算 · <a href="#" class="sp-link" data-go="config">去设置目标</a>';
+    } else if (r.status === 'ended') {
+      html = '🏁 考研已结束 · 累计已学 <b>' + r.doneHours + '</b>h（目标 ' + r.goalHours + 'h）';
+    } else if (r.status === 'done') {
+      html = '🎉 已超额完成目标（累计 ' + r.doneHours + 'h ≥ 目标 ' + r.goalHours + 'h），保持节奏即可！';
+    } else {
+      var warn = r.dailyNeed > 12 ? ' <span class="sp-warn">（缺口较大，建议上调目标或延长每日时长）</span>' : '';
+      html = '📅 距考研 <b>' + r.daysLeft + '</b> 天 · 已学 <b>' + r.doneHours + '</b>h / 目标 <b>' + r.goalHours + '</b>h → 每天需学 <b class="sp-key">' + r.dailyNeed + '</b> 小时' + warn;
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('.sp-link').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.preventDefault(); switchTab(a.getAttribute('data-go')); });
+    });
+  }
+
   function renderTodayAggregate() {
     if (!refs.aggCountdown) return;
     // 日期（顶部）
@@ -3363,6 +3411,7 @@
     renderAggSubjectProgress();
     // H3：快速开始引导卡
     renderTodayOnboarding();
+    renderSmartPlan();
   }
 
   /* ============ H1：科目进度聚合条（今日页 KPI 卡下方）——用语义色 ============ */
@@ -4060,6 +4109,9 @@
     refs.nicknameInput = $('nickname-input');
     refs.examDate = $('exam-date');
     refs.targetTotal = $('target-total');
+    refs.goalHours = $('goal-hours');
+    refs.estimatorK = $('estimator-k');
+    refs.estByScore = $('est-by-score');
     refs.autoPlan = $('auto-plan');
     refs.toggles = $('toggles');
     refs.detail = $('subject-detail');
@@ -4346,6 +4398,18 @@
     refs.nicknameInput.addEventListener('change', function () { Store.setConfig({ nickname: refs.nicknameInput.value.trim() }); });
     refs.examDate.addEventListener('change', function () { Store.setConfig({ examDate: refs.examDate.value }); renderData(); });
     refs.targetTotal.addEventListener('change', function () { Store.setConfig({ targetTotal: Number(refs.targetTotal.value) || 0 }); renderData(); });
+    refs.goalHours.addEventListener('change', function () { Store.setConfig({ goalHours: Number(refs.goalHours.value) || 0 }); renderTodayAggregate(); });
+    refs.estimatorK.addEventListener('change', function () { Store.setConfig({ estimatorK: Number(refs.estimatorK.value) || 6 }); });
+    refs.estByScore.addEventListener('click', function () {
+      var cfg = Store.getConfig();
+      var exams = Store.getExams ? Store.getExams() : [];
+      var latest = exams.length ? exams[exams.length - 1].total : 0;
+      if (!cfg.targetTotal || !latest) { showToast('需先填写目标总分并有至少一次模考成绩', 'warn'); return; }
+      var gap = Math.max(0, Number(cfg.targetTotal) - Number(latest));
+      var suggested = Math.round((Store.totalMinutesForDay && 0) + gap * (Number(cfg.estimatorK) || 6));
+      refs.goalHours.value = suggested; Store.setConfig({ goalHours: suggested }); renderTodayAggregate();
+      showToast('已按缺口估算并填入 ' + suggested + 'h，可手动调整', 'ok');
+    });
     refs.autoPlan.addEventListener('change', function () { Store.setConfig({ autoPlan: refs.autoPlan.checked }); renderPlan(); });
 
     // 得分权重配置（A4）
@@ -4628,6 +4692,8 @@
     window.__switchTab = switchTab;
     window.switchTab = switchTab;
     window.showSub = showSub;
+    // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
+    window.computeSmartPlan = computeSmartPlan;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
     window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
     // B1 测试钩子（仅供 test_sync_phone.js 验证并发/本地保护逻辑，不影响生产行为）

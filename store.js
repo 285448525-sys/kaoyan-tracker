@@ -91,6 +91,8 @@
         major: '',
         examDate: '',
         targetTotal: 0,
+        goalHours: 0,          // 目标累计学习时长（小时），智能计划锚点
+        estimatorK: 6,         // 分数缺口→学时的经验系数（小时/分），可调，默认 6
         autoPlan: false,
         subjects: [],
         sidebarCollapsed: false,
@@ -151,6 +153,8 @@
         major: cfgIn ? (cfgIn.major !== undefined ? cfgIn.major : d.config.major) : d.config.major,
         examDate: cfgIn ? (cfgIn.examDate !== undefined ? cfgIn.examDate : d.config.examDate) : d.config.examDate,
         targetTotal: cfgIn ? (cfgIn.targetTotal !== undefined ? cfgIn.targetTotal : d.config.targetTotal) : d.config.targetTotal,
+        goalHours: cfgIn ? (cfgIn.goalHours !== undefined ? cfgIn.goalHours : d.config.goalHours) : d.config.goalHours,
+        estimatorK: cfgIn ? (cfgIn.estimatorK !== undefined ? cfgIn.estimatorK : d.config.estimatorK) : d.config.estimatorK,
         autoPlan: cfgIn ? (cfgIn.autoPlan !== undefined ? cfgIn.autoPlan : d.config.autoPlan) : d.config.autoPlan,
         subjects: cfgIn ? cfgIn.subjects : d.config.subjects,
         sidebarCollapsed: cfgIn ? (cfgIn.sidebarCollapsed !== undefined ? cfgIn.sidebarCollapsed : d.config.sidebarCollapsed) : d.config.sidebarCollapsed,
@@ -706,6 +710,8 @@
         mathBooksCollapsed: (p.mathBooksCollapsed && typeof p.mathBooksCollapsed === 'object') ? p.mathBooksCollapsed : {},
         _seq: p._seq || d._seq
       };
+      if (state.config.goalHours === undefined) state.config.goalHours = 0;
+      if (state.config.estimatorK === undefined) state.config.estimatorK = 6;
       save();
     }
 
