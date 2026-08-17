@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817k';
+  var APP_VERSION = '20260817l';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -145,7 +145,7 @@
     { category: '概率统计', q: '掷一枚均匀硬币两次，至少出现一次正面的概率是？', options: ['1/4', '1/2', '3/4', '1'], answer: 2, explain: '总 4 种等可能，仅「反反」无正面，故 3/4。' },
     { category: '概率统计', q: '若 X ~ N(0,1)（标准正态分布），则 E(X) = ？', options: ['0', '1', '-1', '0.5'], answer: 0, explain: '标准正态均值为 0。' }
   ];
-  var GROUP_COLORS = { '高数': '#4f46e5', '线代': '#10b981', '概率': '#f59e0b', '其他': '#9ca3af' };
+  var GROUP_COLORS = { '高数': '#5B9FC9', '线代': '#10b981', '概率': '#f59e0b', '其他': '#9ca3af' };
 
   /* ============ 408 专业课模块：常量 ============ */
   // 408 计算机学科专业基础全套章节（按四科分组，预填充）
@@ -2944,7 +2944,7 @@
         if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
       });
       fb.textContent = (s.autoSave ? '已收入生词本，正确答案：' : '正确答案：') + answer;
-      fb.style.color = '#4f46e5';
+      fb.style.color = '#5B9FC9';
       addNextButton();
     });
     function addNextButton() {

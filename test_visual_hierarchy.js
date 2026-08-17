@@ -67,7 +67,7 @@ const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 console.log('===== Phase1：页面底色明度差 + 分区令牌 =====');
 const bgLight = readVar(css, 'bg');
-ok(bgLight && bgLight.toLowerCase() === '#f3f3f1', '--bg 已由 #f8fafc 升级为暖灰 #f3f3f1（h 方案）');
+ok(bgLight && bgLight.toLowerCase() === '#f4f9fc', '--bg 已更新为冷调浅蓝白 #F4F9FC（配色改造）');
 ok(bgLight && (100 - lum100(bgLight)) >= 3, '浅色 --bg 与白卡存在明度差（发丝边+柔阴影补足分隔，实际 ' + (bgLight ? (100 - lum100(bgLight)).toFixed(1) : '?') + '）');
 
 const sectionBg = readVar(css, 'section-bg');
@@ -80,7 +80,7 @@ console.log('===== Phase2：.section / .divider / .section .card 选择器 =====
 ok(/\.section\s*\{/.test(css), 'CSS 含 .section { 选择器');
 ok(/\.divider\s*\{/.test(css), 'CSS 含 .divider { 选择器');
 ok(/\.section\s+\.card\s*\{/.test(css), 'CSS 含 .section .card { 选择器（防双重浮起）');
-ok(/--section-bg:\s*#eceef3/.test(css), '.section 使用 --section-bg(#eceef3)');
+ok(/--section-bg:\s*#eef5fa/i.test(css), '.section 使用 --section-bg(#EEF5FA)');
 
 console.log('===== 深色模式：--bg 更深 + 分区带 =====');
 const darkBlock = css.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/);
@@ -88,7 +88,7 @@ ok(!!darkBlock, '存在 :root[data-theme="dark"] 块');
 if (darkBlock) {
   const dbg = readVar(darkBlock[1], 'bg');
   const dsec = readVar(darkBlock[1], 'section-bg');
-  ok(dbg && dbg.toLowerCase() === '#15151a', '深色 --bg 改为 #15151a（h 方案，比卡片更深）');
+  ok(dbg && dbg.toLowerCase() === '#121a21', '深色 --bg 改为 #121A21（配色改造，比卡片更深）');
   ok(dbg && (lum100('#1d1d23') - lum100(dbg)) >= 3, '深色 --bg 比卡片 #1d1d23 明度差 ≥ 3（实际 ' + (dbg ? (lum100('#1d1d23') - lum100(dbg)).toFixed(1) : '?') + '）');
   ok(!!dsec, '深色 --section-bg 已定义');
 }

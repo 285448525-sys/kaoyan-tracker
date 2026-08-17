@@ -42,7 +42,7 @@ const needLight = ['--bg','--card','--primary','--primary-weak','--primary-ink',
 for (const t of needLight) ok(typeof light[t] === 'string' && light[t].length, '浅色令牌 ' + t + ' 已定义（=' + (light[t] || '') + '）');
 
 console.log('===== 主色去饱和：S < 55% =====');
-ok(light['--primary'] === '#6b6f9c', '浅色 --primary 已更新为 #6b6f9c');
+ok(light['--primary'] === '#5B9FC9', '浅色 --primary 已更新为亮雾蓝 #5B9FC9（配色改造）');
 const sat = hslSat(light['--primary'] || '#000');
 ok(sat < 0.55, '浅色 --primary 饱和度 S=' + (sat * 100).toFixed(1) + '% < 55%（旧 ≈78%）');
 
@@ -52,10 +52,10 @@ const dL = Math.abs(Lcard - Lbg) * 100;
 ok(dL >= 4 && dL <= 14, '浅色 --bg/--card 明度差 ΔL=' + dL.toFixed(2) + ' ∈ [4,14]（既分得开又不刺眼）');
 
 console.log('===== 深色令牌已更新 =====');
-ok(dark['--primary'] === '#979bc4', '深色 --primary 已更新为 #979bc4');
-ok(dark['--bg'] === '#15151a', '深色 --bg 已更新为 #15151a');
+ok(dark['--primary'] === '#7FB8DB', '深色 --primary 已更新为 #7FB8DB');
+ok(dark['--bg'] === '#121A21', '深色 --bg 已更新为 #121A21');
 ok(dark['--card'] === '#1d1d23', '深色 --card 已更新为 #1d1d23');
-ok(dark['--primary-weak'] === '#262838' && dark['--primary-ink'] === '#b9bce0', '深色 --primary-weak/--primary-ink 已定义');
+ok(dark['--primary-weak'] === '#16242E' && dark['--primary-ink'] === '#EAF3FA', '深色 --primary-weak/--primary-ink 已定义');
 
 console.log('===== 旧艳色已清（注释外无裸色）=====');
 for (const c of ['#4f46e5', '#6366f1', '#06b6d4']) {
