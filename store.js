@@ -105,7 +105,7 @@
       plans: {},  // 'YYYY-MM-DD' -> [{id,text,minutes,done}]
       mistakes: [], // {id,type,content,subject,date,note}
       websites: [], // {id,name,url,cat}
-      vocab: [],    // {id,word,cn,box,next,added,wrong,last}
+      vocab: [],    // {id,word,cn,phonetic,pos,example,note,category,box,next,added,wrong,last}
       translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
       aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
@@ -479,12 +479,27 @@
     var lw = String(word).trim().toLowerCase();
     return (state.vocab || []).filter(function (v) { return v.word && v.word.toLowerCase() === lw; })[0] || null;
   }
-  function addVocab(word, cn) {
+  function addVocab(word, cn, extra) {
     word = String(word || '').trim();
     if (!word) return null;
+    extra = extra || {};
     var exist = findVocab(word);
-    if (exist) { if (cn && !exist.cn) { exist.cn = cn; save(); } return exist; }
-    var v = { id: 'vb_' + nextSeq(), word: word, cn: cn || '', box: 1, next: todayStr(), added: todayStr(), wrong: 0, last: '' };
+    if (exist) {
+      if (cn && !exist.cn) exist.cn = cn;
+      var patched = false;
+      ['phonetic', 'pos', 'example', 'note', 'category'].forEach(function (k) {
+        if (extra[k]) { exist[k] = extra[k]; patched = true; }
+      });
+      if (patched) save();
+      return exist;
+    }
+    var v = {
+      id: 'vb_' + nextSeq(), word: word, cn: cn || '',
+      phonetic: extra.phonetic || '', pos: extra.pos || '',
+      example: extra.example || '', note: extra.note || '',
+      category: extra.category || '其他',
+      box: 1, next: todayStr(), added: todayStr(), wrong: 0, last: ''
+    };
     state.vocab.push(v); save(); return v;
   }
   function removeVocab(id) { state.vocab = state.vocab.filter(function (x) { return x.id !== id; }); save(); }
@@ -640,7 +655,24 @@
       plans: (p.plans && typeof p.plans === 'object') ? p.plans : {},
       mistakes: (p.mistakes && Array.isArray(p.mistakes)) ? p.mistakes : [],
       websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
-      vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
+      vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab.map(function (v) {
+        v = v || {};
+        return {
+          id: v.id || ('vb_' + nextSeq()),
+          word: v.word || '',
+          cn: v.cn || '',
+          phonetic: v.phonetic || '',
+          pos: v.pos || '',
+          example: v.example || '',
+          note: v.note || '',
+          category: v.category || '其他',
+          box: v.box || 1,
+          next: v.next || todayStr(),
+          added: v.added || todayStr(),
+          wrong: v.wrong || 0,
+          last: v.last || ''
+        };
+      }) : [],
       translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
       practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')

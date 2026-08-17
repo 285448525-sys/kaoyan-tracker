@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260816p';
+  var APP_VERSION = '20260817a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1102,6 +1102,20 @@
     var out = [];
     lines.forEach(function (line) {
       line = line.trim(); if (!line) return;
+      if (line.indexOf('|') >= 0) {
+        var cols = line.split('|');
+        var w = (cols[0] || '').trim();
+        if (!w) return;
+        out.push({
+          word: w,
+          cn: (cols[1] || '').trim(),
+          phonetic: (cols[2] || '').trim(),
+          pos: (cols[3] || '').trim(),
+          example: (cols[4] || '').trim(),
+          category: (cols[5] || '').trim()
+        });
+        return;
+      }
       var parts = null, m;
       m = line.match(/^(.*?)\t(.*)$/); if (m) parts = [m[1], m[2]];
       else { m = line.match(/^(.*?)[：:—\-]\s*(.*)$/); if (m) parts = [m[1], m[2]]; }
@@ -1118,7 +1132,7 @@
       if (Store.findVocab(it.word)) { skipped++; return; }
       var cn = it.cn;
       if (!cn) { var d = DICT_MAP[it.word.toLowerCase()]; if (d) cn = d.c; else noCn++; }
-      Store.addVocab(it.word, cn); added++;
+      Store.addVocab(it.word, cn, { phonetic: it.phonetic, pos: it.pos, example: it.example, note: it.note, category: it.category }); added++;
     });
     renderWords();
     refs.importStatus.textContent = '导入完成：新增 ' + added + ' 个，跳过重复 ' + skipped + ' 个' + (noCn ? ('，其中 ' + noCn + ' 个需手动补释义') : '');
@@ -2188,20 +2202,55 @@
   }
 
   /* ============ 词汇模块：生词记录 / 背单词 / 生词复习 ============ */
+  function readVocabExtra() {
+    return {
+      phonetic: (refs.wordPhonetic && refs.wordPhonetic.value || '').trim(),
+      pos: (refs.wordPos && refs.wordPos.value || '').trim(),
+      example: (refs.wordExample && refs.wordExample.value || '').trim(),
+      note: (refs.wordNote && refs.wordNote.value || '').trim(),
+      category: (refs.wordCategory && refs.wordCategory.value || '其他')
+    };
+  }
+  function clearVocabExtra() {
+    if (refs.wordPhonetic) refs.wordPhonetic.value = '';
+    if (refs.wordPos) refs.wordPos.value = '';
+    if (refs.wordExample) refs.wordExample.value = '';
+    if (refs.wordNote) refs.wordNote.value = '';
+    if (refs.wordCategory) refs.wordCategory.value = '其他';
+  }
+  function filterVocab(list) {
+    var f = (refs.vocabFilter && refs.vocabFilter.value) || 'all';
+    var q = (refs.vocabSearch && refs.vocabSearch.value || '').trim().toLowerCase();
+    return list.filter(function (v) {
+      if (f === 'due') { if (!(v.next <= Store.todayStr())) return false; }
+      else if (f !== 'all') { if ((v.category || '其他') !== f) return false; }
+      if (q) {
+        var hay = [v.word, v.cn, v.phonetic, v.pos, v.example, v.note].join(' ').toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
   function renderWords() {
-    var list = Store.getVocab();
-    refs.vocabCount.textContent = list.length;
+    var raw = Store.getVocab();
+    var list = filterVocab(raw);
+    refs.vocabCount.textContent = raw.length;
     refs.vocabList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.vocabList, '生词本还是空的，在上方输入框记一个吧', { label: '去记生词', fn: function () { switchTab('review'); } }); return; }
+    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词', { label: '去记生词', fn: function () { switchTab('review'); } }); return; }
     list.forEach(function (v) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
       top.appendChild(el('span', 'mistake-badge', 'L' + (v.box || 1)));
+      if (v.category && v.category !== '其他') top.appendChild(el('span', 'vocab-cat-pill', v.category));
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeVocab(v.id); renderWords(); showToast('已删除'); });
       top.appendChild(del);
       item.appendChild(top);
-      item.appendChild(el('div', 'mistake-content', v.word + (v.cn ? '　' + v.cn : '')));
+      var wline = v.word + (v.phonetic ? '  ' + v.phonetic : '') + (v.pos ? '  ' + v.pos : '');
+      item.appendChild(el('div', 'mistake-content', wline));
+      if (v.cn) item.appendChild(el('div', 'mistake-content vocab-cn', v.cn));
+      if (v.example) item.appendChild(el('div', 'vocab-ex', v.example));
+      if (v.note) item.appendChild(el('div', 'vocab-note', v.note));
       var due = (v.next <= Store.todayStr());
       item.appendChild(el('div', 'mistake-meta', '加入 ' + v.added + (due ? ' · 待复习' : ' · 下次 ' + v.next)));
       refs.vocabList.appendChild(item);
@@ -2212,10 +2261,11 @@
     if (!raw) { alert('请输入单词'); return; }
     var d = DICT_MAP[raw.toLowerCase()];
     if (d) {
-      Store.addVocab(d.w, d.c);
+      Store.addVocab(d.w, d.c, readVocabExtra());
       showWordCard(d.w, d.c, true);
       refs.wordManual.style.display = 'none';
       refs.wordInput.value = '';
+      clearVocabExtra();
       renderWords();
       showToast('已记录：' + d.w + ' ✅');
     } else {
@@ -2232,10 +2282,11 @@
     var raw = refs.wordInput.value.trim();
     var cn = refs.wordManualCn.value.trim();
     if (!raw) { alert('请先输入单词'); return; }
-    Store.addVocab(raw, cn);
+    Store.addVocab(raw, cn, readVocabExtra());
     showWordCard(raw, cn, true);
     refs.wordManual.style.display = 'none';
     refs.wordInput.value = '';
+    clearVocabExtra();
     renderWords();
     showToast('已记录：' + raw + ' ✅');
   }
@@ -2820,9 +2871,9 @@
     else { if (!practiceSession) startPractice(); }
   }
   function buildPracticePool(scope) {
-    if (scope === 'vocab') return Store.getVocab().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
-    if (scope === 'wrong') return Store.getWrongWords().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn }; });
-    return DICT.slice().filter(function (d) { return d.w && d.c; });
+    if (scope === 'vocab') return Store.getVocab().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn, category: v.category }; });
+    if (scope === 'wrong') return Store.getWrongWords().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn, category: v.category }; });
+    return DICT.slice().filter(function (d) { return d.w && d.c; }).map(function (d) { return { w: d.w, c: d.c, category: '' }; });
   }
   function startPractice() {
     var ps = Store.getPracticeSettings();
@@ -2863,7 +2914,8 @@
     shuffle(opts);
     var stem = en2cn ? cur.w : cur.c;
     var answer = en2cn ? cur.c : cur.w;
-    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>';
+    var catPill = (cur.category && cur.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(cur.category) + '</span>' : '';
+    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>' + catPill;
     html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个 · ' + (en2cn ? '英选译' : '中选英') + '</div>';
     html += '<div class="practice-options">';
     opts.forEach(function (o) {
@@ -2936,7 +2988,8 @@
       return;
     }
     var v = q.items[q.index];
-    var html = '<div class="review-en">' + escapeHtml(v.word) + '</div>';
+    var catPill = (v.category && v.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(v.category) + '</span>' : '';
+    var html = '<div class="review-en">' + escapeHtml(v.word) + '</div>' + catPill;
     html += '<div class="review-cn" id="review-cn" style="visibility:hidden">' + escapeHtml(v.cn || '（无释义）') + '</div>';
     html += '<div class="practice-actions"><button class="btn btn-ghost" id="review-show">显示释义</button></div>';
     html += '<div class="review-actions" style="margin-top:12px"><button class="btn btn-primary" id="review-know">✅ 认识</button><button class="btn btn-danger" id="review-unknow">❌ 不认识</button></div>';
@@ -4056,8 +4109,15 @@
     refs.wordManual = $('word-manual');
     refs.wordManualCn = $('word-manual-cn');
     refs.btnSaveManualWord = $('btn-save-manual-word');
+    refs.wordPhonetic = $('word-phonetic');
+    refs.wordPos = $('word-pos');
+    refs.wordExample = $('word-example');
+    refs.wordNote = $('word-note');
+    refs.wordCategory = $('word-category');
     refs.vocabCount = $('vocab-count');
     refs.vocabList = $('vocab-list');
+    refs.vocabFilter = $('vocab-filter');
+    refs.vocabSearch = $('vocab-search');
     refs.practiceBox = $('practice-box');
     refs.btnPracticeRestart = $('btn-practice-restart');
     refs.btnPracticeSettings = $('btn-practice-settings');
@@ -4325,6 +4385,8 @@
     refs.btnRecordWord.addEventListener('click', onRecordWord);
     refs.btnClearWord.addEventListener('click', function () { refs.wordInput.value = ''; refs.wordResult.innerHTML = ''; refs.wordManual.style.display = 'none'; });
     refs.btnSaveManualWord.addEventListener('click', onSaveManualWord);
+    if (refs.vocabFilter) refs.vocabFilter.addEventListener('change', renderWords);
+    if (refs.vocabSearch) refs.vocabSearch.addEventListener('input', renderWords);
 
     // 翻译密钥
     refs.btnSaveTranslator.addEventListener('click', onSaveTranslator);

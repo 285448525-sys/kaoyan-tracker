@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260816p" />
+  <link rel="stylesheet" href="styles.css?v=20260817a" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -562,6 +562,22 @@
           <label>单词</label>
           <input type="text" id="word-input" placeholder="输入英文单词，如 abandon" autocomplete="off" />
         </div>
+        <details class="vocab-extra">
+          <summary class="card-sub">选填：音标 / 词性 / 例句 / 备注 / 分类</summary>
+          <div class="field-row"><label>音标</label><input type="text" id="word-phonetic" placeholder="如 /ˈæbəkæt/" autocomplete="off" /></div>
+          <div class="field-row"><label>词性</label><input type="text" id="word-pos" placeholder="如 n. / v. / adj." autocomplete="off" /></div>
+          <div class="field-row"><label>例句</label><input type="text" id="word-example" placeholder="放进语境的一句话" autocomplete="off" /></div>
+          <div class="field-row"><label>备注</label><input type="text" id="word-note" placeholder="记忆提示 / 来源" autocomplete="off" /></div>
+          <div class="field-row"><label>分类</label>
+            <select id="word-category">
+              <option value="其他">其他</option>
+              <option value="数据结构">数据结构</option>
+              <option value="计算机组成">计算机组成</option>
+              <option value="操作系统">操作系统</option>
+              <option value="计算机网络">计算机网络</option>
+            </select>
+          </div>
+        </details>
         <div class="btn-row">
           <button id="btn-record-word" class="btn btn-primary">记录</button>
           <button id="btn-clear-word" class="btn btn-ghost">清空输入</button>
@@ -589,7 +605,7 @@
 
       <div class="card">
         <h2 class="card-title">📥 批量导入生词</h2>
-        <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的"></textarea>
+        <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
           <label class="btn btn-ghost" for="import-file">上传 .txt</label>
@@ -600,6 +616,18 @@
 
       <div class="card">
         <h2 class="card-title">我的生词本 <span id="vocab-count" class="count-pill">0</span></h2>
+        <div class="vocab-filter-row">
+          <select id="vocab-filter">
+            <option value="all">全部</option>
+            <option value="due">待复习</option>
+            <option value="数据结构">数据结构</option>
+            <option value="计算机组成">计算机组成</option>
+            <option value="操作系统">操作系统</option>
+            <option value="计算机网络">计算机网络</option>
+            <option value="其他">其他</option>
+          </select>
+          <input type="text" id="vocab-search" placeholder="搜单词/释义/音标/例句/备注" autocomplete="off" />
+        </div>
         <div id="vocab-list" class="mistake-list"></div>
       </div>
 
@@ -886,13 +914,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260816p"></script>
-  <script src="words.js?v=20260816p"></script>
-  <script src="store.js?v=20260816p"></script>
-  <script src="charts.js?v=20260816p"></script>
-  <script src="share.js?v=20260816p"></script>
-  <script src="md5.js?v=20260816p"></script>
-  <script src="sentences.js?v=20260816p"></script>
-  <script src="app.js?v=20260816p"></script>
+  <script src="qrcode.min.js?v=20260817a"></script>
+  <script src="words.js?v=20260817a"></script>
+  <script src="store.js?v=20260817a"></script>
+  <script src="charts.js?v=20260817a"></script>
+  <script src="share.js?v=20260817a"></script>
+  <script src="md5.js?v=20260817a"></script>
+  <script src="sentences.js?v=20260817a"></script>
+  <script src="app.js?v=20260817a"></script>
 </body>
 </html>

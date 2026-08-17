@@ -295,6 +295,20 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .mistake-content { font-size: 14px; white-space: pre-wrap; }
 .mistake-meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
+/* ===== 生词记录升级：选填字段 / 筛选搜索 / 列表增强（20260817a） ===== */
+.vocab-extra { margin: 4px 0 12px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; background: rgba(79,70,229,0.03); }
+.vocab-extra > summary { cursor: pointer; user-select: none; }
+.vocab-extra[open] { padding-bottom: 12px; }
+.vocab-filter-row { display: flex; gap: 10px; margin: 10px 0 14px; flex-wrap: wrap; }
+.vocab-filter-row select, .vocab-filter-row input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: #fff; }
+.vocab-filter-row select { flex: 0 0 auto; max-width: 45%; }
+.vocab-filter-row input { flex: 1 1 180px; min-width: 140px; }
+.vocab-cat-pill { display: inline-block; font-size: 11px; font-weight: 700; color: var(--primary); background: rgba(79,70,229,0.12); border: 1px solid rgba(79,70,229,0.25); border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+.vocab-cn { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.vocab-ex { font-size: 12px; color: var(--muted); font-style: italic; white-space: pre-wrap; margin-top: 4px; line-height: 1.5; }
+.vocab-note { font-size: 12px; color: var(--ink); opacity: .75; margin-top: 4px; }
+
+
 /* Websites */
 .site-group { display: grid; gap: 10px; }
 .site-cat { font-size: 13px; font-weight: 700; color: var(--muted); margin: 10px 0 2px; }
@@ -1076,6 +1090,10 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 @media (max-width: 560px) {
   .card { padding: 14px; border-radius: 14px; }
   .app-main { padding: 64px 12px 88px; }
+  .vocab-filter-row { flex-direction: column; }
+  .vocab-filter-row select { max-width: 100%; }
+  .vocab-filter-row input { flex: 1 1 auto; min-width: 0; }
+  .vocab-cat-pill { font-size: 10px; }
 }
 
 /* ---- 自动同步开关 ---- */
