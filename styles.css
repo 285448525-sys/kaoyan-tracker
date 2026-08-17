@@ -1240,7 +1240,7 @@ input:focus, select:focus, textarea:focus {
 /* ============ FAB 悬浮操作按钮（移动端） ============ */
 .fab-action {
   display: none;
-  position: fixed; bottom: 72px; right: 16px; z-index: 79;
+  position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); right: 16px; z-index: 79;
   width: 52px; height: 52px; border-radius: 50%; border: none;
   background: linear-gradient(120deg, var(--primary), var(--primary-d));
   color: #fff; font-size: 24px; cursor: pointer;
@@ -1474,6 +1474,11 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 560px) {
   .checkin-btn { width: 116px; height: 116px; }
   .checkin-btn .ci-label { font-size: 16px; }
+  .practice-opt { min-height: 48px; font-size: 16px; line-height: 1.35; word-break: break-word; }
+  .timer-row .t-btn { min-height: 42px; padding: 10px 16px; font-size: 14px; }
+  .timer-row .t-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .field-row { flex-wrap: wrap; }
+  .field-row input, .field-row select { flex: 1 1 100%; }
 }
 
 /* ===== 移动端安全区 + 触控目标（安卓适配） ===== */
@@ -1493,7 +1498,6 @@ input:focus, select:focus, textarea:focus {
   .checkin-btn { width: 96px; height: 96px; }
   .checkin-btn .ci-label { font-size: 15px; }
   .app-main { padding-bottom: 72px; }
-}
 }
 /* ===== 配置页折叠分组（设置页精简 2026-08-16） ===== */
 .config-fold {
@@ -1603,4 +1607,9 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .
 @media (max-width: 560px) {
   .empty-illust { width: 80px; height: 80px; }
   .empty-title { font-size: 15px; }
+}
+
+/* ===== 移动端超窄屏（≤360px）：拍题按钮整行堆叠，避免挤压 ===== */
+@media (max-width: 360px) {
+  .ai-solve-row .btn { flex: 1 1 100%; }
 }

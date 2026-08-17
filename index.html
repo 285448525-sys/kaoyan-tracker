@@ -21,7 +21,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260817c" />
+  <link rel="stylesheet" href="styles.css?v=20260817d" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -380,8 +380,10 @@
         <h2 class="card-title">📷 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
         <p class="card-hint">需要在「配置」里把 AI 模型换成支持看图的（如豆包视觉 <code>doubao-vision</code> 或 <code>gpt-4o-mini</code>）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
         <div class="ai-solve-row">
-          <button id="btn-capture" class="btn btn-primary" type="button">📷 拍照 / 选图</button>
-          <input id="ai-file" type="file" accept="image/*" hidden />
+          <button id="btn-capture-cam" class="btn btn-primary" type="button">📷 拍照</button>
+          <button id="btn-capture-lib" class="btn btn-ghost" type="button">🖼 相册</button>
+          <input id="ai-file-cam" type="file" accept="image/*" capture="environment" hidden />
+          <input id="ai-file-lib" type="file" accept="image/*" hidden />
           <button id="btn-solve" class="btn btn-ghost" type="button" hidden>求解</button>
         </div>
         <div id="ai-preview" class="ai-preview" hidden></div>
@@ -896,13 +898,13 @@
   <!-- 移动端 FAB 悬浮操作按钮 -->
   <button class="fab-action" id="fabAction" aria-label="快捷操作" title="快捷操作">＋</button>
 
-  <script src="qrcode.min.js?v=20260817c"></script>
-  <script src="words.js?v=20260817c"></script>
-  <script src="store.js?v=20260817c"></script>
-  <script src="charts.js?v=20260817c"></script>
-  <script src="share.js?v=20260817c"></script>
-  <script src="md5.js?v=20260817c"></script>
-  <script src="sentences.js?v=20260817c"></script>
-  <script src="app.js?v=20260817c"></script>
+  <script src="qrcode.min.js?v=20260817d"></script>
+  <script src="words.js?v=20260817d"></script>
+  <script src="store.js?v=20260817d"></script>
+  <script src="charts.js?v=20260817d"></script>
+  <script src="share.js?v=20260817d"></script>
+  <script src="md5.js?v=20260817d"></script>
+  <script src="sentences.js?v=20260817d"></script>
+  <script src="app.js?v=20260817d"></script>
 </body>
 </html>

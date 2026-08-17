@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260817c';
+  var APP_VERSION = '20260817d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2443,8 +2443,9 @@
     };
     reader.readAsDataURL(file);
   }
-  function onAiFileChange() {
-    var f = refs.aiFile && refs.aiFile.files && refs.aiFile.files[0];
+  function onAiFileChange(e) {
+    var inp = (e && e.target) ? e.target : refs.aiFileCam;
+    var f = inp && inp.files && inp.files[0];
     if (!f) return;
     if (!/^image\//.test(f.type)) { showToast('请选择图片文件', 'err'); return; }
     compressImageFile(f, 900, 0.7, function (dataUrl) {
@@ -2508,7 +2509,8 @@
   }
   function resetAiCapture() {
     aiPendingDataUrl = '';
-    if (refs.aiFile) refs.aiFile.value = '';
+    if (refs.aiFileCam) refs.aiFileCam.value = '';
+    if (refs.aiFileLib) refs.aiFileLib.value = '';
     if (refs.aiPreview) { refs.aiPreview.hidden = true; refs.aiPreview.innerHTML = ''; }
     if (refs.aiAnswer) { refs.aiAnswer.hidden = true; refs.aiAnswer.innerHTML = ''; }
     if (refs.btnSolve) refs.btnSolve.hidden = true;
@@ -4140,8 +4142,10 @@
     refs.mistakeFlashcardBox = $('mistake-flashcard-box');
 
     // 拍题自动解答
-    refs.btnCapture = $('btn-capture');
-    refs.aiFile = $('ai-file');
+    refs.btnCaptureCam = $('btn-capture-cam');
+    refs.btnCaptureLib = $('btn-capture-lib');
+    refs.aiFileCam = $('ai-file-cam');
+    refs.aiFileLib = $('ai-file-lib');
     refs.btnSolve = $('btn-solve');
     refs.aiPreview = $('ai-preview');
     refs.aiAnswer = $('ai-answer');
@@ -4420,10 +4424,15 @@
     });
 
     // 拍题自动解答：相机/相册 + 求解
-    if (refs.btnCapture && refs.aiFile) {
-      refs.btnCapture.addEventListener('click', function () { if (refs.aiFile) refs.aiFile.click(); });
-      refs.aiFile.addEventListener('change', onAiFileChange);
+    if (refs.btnCaptureCam && refs.aiFileCam) {
+      refs.btnCaptureCam.addEventListener('click', function () { if (refs.aiFileCam) refs.aiFileCam.click(); });
     }
+    if (refs.btnCaptureLib && refs.aiFileLib) {
+      refs.btnCaptureLib.addEventListener('click', function () { if (refs.aiFileLib) refs.aiFileLib.click(); });
+    }
+    [refs.aiFileCam, refs.aiFileLib].forEach(function (inp) {
+      if (inp) inp.addEventListener('change', onAiFileChange);
+    });
     if (refs.btnSolve) refs.btnSolve.addEventListener('click', onAiSolve);
 
     // 网站
