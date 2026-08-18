@@ -162,12 +162,22 @@ input, select, textarea {
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--surface-2);
   color: var(--ink);
 }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(107, 111, 156, 0.18);
+}
+/* 安卓适配 P1-3：select 统一扁平箭头（appearance:none 后补自定义箭头，避免无箭头） */
+select {
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%237A93A3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 textarea { resize: vertical; }
 
@@ -1569,6 +1579,9 @@ input:focus, select:focus, textarea:focus {
 .bottom-tabbar .btb-btn { min-height: 48px; }
 .fab-action { width: 56px; height: 56px; min-width: 44px; min-height: 44px; }
 .side-nav { max-height: 100dvh; overflow-y: auto; }
+/* 安卓适配 P1-2：禁用整页下拉刷新回弹，内层滚动不外溢外层 */
+body { overscroll-behavior-y: none; }
+.side-nav, .app-main { overscroll-behavior: contain; }
 .card { transition: box-shadow .2s ease, transform .2s ease; }
 @media (prefers-reduced-motion: reduce) {
   .checkin-btn, .checkin-btn.pulse .ci-ring, .checkin-btn.pop { animation: none !important; transition: none !important; }
