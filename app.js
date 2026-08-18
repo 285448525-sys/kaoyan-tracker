@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260818f';
+  var APP_VERSION = '20260818g';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -395,12 +395,13 @@
     var nt = Store.getTimer();
     nt.subjectKey = key; nt.running = true; nt.startTs = Date.now(); nt.accumulated = 0;
     Store.setTimer(nt);
-    renderTimerRows(); startTick();
+    renderTimerRows(); startTick(); showGlobalTimer(key);
   }
   function endTimer() {
     commitTimer();
     Store.setTimer({ subjectKey: null, startTs: 0, accumulated: 0, running: false });
     stopTick();
+    hideGlobalTimer();
     renderTimerRows(); renderData(); renderToday(); renderPlan();
   }
   function startTick() {
@@ -410,6 +411,8 @@
       if (t.running) {
         var node = document.getElementById('t-time-' + t.subjectKey);
         if (node) node.textContent = fmt(currentElapsed());
+        var gt = document.getElementById('gt-time');
+        if (gt) gt.textContent = fmt(currentElapsed());
       }
     }, 1000);
   }
@@ -420,11 +423,13 @@
     var subs = Store.getSubjects();
     if (!subs.length) { refs.timerRows.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
     var t = Store.getTimer();
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
     subs.forEach(function (s) {
       var running = t.running && t.subjectKey === s.key;
       var row = el('div', 'timer-row' + (running ? ' running' : ''));
       row.appendChild(el('div', 't-name', s.name));
-      var time = el('div', 't-time', fmt(running ? currentElapsed() : 0));
+      var acc = (day.durations && day.durations[s.key]) || 0;
+      var time = el('div', 't-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
       time.id = 't-time-' + s.key;
       row.appendChild(time);
       var btn = el('button', 't-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
@@ -432,6 +437,24 @@
       row.appendChild(btn);
       refs.timerRows.appendChild(row);
     });
+  }
+
+  /* ============ 全局计时常驻指示：计时运行时在所有 tab 可见 ============ */
+  function showGlobalTimer(key) {
+    var bar = document.getElementById('global-timer');
+    if (!bar) return;
+    var subs = Store.getSubjects();
+    var name = key;
+    subs.forEach(function (s) { if (s.key === key) name = s.name; });
+    var lbl = document.getElementById('gt-label');
+    if (lbl) lbl.textContent = (name || '学习') + ' 计时中';
+    var gt = document.getElementById('gt-time');
+    if (gt) gt.textContent = fmt(currentElapsed());
+    bar.hidden = false;
+  }
+  function hideGlobalTimer() {
+    var bar = document.getElementById('global-timer');
+    if (bar) bar.hidden = true;
   }
 
   /* ============ 记录：手动 + 模考 ============ */
@@ -4193,6 +4216,7 @@
     // 第一批：用户立即可见的内容（配置、头部、计时器、今日页）
     renderConfig();
     renderTimerRows();
+    if (Store.getTimer().running) showGlobalTimer(Store.getTimer().subjectKey);
     renderManual();
     populatePlanSubjects();
     renderPlan();
@@ -4350,6 +4374,8 @@
     refs.syncStatus = $('sync-status');
 
     refs.timerRows = $('timer-rows');
+    refs.gtStop = $('gt-stop');
+    if (refs.gtStop) refs.gtStop.addEventListener('click', endTimer);
     refs.pomoTime = $('pomo-time');
     refs.pomoMode = $('pomo-mode');
     refs.btnPomoStart = $('btn-pomo-start');
@@ -4940,6 +4966,10 @@
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
     window.__renderTodayAggregate = renderTodayAggregate;
+    // 计时 UX 测试钩子（仅供 test_timer_ux.js 验证全局药丸与计时行累计，不影响生产行为）
+    window.__showGlobalTimer = showGlobalTimer;
+    window.__hideGlobalTimer = hideGlobalTimer;
+    window.__renderTimerRows = renderTimerRows;
     window.switchTab = switchTab;
     window.showSub = showSub;
     // 主题设置暴露（供 test_theme_setting.js 验证）
@@ -4980,6 +5010,8 @@
       if (!document.hidden && Store.getTimer().running) {
         var node = document.getElementById('t-time-' + Store.getTimer().subjectKey);
         if (node) node.textContent = fmt(currentElapsed());
+        var gt = document.getElementById('gt-time');
+        if (gt) gt.textContent = fmt(currentElapsed());
       }
     });
 
