@@ -82,7 +82,7 @@ console.log('===== P1 触控目标高度 + FAB 安全区（CSS）=====');
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 ok(/@media\s*\(max-width:\s*560px\)[\s\S]*?\.practice-opt\s*\{\s*min-height:\s*48px/.test(css), '@media(560px) 内含 .practice-opt{min-height:48px}');
 ok(/@media\s*\(max-width:\s*560px\)[\s\S]*?\.timer-row\s+\.t-btn\s*\{\s*min-height:\s*42px/.test(css), '@media(560px) 内含 .timer-row .t-btn{min-height:42px}');
-ok(css.indexOf('calc(64px + env(safe-area-inset-bottom))') >= 0, '.fab-action 改用 calc(64px + env(safe-area-inset-bottom))');
+ok(css.indexOf('calc(64px + max(env(safe-area-inset-bottom), 12px))') >= 0, '.fab-action 避让安卓手势条：bottom 用 max(env(...), 12px)');
 ok(css.indexOf('position: fixed; bottom: 72px') < 0, '.fab-action 不再写死 bottom:72px');
 ok(css.indexOf('.ai-solve-row .btn { flex: 1 1 100%') >= 0, '≤360px 拍题按钮整行堆叠');
 
