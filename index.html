@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260818d" />
+  <link rel="stylesheet" href="styles.css?v=20260818e" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -114,6 +114,16 @@
             </div>
             <div class="stat-label">计划项完成</div>
           </div>
+        </div>
+
+        <!-- 今日学习分布卡：截图标配，直观显示「学了哪些模块 + 各多久」 -->
+        <div class="card today-dist" id="today-dist">
+          <div class="td-head">
+            <h2 class="card-title">📚 今日学习分布</h2>
+            <span class="td-total" id="td-total">合计 0m</span>
+          </div>
+          <div id="td-rows" class="td-rows"></div>
+          <div class="td-empty" id="td-empty" hidden>今天还没开始计时，去对应模块点「开始」吧～</div>
         </div>
 
         <!-- 次级信息：今日得分 / 累计等级卡片组 -->
@@ -1063,13 +1073,13 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题">📷</button>
 
-  <script src="qrcode.min.js?v=20260818d"></script>
-  <script src="words.js?v=20260818d"></script>
-  <script src="store.js?v=20260818d"></script>
-  <script src="charts.js?v=20260818d"></script>
-  <script src="share.js?v=20260818d"></script>
-  <script src="md5.js?v=20260818d"></script>
-  <script src="sentences.js?v=20260818d"></script>
-  <script src="app.js?v=20260818d"></script>
+  <script src="qrcode.min.js?v=20260818e"></script>
+  <script src="words.js?v=20260818e"></script>
+  <script src="store.js?v=20260818e"></script>
+  <script src="charts.js?v=20260818e"></script>
+  <script src="share.js?v=20260818e"></script>
+  <script src="md5.js?v=20260818e"></script>
+  <script src="sentences.js?v=20260818e"></script>
+  <script src="app.js?v=20260818e"></script>
 </body>
 </html>

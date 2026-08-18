@@ -833,6 +833,19 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .stat-trend  .stat-value .num { color: var(--c-math); }
 .stat-block.is-zero .stat-value .num { opacity: .5; color: var(--muted); }
 
+/* --- 今日学习分布卡（截图标配） --- */
+.today-dist { position: relative; z-index: 1; margin: 16px 0 0; }
+.today-dist .td-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.today-dist .td-total { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.today-dist .td-rows { display: flex; flex-direction: column; gap: 12px; }
+.today-dist .td-row { display: grid; grid-template-columns: 14px 64px 1fr auto; align-items: center; gap: 10px; }
+.today-dist .td-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.today-dist .td-name { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-dist .td-bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 16%, transparent); overflow: hidden; }
+.today-dist .td-fill { display: block; height: 100%; border-radius: 999px; }
+.today-dist .td-time { font-size: 14px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; min-width: 56px; text-align: right; }
+.today-dist .td-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
+
 /* --- 5. 得分卡 --- */
 .today-score-card {
   position: relative; z-index: 1;

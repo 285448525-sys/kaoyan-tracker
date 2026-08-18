@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260818d';
+  var APP_VERSION = '20260818e';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3535,6 +3535,8 @@
     }
     // H1：科目进度聚合条
     renderAggSubjectProgress();
+    // 今日学习分布卡（截图标配）
+    renderTodayDistribution();
     // H3：快速开始引导卡
     renderTodayOnboarding();
     renderSmartPlan();
@@ -3569,6 +3571,51 @@
               '</div>';
     });
     refs.aggSubjectProgress.innerHTML = html;
+  }
+
+  /* ============ 今日学习分布卡（截图标配）：科目色条 + 时长，按时长降序 ============ */
+  function renderTodayDistribution() {
+    if (!refs.tdRows) return;
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
+    var subs = Store.getSubjects();
+    var rows = subs.map(function (s) {
+      var min = (day.durations && day.durations[s.key]) || 0;
+      return { key: s.key, name: s.name, min: min, color: subjectColorClass(s.key, s.name) };
+    }).filter(function (x) { return x.min > 0; })
+      .sort(function (a, b) { return b.min - a.min; });
+    var total = rows.reduce(function (s, x) { return s + x.min; }, 0);
+    if (refs.tdTotal) refs.tdTotal.textContent = '合计 ' + fmtMinShort(total);
+    if (!rows.length) {
+      if (refs.tdRows) refs.tdRows.innerHTML = '';
+      if (refs.tdEmpty) refs.tdEmpty.hidden = false;
+      return;
+    }
+    if (refs.tdEmpty) refs.tdEmpty.hidden = true;
+    var max = rows[0].min;
+    var html = rows.map(function (r) {
+      var w = max ? Math.round(r.min / max * 100) : 0;
+      return '<div class="td-row">' +
+        '<span class="td-dot" style="background:' + r.color + '"></span>' +
+        '<span class="td-name">' + escapeHtml(r.name) + '</span>' +
+        '<span class="td-bar"><span class="td-fill" style="width:' + Math.max(6, w) + '%;background:' + r.color + '"></span></span>' +
+        '<span class="td-time">' + fmtMinShort(r.min) + '</span>' +
+      '</div>';
+    }).join('');
+    refs.tdRows.innerHTML = html;
+  }
+  // 科目语义色（与 renderAggSubjectProgress 映射一致，但返回 hex 供内联色条/色点使用）
+  function subjectColorClass(key, name) {
+    key = (key || '').toLowerCase(); name = (name || '').toLowerCase();
+    if (key === 'politics' || name.indexOf('政治') >= 0) return '#f97316';
+    if (key === 'english' || name.indexOf('英语') >= 0) return '#3b82f6';
+    if (key === 'math' || name.indexOf('数学') >= 0) return '#8b5cf6';
+    if (key === 'cs408' || name.indexOf('408') >= 0) return '#7FA8C4';
+    if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) return '#10b981';
+    return '#5B9FC9';
+  }
+  function fmtMinShort(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    return (h > 0 ? h + 'h ' : '') + m + 'm';
   }
 
   /* ============ H3：快速开始引导卡（新用户 4 步引导） ============ */
@@ -4351,6 +4398,9 @@
     refs.btnStartTour = $('btn-start-tour');
     refs.btnRestartTour = $('btn-restart-tour');
     refs.aggSubjectProgress = $('agg-subject-progress');
+    refs.tdRows = $('td-rows');
+    refs.tdTotal = $('td-total');
+    refs.tdEmpty = $('td-empty');
 
     refs.mistakeTypes = $('mistake-types');
     refs.mistakeSubject = $('mistake-subject');
@@ -4889,6 +4939,7 @@
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
+    window.__renderTodayAggregate = renderTodayAggregate;
     window.switchTab = switchTab;
     window.showSub = showSub;
     // 主题设置暴露（供 test_theme_setting.js 验证）
