@@ -181,6 +181,9 @@ select {
 }
 textarea { resize: vertical; }
 
+/* 安卓适配 P2-1：抑制图片长按弹出"保存图片"系统菜单（如拍题预览图） */
+img { -webkit-touch-callout: none; user-select: none; }
+
 /* 安卓适配 P0-1：移动端表单字号≥16px，避免聚焦时整页自动缩放（桌面保持 14px 不变） */
 @media (max-width: 860px) {
   input, select, textarea, .target-input, .name-input, .variant-select { font-size: 16px; }
@@ -262,7 +265,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .plan-item.done { background: #ecfdf5; border-color: #a7f3d0; }
 .plan-item.done .plan-text { text-decoration: line-through; color: var(--muted); }
-.plan-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--primary); cursor: pointer; display: grid; place-items: center; flex: none; color: #fff; font-size: 13px; }
+.plan-check { width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--primary); cursor: pointer; display: grid; place-items: center; flex: none; color: #fff; font-size: 13px; position: relative; }
+.plan-check::before { content: ""; position: absolute; inset: -10px; }
 .plan-item.done .plan-check { background: var(--ok); border-color: var(--ok); }
 .plan-text { flex: 1; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
 .plan-subject-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
@@ -1347,9 +1351,9 @@ input:focus, select:focus, textarea:focus {
 }
 /* 8 个 tab 在极窄屏（≤380px）收紧字号，避免拥挤/换行 */
 @media (max-width: 380px) {
-  .bottom-tabbar .btb-btn { font-size: 9px; padding: 4px 0; }
+  .bottom-tabbar .btb-btn { font-size: 11px; padding: 4px 0; }
   .bottom-tabbar .btb-btn span:first-child { font-size: 17px; }
-  .bottom-tabbar .btb-btn span:last-child { font-size: 9px; }
+  .bottom-tabbar .btb-btn span:last-child { font-size: 11px; }
 }
 
 /* ============ 深色模式补充 ============ */
