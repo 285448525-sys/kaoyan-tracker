@@ -46,14 +46,14 @@
     muted: '#9CA3AF',
     line: '#EEF0F3',
     card: '#FFFFFF',
-    brand: '#4F46E5',
-    brandSoft: '#6366F1',
+    brand: '#5B9FC9',
+    brandSoft: '#3F7FA8',
     gold: '#D97706',
     ok: '#059669',
     danger: '#DC2626',
-    accent: '#8B5CF6',
+    accent: '#7FA8C4',
     ds: '#3B82F6',
-    co: '#8B5CF6',
+    co: '#7FA8C4',
     os: '#059669',
     nw: '#D97706',
   };
@@ -61,16 +61,16 @@
   /* ---------------- 渐变背景 + 装饰 ---------------- */
   function drawBackground(ctx, W, H) {
     var bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#FBFAF8');
-    bg.addColorStop(1, '#F5F3FF');
+    bg.addColorStop(0, '#F4F9FC');
+    bg.addColorStop(1, '#EAF4FB');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
     ctx.save();
     ctx.globalAlpha = 0.35;
     var g1 = ctx.createRadialGradient(660, 70, 0, 660, 70, 260);
-    g1.addColorStop(0, 'rgba(99,102,241,0.28)');
-    g1.addColorStop(1, 'rgba(99,102,241,0)');
+    g1.addColorStop(0, 'rgba(91,159,201,0.28)');
+    g1.addColorStop(1, 'rgba(91,159,201,0)');
     ctx.fillStyle = g1;
     ctx.fillRect(400, -100, 420, 400);
     var g2 = ctx.createRadialGradient(90, H - 280, 0, 90, H - 280, 280);
@@ -81,7 +81,7 @@
     ctx.restore();
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(79,70,229,0.08)';
+    ctx.strokeStyle = 'rgba(91,159,201,0.10)';
     ctx.lineWidth = 1.5;
     roundRect(ctx, 24, 24, W - 48, H - 48, 20);
     ctx.stroke();
@@ -99,8 +99,8 @@
     var x = rightX - w, y = topY;
 
     var g = ctx.createLinearGradient(x, y, x + w, y);
-    g.addColorStop(0, '#4F46E5');
-    g.addColorStop(1, '#7C3AED');
+    g.addColorStop(0, '#5B9FC9');
+    g.addColorStop(1, '#3F7FA8');
     ctx.fillStyle = g;
     roundRect(ctx, x, y, w, h, 17);
     ctx.fill();
@@ -530,7 +530,7 @@
   function drawFooter(ctx, W, H, opts) {
     var y = H - 240;
     // 细分割线
-    ctx.strokeStyle = 'rgba(79,70,229,0.14)';
+    ctx.strokeStyle = 'rgba(91,159,201,0.16)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(56, y);
