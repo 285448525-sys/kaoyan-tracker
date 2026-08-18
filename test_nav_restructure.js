@@ -69,11 +69,12 @@ containers.forEach(function (c) {
   ok(document.querySelectorAll('#tab-' + o).length === 0, '旧外壳 tab-' + o + ' 已不存在');
 });
 
-// ---- 3) 底部 Tab Bar 8 个 btb-btn，data-tab 集合与容器一致 ----
+// ---- 3) 底部 Tab Bar 5 个 btb-btn（高频项），其余 3 项在 ☰ 抽屉 ----
 const btb = Array.prototype.slice.call(document.querySelectorAll('.bottom-tabbar .btb-btn'));
-ok(btb.length === 8, '底部 Tab Bar 有 8 个 btb-btn（实际 ' + btb.length + '）');
+ok(btb.length === 5, '底部 Tab Bar 有 5 个 btb-btn（实际 ' + btb.length + '）');
 const btbTabs = btb.map(function (b) { return b.getAttribute('data-tab'); }).sort();
-ok(JSON.stringify(btbTabs) === JSON.stringify(containers.slice().sort()), '底部 data-tab 集合 = 8 容器');
+const btbExpected = ['home', 'math', 'cs408', 'vocab', 'mistakes'];
+ok(JSON.stringify(btbTabs) === JSON.stringify(btbExpected.slice().sort()), '底部 data-tab 集合 = 5 个高频项');
 
 // ---- 4) 侧栏 8 个 tab-btn ----
 const sbtn = document.querySelectorAll('.side-menu .tab-btn');
