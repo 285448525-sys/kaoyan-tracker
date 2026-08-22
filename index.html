@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822n" />
+  <link rel="stylesheet" href="styles.css?v=20260822p" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -153,11 +153,41 @@
         <div class="home-quick" id="home-quick"></div>
       </div></div>
 
-      <!-- 折叠区：打卡 / 待办 / 错题复习 / 今日分布 / 今日得分（P4 首屏收敛，默认收起） -->
-      <details class="home-more">
-        <summary class="home-more-sum">展开更多（打卡 · 待办 · 错题 · 分布 · 得分）</summary>
+      <!-- 板块3：⏱ 计时（常驻，不折叠；首页独立容器，避免与计时页 timer-rows 冲突） -->
+      <div class="section">
+        <div class="card home-timer-card" id="home-timer-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="timer"></span> 计时</h2>
+          <div class="home-timer-grid">
+            <div class="ht-rows" id="home-timer-rows"></div>
+            <div class="ht-pomo" id="home-pomo">
+              <div class="pomo-display" id="home-pomo-display">
+                <div class="pomo-mode" id="home-pomo-mode">🍅 学习中</div>
+                <div class="pomo-time" id="home-pomo-time">25:00</div>
+              </div>
+              <div class="btn-row home-pomo-btns">
+                <button class="btn btn-primary" id="home-btn-pomo-start" type="button">开始</button>
+                <button class="btn btn-ghost" id="home-btn-pomo-reset" type="button">重置</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
+      <!-- 板块4：📚 学习（常驻，不折叠；四块 2×2 平铺） -->
+      <div class="section">
+        <div class="card home-study-card" id="home-study-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 学习</h2>
+          <div class="home-study-grid">
+            <div class="hs-block" id="home-distribution"><h3>今日分布</h3><div class="hs-body"></div></div>
+            <div class="hs-block" id="home-review"><h3>待复习</h3><div class="hs-body"></div></div>
+            <div class="hs-block" id="home-mistakes"><h3>错题速览</h3><div class="hs-body"></div></div>
+            <div class="hs-block" id="home-scores"><h3>今日得分</h3><div class="hs-body"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 板块5：今日打卡（从折叠拎出平铺） -->
+      <div class="section">
         <div class="card checkin-card" id="checkinCard">
           <h2 class="card-title"><span class="ic-inline" data-icon="check"></span> 今日打卡</h2>
           <div class="checkin-inner">
@@ -169,8 +199,10 @@
             <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
           </div>
         </div>
+      </div>
 
-        <!-- 快速开始引导卡（H3 新增） -->
+      <!-- 板块6：今日待办（从折叠拎出平铺） -->
+      <div class="section">
         <div class="card">
           <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 今日待办</h2>
           <div class="btn-row">
@@ -184,43 +216,15 @@
             <button id="btn-add-plan" class="btn btn-ghost">添加</button>
           </div>
         </div>
+      </div>
 
-        <!-- 错题复习主动提醒（记忆曲线） -->
+      <!-- 板块7：错题复习（从折叠拎出平铺） -->
+      <div class="section">
         <div class="card" id="mistake-review-card">
           <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题复习</h2>
           <div id="mistake-review-body" class="mistake-review-body"></div>
         </div>
-
-        <!-- 今日学习分布卡（从首屏移入折叠区） -->
-        <div class="card today-dist" id="today-dist">
-          <div class="td-head">
-            <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 今日学习分布</h2>
-            <span class="td-total" id="td-total">合计 0m</span>
-          </div>
-          <div id="td-rows" class="td-rows"></div>
-          <div class="td-empty" id="td-empty" hidden>今天还没开始计时，去对应模块点「开始」吧～</div>
-        </div>
-
-        <!-- 次级信息：今日得分 / 累计等级 -->
-        <div class="today-score-card" id="today-score-card">
-          <div class="sc-item">
-            <div class="sc-label">今日得分</div>
-            <div class="sc-value" id="agg-score">0</div>
-          </div>
-          <div class="sc-item">
-            <div class="sc-label">累计等级</div>
-            <div class="sc-value" id="agg-level">Lv.0</div>
-          </div>
-        </div>
-
-      </details>
-
-      <!-- 按模块计时（首屏第 4 块，保留功能） -->
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="timer"></span> 按模块计时</h2>
-        <div id="timer-rows" class="timer-rows"></div>
-      </div></div>
+      </div>
 
 
       <div class="section">
@@ -1106,14 +1110,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822n"></script>
-  <script src="iconset.js?v=20260822n"></script>
-  <script src="words.js?v=20260822n"></script>
-  <script src="store.js?v=20260822n"></script>
-  <script src="charts.js?v=20260822n"></script>
-  <script src="share.js?v=20260822n"></script>
-  <script src="md5.js?v=20260822n"></script>
-  <script src="sentences.js?v=20260822n"></script>
-  <script src="app.js?v=20260822n"></script>
+  <script src="qrcode.min.js?v=20260822p"></script>
+  <script src="iconset.js?v=20260822p"></script>
+  <script src="words.js?v=20260822p"></script>
+  <script src="store.js?v=20260822p"></script>
+  <script src="charts.js?v=20260822p"></script>
+  <script src="share.js?v=20260822p"></script>
+  <script src="md5.js?v=20260822p"></script>
+  <script src="sentences.js?v=20260822p"></script>
+  <script src="app.js?v=20260822p"></script>
 </body>
 </html>

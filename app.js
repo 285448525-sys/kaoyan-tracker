@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822n';
+  var APP_VERSION = '20260822p';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -21,10 +21,13 @@
     if (text !== undefined && text !== null) e.textContent = String(text);
     return e;
   }
-  // 空状态：一句话说明 + 可选「去 XX」行动按钮（文案走 textContent 防 XSS）
+  // 空状态：线性图标 + 一句话说明 + 可选「去 XX」行动按钮（文案走 textContent 防 XSS；图标走已注册 data-icon）
   function emptyHint(box, msg, action) {
     box.innerHTML = '';
     var d = el('div', 'empty-hint');
+    if (action && action.icon && window.Icon && Icon.paths[action.icon]) {
+      var ic = el('span', 'empty-ic'); ic.setAttribute('data-icon', action.icon); d.appendChild(ic);
+    }
     if (msg) d.appendChild(el('div', 'empty-msg', msg));
     if (action && action.label) {
       var b = el('button', 'btn btn-primary empty-act', action.label);
@@ -33,6 +36,7 @@
       d.appendChild(b);
     }
     box.appendChild(d);
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
   function setText(node, text) {
     if (!node) return;
@@ -439,6 +443,119 @@
     });
   }
 
+  /* ============ 首页专属板块（P4b 一屏平铺，独立容器避免与计时页冲突） ============ */
+  // 首页计时行：复用 Store 数据，渲染到 #home-timer-rows（与计时页 timer-rows 互不干扰）
+  function renderHomeTimer() {
+    var box = document.getElementById('home-timer-rows');
+    if (!box) return;
+    box.innerHTML = '';
+    var subs = Store.getSubjects();
+    if (!subs.length) { box.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
+    var t = Store.getTimer();
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
+    subs.forEach(function (s) {
+      var running = t.running && t.subjectKey === s.key;
+      var row = el('div', 'timer-row' + (running ? ' running' : ''));
+      row.appendChild(el('div', 't-name', s.name));
+      var acc = (day.durations && day.durations[s.key]) || 0;
+      row.appendChild(el('div', 't-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时')));
+      var btn = el('button', 't-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
+      btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
+  }
+  // 首页番茄钟：镜像计时页逻辑，渲染到 #home-pomo-*（独立 id，不与计时页 pomo-* 冲突）
+  function renderHomePomodoro() {
+    var timeEl = document.getElementById('home-pomo-time');
+    if (!timeEl) return;
+    timeEl.textContent = fmtPomo(pomodoro.remain);
+    var modeEl = document.getElementById('home-pomo-mode');
+    if (modeEl) modeEl.textContent = pomodoro.done ? '✅ 倒计时结束'
+      : (pomodoro.countdownOnly ? '⏲ 倒计时' : (pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中'));
+    var startBtn = document.getElementById('home-btn-pomo-start');
+    if (startBtn) startBtn.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
+  }
+  // 首页学习板块：今日分布（复用 renderTodayDistribution 聚合逻辑，输出到 #home-distribution）
+  function renderHomeDistribution() {
+    var box = document.getElementById('home-distribution');
+    if (!box) return;
+    var body = box.querySelector('.hs-body');
+    if (!body) return;
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
+    var subs = Store.getSubjects();
+    var rows = subs.map(function (s) {
+      var min = (day.durations && day.durations[s.key]) || 0;
+      return { name: s.name, min: min, color: subjectColorClass(s.key, s.name) };
+    }).filter(function (x) { return x.min > 0; })
+      .sort(function (a, b) { return b.min - a.min; });
+    var total = rows.reduce(function (s, x) { return s + x.min; }, 0);
+    if (!rows.length) { body.innerHTML = '<div class="hs-empty">今天还没开始计时，去对应模块点「开始」吧～</div>'; return; }
+    var max = rows[0].min;
+    body.innerHTML = rows.map(function (r) {
+      var w = max ? Math.round(r.min / max * 100) : 0;
+      return '<div class="td-row">' +
+        '<span class="td-dot" style="background:' + r.color + '"></span>' +
+        '<span class="td-name">' + escapeHtml(r.name) + '</span>' +
+        '<span class="td-bar"><span class="td-fill" style="width:' + Math.max(6, w) + '%;background:' + r.color + '"></span></span>' +
+        '<span class="td-time">' + fmtMinShort(r.min) + '</span>' +
+      '</div>';
+    }).join('') + '<div class="hs-total">合计 ' + fmtMinShort(total) + '</div>';
+  }
+  // 首页学习板块：待复习（记忆曲线：数学+408 错题 + vocab Leitner 箱中 nextReview<=today）
+  function renderHomeReview() {
+    var box = document.getElementById('home-review');
+    if (!box) return;
+    var body = box.querySelector('.hs-body');
+    if (!body) return;
+    var today = Store.todayStr();
+    var due = Store.getMathDueMistakes(today).length + Store.get408DueMistakes(today).length;
+    var vocabDue = 0;
+    try {
+      var vocab = Store.getVocab ? Store.getVocab() : [];
+      vocab.forEach(function (w) { if (w.box && w.box < 5 && w.nextReview && w.nextReview <= today) vocabDue++; });
+    } catch (e) {}
+    var totalDue = due + vocabDue;
+    if (totalDue === 0) { body.innerHTML = '<div class="hs-empty ok">✅ 今日无待复习项</div>'; return; }
+    body.innerHTML = '<div class="hs-num">' + totalDue + ' <span>项</span></div>' +
+      '<div class="hs-sub">错题 ' + due + ' · 生词 ' + vocabDue + '</div>';
+  }
+  // 首页学习板块：错题速览（近 5 条 mistakes/mathMistakes/cs408Mistakes）
+  function renderHomeMistakes() {
+    var box = document.getElementById('home-mistakes');
+    if (!box) return;
+    var body = box.querySelector('.hs-body');
+    if (!body) return;
+    var list = [];
+    try {
+      var m = Store.getMistakes ? Store.getMistakes() : [];
+      var mm = Store.getMathMistakes ? Store.getMathMistakes() : [];
+      var cm = Store.get408Mistakes ? Store.get408Mistakes() : [];
+      list = list.concat(m.map(function (x) { return { t: x.content || x.note || '错题', d: x.date, k: '通用' }; }));
+      list = list.concat(mm.map(function (x) { return { t: x.content || x.note || '数学错题', d: x.date, k: '数学' }; }));
+      list = list.concat(cm.map(function (x) { return { t: x.content || x.note || '408错题', d: x.date, k: '408' }; }));
+    } catch (e) {}
+    list.sort(function (a, b) { return (b.d || '').localeCompare(a.d || ''); });
+    if (!list.length) { body.innerHTML = '<div class="hs-empty">还没有错题记录，做过的题觉得重要就记下来</div>'; return; }
+    body.innerHTML = list.slice(0, 5).map(function (x) {
+      return '<div class="hs-mistake"><span class="hs-mk">' + escapeHtml(x.k) + '</span>' +
+        '<span class="hs-mt">' + escapeHtml((x.t || '').slice(0, 24)) + '</span></div>';
+    }).join('');
+  }
+  // 首页学习板块：今日得分 + 累计等级
+  function renderHomeScores() {
+    var box = document.getElementById('home-scores');
+    if (!box) return;
+    var body = box.querySelector('.hs-body');
+    if (!body) return;
+    var today = Store.getDay(Store.todayStr()) || {};
+    var score = scoreForDay(Store.todayStr(), today);
+    var lvl = 'Lv.1';
+    try { lvl = 'Lv.' + computeLevel(getStudyStats()).level; } catch (e) {}
+    body.innerHTML = '<div class="hs-num">' + score + ' <span>分</span></div>' +
+      '<div class="hs-sub">' + lvl + '</div>';
+  }
+
   /* ============ 全局计时常驻指示：计时运行时在所有 tab 可见 ============ */
   function showGlobalTimer(key) {
     var bar = document.getElementById('global-timer');
@@ -527,7 +644,7 @@
   function renderDayList() {
     refs.dayList.innerHTML = '';
     var keys = Object.keys(Store.getDays()).filter(function (k) { return Store.totalMinutesForDay(Store.getDays()[k]) > 0; }).sort().reverse().slice(0, 12);
-    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { label: '去记录学习', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
+    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { icon: 'clock', label: '去记录学习', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
     keys.forEach(function (ds) {
       var d = Store.getDays()[ds];
       var item = el('div', 'list-item');
@@ -539,7 +656,7 @@
   function renderExamList() {
     refs.examList.innerHTML = '';
     var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { label: '去添加模考', fn: function () { switchTab('mock'); } }); return; }
+    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { icon: 'target', label: '去添加模考', fn: function () { switchTab('mock'); } }); return; }
     exams.forEach(function (ex) {
       var item = el('div', 'list-item');
       item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
@@ -566,7 +683,7 @@
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
     refs.planList.innerHTML = '';
-    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } }); return; }
+    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } }); return; }
     var subs = Store.getSubjects();
     var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
@@ -939,7 +1056,7 @@
       }
     }
     refs.subjectStats.innerHTML = '';
-    if (!subs.length) { Charts.chartEmptyState(refs.subjectStats, { ill: Charts.ILL_GOAL, title: '暂无科目统计', hint: '配置科目并计时后，这里显示累计/日均时长', ctaLabel: '去设置科目', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); return; }
+    if (!subs.length) { Charts.chartEmptyState(refs.subjectStats, { ill: Charts.ILL_GOAL, title: '科目统计还是空的', hint: '配置科目并计时后，这里显示累计/日均时长', ctaLabel: '去设置科目', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); return; }
     subs.forEach(function (s) {
       var total = 0, daysCount = 0;
       Object.keys(days).forEach(function (ds) {
@@ -1069,7 +1186,7 @@
     });
 
     refs.mistakeList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.mistakeList, '还没有整理错题，做过的题觉得重要就记下来', { label: '记一道错题', fn: function () { switchTab('mistakes'); } }); return; }
+    if (!list.length) { emptyHint(refs.mistakeList, '还没有整理错题，做过的题觉得重要就记下来', { icon: 'bug', label: '记一道错题', fn: function () { switchTab('mistakes'); } }); return; }
     list.forEach(function (m) {
       var isDue = m.scope === 'math'
         ? (!m.nextReview || m.nextReview <= today)
@@ -1489,7 +1606,7 @@
     block.appendChild(barWrap);
     var prog = el('div', 'chapter-prog');
     prog.textContent = total ? ('已完成 ' + doneCount + ' / ' + total + '（' + pct + '%）' + (current >= 0 ? ' · 当前：' + parseChapter(chapters[current]).n : ' · 未开始'))
-      : '暂无章节，可在下方添加';
+      : '这个分支下还没有章节，可在下方添加';
     block.appendChild(prog);
     if (total) block.appendChild(renderMasteryHeatmap(chapters, doneSet, current));
 
@@ -1560,7 +1677,7 @@
     block.appendChild(barWrap);
     var prog = el('div', 'chapter-prog');
     prog.textContent = total ? ('已完成 ' + doneCount + ' / ' + total + '（' + pct + '%）' + (current >= 0 ? ' · 当前：' + parseChapter(chapters[current]).n : ' · 未开始'))
-      : '暂无章节，可在下方添加';
+      : '这个分支下还没有章节，可在下方添加';
     block.appendChild(prog);
     if (total) block.appendChild(renderMasteryHeatmap(chapters, doneSet, current));
 
@@ -1723,7 +1840,7 @@
         else items.push({ text: '复习《' + s.name + '》全部章节', note: '已完成全部 ' + total + ' 章，建议进入刷题巩固' });
       }
     });
-    if (!items.length) { showToast('暂无进度数据，先填写模块掌握情况或章节进度吧'); return; }
+    if (!items.length) { showToast('进度数据还是空的，先填写模块掌握情况或章节进度吧'); return; }
     items.forEach(function (it) { Store.addPlanItem({ text: it.text, note: it.note || '', done: false }); });
     renderPlanItems(); showToast('已按进度生成 ' + items.length + ' 项计划 ⚡');
   }
@@ -1967,7 +2084,7 @@
   function renderMathQuestionList() {
     var box = refs.mathQuestionList; box.innerHTML = '';
     var list = Store.getMathQuestions();
-    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有自定义题目')); return; }
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有自定义题目，在下方「我的题库」里添加吧')); return; }
     list.forEach(function (q) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2079,7 +2196,7 @@
   function render408QuestionList() {
     var box = refs.cs408QuestionList; box.innerHTML = '';
     var list = Store.get408Questions();
-    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有自定义题目')); return; }
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有自定义题目，在下方「我的题库」里添加吧')); return; }
     list.forEach(function (q) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2126,7 +2243,7 @@
       chip.addEventListener('click', function () { kpFilter = c; render408Knowledge(); });
       refs.kpFilter.appendChild(chip);
     });
-    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有知识点，在上方添加吧')); return; }
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有知识点，在上方输入框添加吧')); return; }
     list.forEach(function (k) {
       var card = el('div', 'kp-card');
       card.style.borderLeftColor = CS408_GROUP_COLORS[k.subject] || '#9ca3af';
@@ -2252,7 +2369,7 @@
     var list = filterVocab(raw);
     refs.vocabCount.textContent = raw.length;
     refs.vocabList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词', { label: '去记生词', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
+    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词，先加几个生词吧', { icon: 'book', label: '去记生词', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
     list.forEach(function (v) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2792,7 +2909,7 @@
     var list = Store.getWrongWords();
     refs.wrongCount.textContent = list.length;
     refs.wrongList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { label: '去翻译查询', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
+    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { icon: 'book', label: '去翻译查询', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
     list.forEach(function (w) {
       var item = el('div', 'mistake-item');
       var top = el('div', 'mistake-top');
@@ -2840,7 +2957,7 @@
     var list = Store.getWrongWords();
     if (!list.length) {
       box.textContent = '';
-      box.appendChild(el('div', 'empty-hint', '暂无查词记录，先去翻译查询或刷题积累吧'));
+      box.appendChild(el('div', 'empty-hint', '查词记录还是空的，先去翻译查询或刷题积累吧'));
       return;
     }
     var c = Store.getAiConfig();
@@ -4299,7 +4416,7 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); }
+    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); renderHomePomodoro(); renderHomeDistribution(); renderHomeReview(); renderHomeMistakes(); renderHomeScores(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
@@ -5008,6 +5125,12 @@
     applySidebar();
     renderTodayAggregate();
     renderCheckinCard();
+
+    // 首页番茄钟按钮（独立 id home-btn-pomo-*，避免与计时页 pomo-* 冲突）
+    var hpStart = document.getElementById('home-btn-pomo-start');
+    if (hpStart) hpStart.addEventListener('click', function () { togglePomodoro(); renderHomePomodoro(); });
+    var hpReset = document.getElementById('home-btn-pomo-reset');
+    if (hpReset) hpReset.addEventListener('click', function () { resetPomodoro(); renderHomePomodoro(); });
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
