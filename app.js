@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822u';
+  var APP_VERSION = '20260822v';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -88,26 +88,6 @@
   var MISTAKE_TYPES = ['今日感悟', '刷题时遇到的问题', '知识点盲区', '易错点', '其他'];
   // 错题本科目：固定丰富列表，并与用户配置的考试科目合并去重（修复「科目无法选择」缺陷）
   var MISTAKE_SUBJECTS = ['阅读', '完形', '翻译', '写作', '语法', '词汇', '听力', '口语', '政治', '数学', '专业课'];
-  var CURATED = [
-    { cat: '官方 / 资讯', items: [
-      { name: '中国研究生招生信息网（研招网）', url: 'https://yz.chsi.com.cn', desc: '报名、调剂、分数线官方平台' },
-      { name: '学信网', url: 'https://www.chsi.com.cn', desc: '学籍学历查询' }
-    ]},
-    { cat: '网课 / MOOC', items: [
-      { name: '哔哩哔哩', url: 'https://www.bilibili.com', desc: '大量免费考研网课与经验视频' },
-      { name: '中国大学MOOC', url: 'https://www.icourse163.org', desc: '名校公开课' },
-      { name: '网易公开课', url: 'https://open.163.com', desc: '公开课资源' },
-      { name: '学堂在线', url: 'https://www.xuetangx.com', desc: '清华等高校课程' }
-    ]},
-    { cat: '计算机专属', items: [
-      { name: '王道论坛', url: 'https://www.cskaoyan.com', desc: '408 计算机考研资料与经验' },
-      { name: '牛客网', url: 'https://www.nowcoder.com', desc: '刷题与笔试面试' }
-    ]},
-    { cat: '资料 / 工具', items: [
-      { name: '百度网盘', url: 'https://pan.baidu.com', desc: '资料存储与分享' },
-      { name: '考研帮', url: 'https://kaoyan.com', desc: '经验帖与院校信息' }
-    ]}
-  ];
 
   /* ============ 学习计划 / 数学模块：常量 ============ */
   // 考研数学全套章节（带分组前缀「分组 · 章节名」，预填充）
@@ -475,85 +455,6 @@
       : (pomodoro.countdownOnly ? '⏲ 倒计时' : (pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中'));
     var startBtn = document.getElementById('home-btn-pomo-start');
     if (startBtn) startBtn.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
-  }
-  // 首页学习板块：今日分布（复用 renderTodayDistribution 聚合逻辑，输出到 #home-distribution）
-  function renderHomeDistribution() {
-    var box = document.getElementById('home-distribution');
-    if (!box) return;
-    var body = box.querySelector('.hs-body');
-    if (!body) return;
-    var day = Store.getDay(Store.todayStr()) || { durations: {} };
-    var subs = Store.getSubjects();
-    var rows = subs.map(function (s) {
-      var min = (day.durations && day.durations[s.key]) || 0;
-      return { name: s.name, min: min, color: subjectColorClass(s.key, s.name) };
-    }).filter(function (x) { return x.min > 0; })
-      .sort(function (a, b) { return b.min - a.min; });
-    var total = rows.reduce(function (s, x) { return s + x.min; }, 0);
-    if (!rows.length) { body.innerHTML = '<div class="hs-empty">今天还没开始计时，去对应模块点「开始」吧～</div>'; return; }
-    var max = rows[0].min;
-    body.innerHTML = rows.map(function (r) {
-      var w = max ? Math.round(r.min / max * 100) : 0;
-      return '<div class="td-row">' +
-        '<span class="td-dot" style="background:' + r.color + '"></span>' +
-        '<span class="td-name">' + escapeHtml(r.name) + '</span>' +
-        '<span class="td-bar"><span class="td-fill" style="width:' + Math.max(6, w) + '%;background:' + r.color + '"></span></span>' +
-        '<span class="td-time">' + fmtMinShort(r.min) + '</span>' +
-      '</div>';
-    }).join('') + '<div class="hs-total">合计 ' + fmtMinShort(total) + '</div>';
-  }
-  // 首页学习板块：待复习（记忆曲线：数学+408 错题 + vocab Leitner 箱中 nextReview<=today）
-  function renderHomeReview() {
-    var box = document.getElementById('home-review');
-    if (!box) return;
-    var body = box.querySelector('.hs-body');
-    if (!body) return;
-    var today = Store.todayStr();
-    var due = Store.getMathDueMistakes(today).length + Store.get408DueMistakes(today).length;
-    var vocabDue = 0;
-    try {
-      var vocab = Store.getVocab ? Store.getVocab() : [];
-      vocab.forEach(function (w) { if (w.box && w.box < 5 && w.nextReview && w.nextReview <= today) vocabDue++; });
-    } catch (e) {}
-    var totalDue = due + vocabDue;
-    if (totalDue === 0) { body.innerHTML = '<div class="hs-empty ok">✅ 今日无待复习项</div>'; return; }
-    body.innerHTML = '<div class="hs-num">' + totalDue + ' <span>项</span></div>' +
-      '<div class="hs-sub">错题 ' + due + ' · 生词 ' + vocabDue + '</div>';
-  }
-  // 首页学习板块：错题速览（近 5 条 mistakes/mathMistakes/cs408Mistakes）
-  function renderHomeMistakes() {
-    var box = document.getElementById('home-mistakes');
-    if (!box) return;
-    var body = box.querySelector('.hs-body');
-    if (!body) return;
-    var list = [];
-    try {
-      var m = Store.getMistakes ? Store.getMistakes() : [];
-      var mm = Store.getMathMistakes ? Store.getMathMistakes() : [];
-      var cm = Store.get408Mistakes ? Store.get408Mistakes() : [];
-      list = list.concat(m.map(function (x) { return { t: x.content || x.note || '错题', d: x.date, k: '通用' }; }));
-      list = list.concat(mm.map(function (x) { return { t: x.content || x.note || '数学错题', d: x.date, k: '数学' }; }));
-      list = list.concat(cm.map(function (x) { return { t: x.content || x.note || '408错题', d: x.date, k: '408' }; }));
-    } catch (e) {}
-    list.sort(function (a, b) { return (b.d || '').localeCompare(a.d || ''); });
-    if (!list.length) { body.innerHTML = '<div class="hs-empty">还没有错题记录，做过的题觉得重要就记下来</div>'; return; }
-    body.innerHTML = list.slice(0, 5).map(function (x) {
-      return '<div class="hs-mistake"><span class="hs-mk">' + escapeHtml(x.k) + '</span>' +
-        '<span class="hs-mt">' + escapeHtml((x.t || '').slice(0, 24)) + '</span></div>';
-    }).join('');
-  }
-  // 首页学习板块：今日得分 + 累计等级
-  function renderHomeScores() {
-    var box = document.getElementById('home-scores');
-    if (!box) return;
-    var body = box.querySelector('.hs-body');
-    if (!body)  return;
-    var today = Store.getDay(Store.todayStr()) || {};
-    var score = scoreForDay(Store.todayStr(), today);
-    var lvl = 'Lv.1';
-    try { lvl = 'Lv.' + computeLevel(getStudyStats()).level; } catch (e) {}
-    body.innerHTML = '<div class="hs-num">' + score + ' <span>分</span></div>' +
-      '<div class="hs-sub">' + lvl + '</div>';
   }
 
   // 计时页「今日计时汇总」：复用 Store 当日 durations
@@ -1430,7 +1331,7 @@
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
-    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math', mock:'mock', data:'data', settings:'settings', vocab:'vocab' };
+    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', mock:'mock', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
     showTab(real);
     if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
@@ -1844,33 +1745,6 @@
   }
 
   // 依据「模块掌握情况 + 章节进度」智能生成计划项
-  function onSmartPlan() {
-    var items = [];
-    var mastery = Store.getModuleMastery();
-    Object.keys(mastery).forEach(function (name) {
-      var st = mastery[name];
-      if (st === '未开始') items.push({ text: '启动模块：' + name, note: '当前标记「未开始」，建议先制定入门学习计划' });
-      else if (st === '进行中') items.push({ text: '推进模块：' + name, note: '当前「进行中」，建议本周安排重点攻克' });
-    });
-    Store.getSubjects().forEach(function (s) {
-      var ch, doneArr, total, doneCount;
-      if (s.key === 'math') { ch = Store.getMathChapters(); doneArr = Store.getMathDone(); }
-      else if (s.key === 'cs408') { ch = Store.get408Chapters(); doneArr = Store.get408Done(); }
-      else { var obj = Store.getSubjectChapters(s.key) || {}; ch = obj.chapters || []; doneArr = Array.isArray(obj.done) ? obj.done : []; }
-      total = ch.length; doneCount = doneArr.length;
-      if (total) {
-        // 找第一个未完成的章节作为"下一步"
-        var nextIdx = -1;
-        for (var i = 0; i < total; i++) { if (doneArr.indexOf(i) < 0) { nextIdx = i; break; } }
-        if (doneCount === 0) items.push({ text: '开始《' + s.name + '》：' + parseChapter(ch[nextIdx >= 0 ? nextIdx : 0]).n, note: '尚未完成任何章节' });
-        else if (doneCount < total) items.push({ text: '继续《' + s.name + '》：' + (nextIdx >= 0 ? parseChapter(ch[nextIdx]).n : '复习已学内容'), note: '已完成 ' + doneCount + '/' + total + ' 章' });
-        else items.push({ text: '复习《' + s.name + '》全部章节', note: '已完成全部 ' + total + ' 章，建议进入刷题巩固' });
-      }
-    });
-    if (!items.length) { showToast('进度数据还是空的，先填写模块掌握情况或章节进度吧'); return; }
-    items.forEach(function (it) { Store.addPlanItem({ text: it.text, note: it.note || '', done: false }); });
-    renderPlanItems(); showToast('已按进度生成 ' + items.length + ' 项计划 ⚡');
-  }
 
   // 解析 AI 返回的 JSON 数组（兼容 ```json 围栏 / 前后多余文字）
   function parseJsonArray(str) {
@@ -1881,42 +1755,6 @@
     try { var arr = JSON.parse(s.slice(a, b + 1)); return Array.isArray(arr) ? arr : null; } catch (e) { return null; }
   }
 
-  // AI 生成个性化学习计划（基于模块掌握情况 + 章节进度 + 距考研倒计时）
-  function onAiPlan() {
-    var c = Store.getAiConfig();
-    if (!c.baseUrl || !c.model || !c.key) { showToast('请先在「配置」页填写 AI 接口地址、模型与 Key', 'err'); return; }
-    var days = refs.aggCountdown ? refs.aggCountdown.textContent : '';
-    var mastery = Store.getModuleMastery();
-    var masLines = Object.keys(mastery).map(function (n) { return '- ' + n + '：' + mastery[n]; });
-    var subLines = [];
-    Store.getSubjects().forEach(function (s) {
-      var ch, doneArr, total, doneCount;
-      if (s.key === 'math') { ch = Store.getMathChapters(); doneArr = Store.getMathDone(); }
-      else if (s.key === 'cs408') { ch = Store.get408Chapters(); doneArr = Store.get408Done(); }
-      else { var obj = Store.getSubjectChapters(s.key) || {}; ch = obj.chapters || []; doneArr = Array.isArray(obj.done) ? obj.done : []; }
-      total = ch.length; doneCount = doneArr.length;
-      subLines.push('- 《' + s.name + '》已完成 ' + doneCount + '/' + total + ' 章');
-    });
-    var userMsg = '我是考研备考学生。当前情况：\n模块掌握：\n' + masLines.join('\n') + '\n各科进度：\n' + subLines.join('\n') + '\n距考研约 ' + (days || '未知') + ' 天。\n请为我生成接下来一周的个性化学习计划，按优先级排序。只返回一个 JSON 数组，每个元素形如 {"text":"计划内容","note":"为什么/怎么做","priority":"高|中|低"}，不要任何解释文字。';
-    var btn = refs.btnAiPlan;
-    if (btn) { btn.disabled = true; btn.textContent = '🤖 AI 生成中…'; }
-    aiChat([
-      { role: 'system', content: '你是考研规划助手。只输出可被 JSON.parse 解析的 JSON 数组，不要 markdown、不要多余文字。' },
-      { role: 'user', content: userMsg }
-    ], { maxTokens: 1500 }).then(function (res) {
-      var arr = parseJsonArray(res.content);
-      if (!arr || !arr.length) { showToast('AI 未返回有效计划，请重试', 'err'); return; }
-      arr.forEach(function (it) {
-        if (it && it.text) Store.addPlanItem({ text: String(it.text), note: it.note ? String(it.note) : '', done: false });
-      });
-      renderPlanItems();
-      showToast('🤖 AI 已生成 ' + arr.length + ' 项计划', 'ok');
-    }).catch(function (err) {
-      showToast('AI 生成失败：' + (err.msg || '未知错误'), 'err');
-    }).then(function () {
-      if (btn) { btn.disabled = false; btn.textContent = '🤖 AI 生成计划'; }
-    });
-  }
 
   /* ============ 数学模块：章节 + 分类刷题 ============ */
   var mathPractice = null;
@@ -2334,32 +2172,6 @@
     // 408 现为顶层 tab（tab-cs408），始终可见；内容区由对应 render 决定是否为空态
   }
 
-  /* ============ 学习网站 ============ */
-  function renderSites() {
-    refs.curatedSites.innerHTML = '';
-    CURATED.forEach(function (g) {
-      refs.curatedSites.appendChild(el('div', 'site-cat', g.cat));
-      g.items.forEach(function (it) { refs.curatedSites.appendChild(siteItem(it, null)); });
-    });
-    refs.userSites.innerHTML = '';
-    var us = Store.getUserWebsites();
-    if (!us.length) refs.userSites.appendChild(el('div', 'empty-hint', '还没有收藏，添加你常用的资源吧'));
-    us.forEach(function (it) { refs.userSites.appendChild(siteItem(it, it.id)); });
-  }
-  function siteItem(it, id) {
-    var d = el('div', 'site-item');
-    var left = el('div'); left.style.flex = '1'; left.style.minWidth = '0';
-    var a = el('a', null, it.name); a.href = it.url; a.target = '_blank'; a.rel = 'noopener';
-    left.appendChild(a);
-    if (it.desc) left.appendChild(el('div', 'site-desc', it.desc));
-    d.appendChild(left);
-    if (id) {
-      var del = el('button', 'site-del', '删除');
-      del.addEventListener('click', function () { Store.removeWebsite(id); renderSites(); });
-      d.appendChild(del);
-    }
-    return d;
-  }
 
   /* ============ 词汇模块：生词记录 / 背单词 / 生词复习 ============ */
   function readVocabExtra() {
@@ -3551,51 +3363,7 @@
     if (Number(val) === 0) el.classList.add('is-zero'); else el.classList.remove('is-zero');
   }
 
-  /* ============ 智能计划：基于剩余天数 + 目标累计时长反推每日学习量 ============ */
-  function computeSmartPlan(cfg, doneHours, daysLeft) {
-    var goal = Number(cfg.goalHours) || 0;
-    if (!cfg.examDate || daysLeft == null) return { status: 'noExam' };
-    if (goal <= 0) return { status: 'unset', daysLeft: daysLeft, doneHours: +doneHours.toFixed(1) };
-    if (daysLeft <= 0) return { status: 'ended', daysLeft: 0, doneHours: +doneHours.toFixed(1), goalHours: goal };
-    var remaining = Math.max(0, +(goal - doneHours).toFixed(1));
-    var daily = +(remaining / daysLeft).toFixed(1);
-    return {
-      status: remaining <= 0 ? 'done' : 'ok',
-      daysLeft: daysLeft,
-      doneHours: +doneHours.toFixed(1),
-      goalHours: goal,
-      remaining: remaining,
-      dailyNeed: daily
-    };
-  }
 
-  function renderSmartPlan() {
-    var box = document.getElementById('smart-plan');
-    if (!box) return;
-    var cfg = Store.getConfig();
-    var daysLeft = cfg.examDate ? Math.ceil((new Date(cfg.examDate) - new Date(Store.todayStr())) / 86400000) : null;
-    var doneMin = 0; var days = Store.getDays();
-    Object.keys(days).forEach(function (ds) { doneMin += Store.totalMinutesForDay(days[ds]); });
-    var doneHours = Math.round(doneMin / 60 * 10) / 10; // 显示用的已学时长，统一保留 1 位小数，避免长浮点（如 12.083333…）
-    var r = computeSmartPlan(cfg, doneHours, daysLeft);
-    var html = '';
-    if (r.status === 'noExam') {
-      html = '📅 先设置考研日期，才能为你规划每日学习量 · <a href="#" class="sp-link" data-go="config">去设置</a>';
-    } else if (r.status === 'unset') {
-      html = '📅 距考研 <b>' + r.daysLeft + '</b> 天 · 已学 <b>' + r.doneHours + '</b>h · 设置目标时长后为你计算 · <a href="#" class="sp-link" data-go="config">去设置目标</a>';
-    } else if (r.status === 'ended') {
-      html = '🏁 考研已结束 · 累计已学 <b>' + r.doneHours + '</b>h（目标 ' + r.goalHours + 'h）';
-    } else if (r.status === 'done') {
-      html = '🎉 已超额完成目标（累计 ' + r.doneHours + 'h ≥ 目标 ' + r.goalHours + 'h），保持节奏即可！';
-    } else {
-      var warn = r.dailyNeed > 12 ? ' <span class="sp-warn">（缺口较大，建议上调目标或延长每日时长）</span>' : '';
-      html = '📅 距考研 <b>' + r.daysLeft + '</b> 天 · 已学 <b>' + r.doneHours + '</b>h / 目标 <b>' + r.goalHours + '</b>h → 每天需学 <b class="sp-key">' + r.dailyNeed + '</b> 小时' + warn;
-    }
-    box.innerHTML = html;
-    box.querySelectorAll('.sp-link').forEach(function (a) {
-      a.addEventListener('click', function (e) { e.preventDefault(); switchTab(a.getAttribute('data-go')); });
-    });
-  }
 
   /* ============ 快捷入口网格（方案 29 · Block 5）============ */
   // 从侧栏 .tab-btn 派生，保证导航文案/图标与侧栏一致；点击直接 switchTab
@@ -3746,7 +3514,6 @@
     renderTodayDistribution();
     // H3：快速开始引导卡
     renderTodayOnboarding();
-    renderSmartPlan();
   }
 
   /* ============ H1：科目进度聚合条（今日页 KPI 卡下方）——用语义色 ============ */
@@ -4420,7 +4187,6 @@
     setTimeout(function () {
       renderData();
       renderMistakeList();
-      renderSites();
       renderWords();
       renderPractice();
       renderReview();
@@ -4443,7 +4209,7 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); renderHomeDistribution(); renderHomeReview(); renderHomeMistakes(); renderHomeScores(); }
+    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); }
     if (target === 'timer') { renderTimerRows(); renderPomodoro(); renderTimerSummary(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
@@ -4451,7 +4217,6 @@
     if (target === 'vocab') { showSub('vocab', 'words'); renderWrongBook(); renderWords(); }
     if (target === 'mock') { renderExamCard(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
-    if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); renderHelpManual(); renderSmartPlan(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
     // 同步底部 tabbar 高亮
     var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
@@ -4482,7 +4247,6 @@
       else if (sub === 'summary') { renderSummary(); }
     } else if (container === 'settings') {
       if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); }
-      else if (sub === 'sites') { renderSites(); }
       else if (sub === 'manual') { renderHelpManual(); }
       else if (sub === 'guide') { renderTodayOnboarding(); }
     }
@@ -4664,11 +4428,6 @@
     refs.aiAnswer = $('ai-answer');
     refs.aiSolvedList = $('ai-solved-list');
 
-    refs.curatedSites = $('curated-sites');
-    refs.userSites = $('user-sites');
-    refs.siteName = $('site-name');
-    refs.siteUrl = $('site-url');
-    refs.btnAddSite = $('btn-add-site');
 
     refs.toast = $('toast');
 
@@ -4740,8 +4499,6 @@
     refs.moduleName = $('module-name');
     refs.btnAddModule = $('btn-add-module');
     refs.subjectChapters = $('subject-chapters');
-    refs.btnSmartPlan = $('btn-smart-plan');
-    refs.btnAiPlan = $('btn-ai-plan');
     refs.planItems = $('plan-items');
     refs.planItemText = $('plan-item-text');
     refs.planNote = $('plan-note');
@@ -4962,15 +4719,6 @@
     });
     if (refs.btnSolve) refs.btnSolve.addEventListener('click', onAiSolve);
 
-    // 网站
-    refs.btnAddSite.addEventListener('click', function () {
-      var name = refs.siteName.value.trim(), url = refs.siteUrl.value.trim();
-      if (!name || !url) { alert('请填写名称和网址'); return; }
-      if (!/^https?:\/\//.test(url)) url = 'https://' + url;
-      Store.addWebsite({ name: name, url: url, cat: '' });
-      refs.siteName.value = ''; refs.siteUrl.value = ''; renderSites();
-    });
-
     // 词汇：生词记录
     refs.btnRecordWord.addEventListener('click', onRecordWord);
     refs.btnClearWord.addEventListener('click', function () { refs.wordInput.value = ''; refs.wordResult.innerHTML = ''; refs.wordManual.style.display = 'none'; });
@@ -5090,8 +4838,6 @@
       Store.addModule(name); refs.moduleName.value = ''; renderMastery();
     });
     // 学习计划：智能生成 + 手动添加
-    refs.btnSmartPlan.addEventListener('click', onSmartPlan);
-    if (refs.btnAiPlan) refs.btnAiPlan.addEventListener('click', onAiPlan);
     refs.btnAddPlanItem.addEventListener('click', function () {
       var text = refs.planItemText.value.trim();
       if (!text) { alert('请输入计划内容'); return; }
@@ -5182,7 +4928,6 @@
     window.toggleTheme = toggleTheme;
     window.applyColorScheme = applyColorScheme;
     // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
-    window.computeSmartPlan = computeSmartPlan;
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
     window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
     // B1 测试钩子（仅供 test_sync_phone.js 验证并发/本地保护逻辑，不影响生产行为）

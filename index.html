@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822u" />
+  <link rel="stylesheet" href="styles.css?v=20260822v" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -167,33 +167,7 @@
         </div>
       </div>
 
-      <!-- 板块4：📚 学习（常驻，不折叠；四块 2×2 平铺） -->
-      <div class="section">
-        <div class="card home-study-card" id="home-study-card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 学习</h2>
-          <div class="home-study-grid">
-            <div class="hs-block" id="home-distribution"><h3>今日分布</h3><div class="hs-body"></div></div>
-            <div class="hs-block" id="home-review"><h3>待复习</h3><div class="hs-body"></div></div>
-            <div class="hs-block" id="home-mistakes"><h3>错题速览</h3><div class="hs-body"></div></div>
-            <div class="hs-block" id="home-scores"><h3>今日得分</h3><div class="hs-body"></div></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- 板块5：今日打卡（从折叠拎出平铺） -->
-      <div class="section">
-        <div class="card checkin-card" id="checkinCard">
-          <h2 class="card-title"><span class="ic-inline" data-icon="check"></span> 今日打卡</h2>
-          <div class="checkin-inner">
-            <div class="checkin-streak"><span class="ic-inline" data-icon="fire"></span> 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
-            <button class="checkin-btn" id="btn-checkin-today" type="button" aria-label="今日打卡">
-              <span class="ci-ring"></span>
-              <span class="ci-label" id="ci-label">今日打卡</span>
-            </button>
-            <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
-          </div>
-        </div>
-      </div>
 
       <!-- 板块6：今日待办（自动生成钮 + 列表首屏可见；添加表单折叠） -->
       <div class="section">
@@ -214,20 +188,6 @@
           </details>
         </div>
       </div>
-
-      <!-- 板块7：错题复习（从折叠拎出平铺） -->
-      <div class="section">
-        <div class="card" id="mistake-review-card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题复习</h2>
-          <div id="mistake-review-body" class="mistake-review-body"></div>
-        </div>
-      </div>
-
-
-      <details class="smart-plan-fold">
-        <summary class="card-title"><span class="ic-inline" data-icon="bolt"></span> 智能计划（每日学习量建议）</summary>
-        <div id="smart-plan" class="smart-plan"></div>
-      </details>
 
           </section>
 
@@ -721,48 +681,51 @@
       </div></div>
 
 
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="medal"></span> 成就与等级</h2>
-        <div id="badges-level" class="badges-level"></div>
-        <div class="badges-count" id="badges-count"></div>
-        <div id="badges-grid" class="badges-grid"></div>
-      </div></div>
+      <details class="analysis-fold">
+        <summary class="fold-summary"><span class="ic-inline" data-icon="chart"></span> 更多分析（成就 · 目标 · 雷达图 · 薄弱点）</summary>
+        <div class="section">
+  <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="medal"></span> 成就与等级</h2>
+          <div id="badges-level" class="badges-level"></div>
+          <div class="badges-count" id="badges-count"></div>
+          <div id="badges-grid" class="badges-grid"></div>
+        </div></div>
 
 
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 目标进度与差距</h2>
-        <div id="goal-progress" class="goal"></div>
-      </div></div>
+        <div class="section">
+  <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 目标进度与差距</h2>
+          <div id="goal-progress" class="goal"></div>
+        </div></div>
 
 
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="fire"></span> 学习热力图</h2>
-        <div class="mheat-nav">
-          <button id="heat-prev" class="mini-btn">‹</button>
-          <span id="heat-label" class="mheat-label"></span>
-          <button id="heat-next" class="mini-btn">›</button>
-          <button id="heat-now" class="mini-btn">本月</button>
-        </div>
-        <div id="heatmap" class="mheat-wrap"></div>
-      </div></div>
+        <div class="section">
+  <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="fire"></span> 学习热力图</h2>
+          <div class="mheat-nav">
+            <button id="heat-prev" class="mini-btn">‹</button>
+            <span id="heat-label" class="mheat-label"></span>
+            <button id="heat-next" class="mini-btn">›</button>
+            <button id="heat-now" class="mini-btn">本月</button>
+          </div>
+          <div id="heatmap" class="mheat-wrap"></div>
+        </div></div>
 
 
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="radar"></span> 综合掌握度雷达图</h2>
-        <div id="subject-radar"></div>
-      </div></div>
+        <div class="section">
+  <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="radar"></span> 综合掌握度雷达图</h2>
+          <div id="subject-radar"></div>
+        </div></div>
 
 
-      <div class="section">
-<div class="card weakness-card" id="weakness-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 薄弱点分析报告（基于刷题正确率）</h2>
-        <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
-        <div id="weakness-report"></div>
-      </div></div>
+        <div class="section">
+  <div class="card weakness-card" id="weakness-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 薄弱点分析报告（基于刷题正确率）</h2>
+          <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
+          <div id="weakness-report"></div>
+        </div></div>
+      </details>
 
 
       <details class="charts-fold">
@@ -826,10 +789,6 @@
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="compass"></span> 学习计划</h2>
-        <div class="btn-row">
-          <button id="btn-smart-plan" class="btn btn-primary"><span class="ic-inline" data-icon="bolt"></span> 按进度智能生成计划</button>
-          <button id="btn-ai-plan" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 生成计划</button>
-        </div>
         <div id="plan-items" class="plan-items"></div>
         <div class="plan-add">
           <input type="text" id="plan-item-text" placeholder="计划内容，如 完成高数第3章习题" />
@@ -863,7 +822,7 @@
 
     <!-- 设置 -->
     <section id="tab-settings" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="sites">资源网站</button><button class="sub-tab-btn" data-sub="manual">使用说明</button><button class="sub-tab-btn" data-sub="guide">新手指引</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="manual">使用说明</button><button class="sub-tab-btn" data-sub="guide">新手指引</button></div>
       <div id="sub-base" class="sub-panel active">
       <!-- ① 基础设置（首屏唯一主卡） -->
       <div class="section">
@@ -1058,25 +1017,6 @@
         </div>
       </details>
     </div>
-      <div id="sub-sites" class="sub-panel">
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="globe"></span> 考研资料与网课网站</h2>
-        <div id="curated-sites" class="site-group"></div>
-      </div></div>
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title">我的收藏</h2>
-        <div id="user-sites" class="site-group"></div>
-        <div class="plan-add">
-          <input type="text" id="site-name" placeholder="网站名称" />
-          <input type="url" id="site-url" placeholder="https://" />
-          <button id="btn-add-site" class="btn btn-ghost">添加</button>
-        </div>
-      </div></div>
-
-    </div>
       <div id="sub-manual" class="sub-panel">
       <div class="section">
 <div class="card">
@@ -1126,14 +1066,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822u"></script>
-  <script src="iconset.js?v=20260822u"></script>
-  <script src="words.js?v=20260822u"></script>
-  <script src="store.js?v=20260822u"></script>
-  <script src="charts.js?v=20260822u"></script>
-  <script src="share.js?v=20260822u"></script>
-  <script src="md5.js?v=20260822u"></script>
-  <script src="sentences.js?v=20260822u"></script>
-  <script src="app.js?v=20260822u"></script>
+  <script src="qrcode.min.js?v=20260822v"></script>
+  <script src="iconset.js?v=20260822v"></script>
+  <script src="words.js?v=20260822v"></script>
+  <script src="store.js?v=20260822v"></script>
+  <script src="charts.js?v=20260822v"></script>
+  <script src="share.js?v=20260822v"></script>
+  <script src="md5.js?v=20260822v"></script>
+  <script src="sentences.js?v=20260822v"></script>
+  <script src="app.js?v=20260822v"></script>
 </body>
 </html>

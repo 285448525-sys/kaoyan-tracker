@@ -154,23 +154,16 @@ body {
   border: 0; margin: var(--sp-5) 0;
 }
 
-/* ===== 智能计划：每日学习量建议条幅 ===== */
-.smart-plan {
-  background: linear-gradient(120deg, rgba(62, 155, 232, .10), rgba(139, 143, 192, .06));
-  border: 1px solid var(--line); border-left: 4px solid var(--primary);
-  border-radius: var(--radius); padding: 14px var(--sp-4); margin-bottom: var(--sp-4);
-  font-size: 15px; line-height: 1.6; color: var(--ink);
-}
-.smart-plan b { color: var(--primary); font-weight: 800; }
-.smart-plan .sp-key { font-size: 20px; }
-.smart-plan .sp-link { color: var(--primary); font-weight: 600; text-decoration: none; }
-.smart-plan .sp-link:hover { text-decoration: underline; }
-.smart-plan .sp-warn { color: var(--warn); font-size: 13px; }
-.smart-plan-fold { margin-bottom: var(--sp-4); }
-.smart-plan-fold > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
-.smart-plan-fold > summary::-webkit-details-marker { display: none; }
-.smart-plan-fold > summary::after { content: '▾'; color: var(--muted); font-size: 14px; transition: transform .15s; }
-.smart-plan-fold[open] > summary::after { content: '▴'; }
+/* ===== 数据页「更多分析」折叠 ===== */
+.analysis-fold { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); overflow: hidden; }
+.analysis-fold > summary { cursor: pointer; list-style: none; padding: 14px 18px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: var(--sp-2); }
+.analysis-fold > summary::-webkit-details-marker { display: none; }
+.analysis-fold > summary::after { content: '▸'; margin-left: auto; transition: transform .15s ease; color: var(--muted); }
+.analysis-fold[open] > summary { border-bottom: 1px solid var(--line); }
+.analysis-fold[open] > summary::after { transform: rotate(90deg); }
+.analysis-fold > .card { border: none; box-shadow: none; border-radius: 0; margin: 0; }
+.analysis-fold > .card + .card { border-top: 1px solid var(--line); }
+
 
 .icon-btn {
   background: none; border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -1981,14 +1974,11 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
   gap: var(--sp-3);
   align-content: start;
 }
-/* 跨两列的主块：聚合卡、快捷入口、学习、待复习/错题 */
+/* 跨两列的主块：聚合卡、快捷入口 */
 .home-one-screen .today-aggregate,
-.home-one-screen .home-quick-card,
-.home-one-screen .home-study-card,
-.home-one-screen .mistake-review-card { grid-column: 1 / -1; }
-/* 计时 / 打卡 / 待办 各占一列，按需两两并排 */
+.home-one-screen .home-quick-card { grid-column: 1 / -1; }
+/* 计时 / 待办 并排两列 */
 .home-one-screen .home-timer-card,
-.home-one-screen .checkin-card,
 .home-one-screen .plan-card { grid-column: auto; }
 /* 桌面 1280×800 不滚：限制首页整体高度 + 溢出内部滚（兜底） */
 @media (min-width: 901px) {
