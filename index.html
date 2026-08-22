@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822l" />
+  <link rel="stylesheet" href="styles.css?v=20260822m" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -81,6 +81,7 @@
 
         <!-- 倒计时独立卡片：深色渐变紫（设计方案核心视觉） -->
         <div class="today-countdown-card" id="today-countdown-card">
+          <div class="hero-greet" id="hero-greet">你好，之之</div>
           <div class="countdown-top">
             <span class="countdown-tag" id="cd-target"><span class="ic-inline" data-icon="target"></span> 目标院校 / 专业</span>
             <span class="countdown-quote" id="cd-quote">“每天进步一点点”</span>
@@ -95,6 +96,10 @@
                 <span>备考进度</span><span id="cd-pct">0%</span>
               </div>
               <div class="countdown-bar"><div class="countdown-bar-fill" id="cd-fill" style="width:0%"></div></div>
+            </div>
+            <div class="hero-meta">
+              <span class="hero-streak"><span class="ic-inline" data-icon="fire"></span> 连续 <b id="hero-streak-day">0</b> 天</span>
+              <span class="hero-target" id="hero-target">目标 2026-09-13</span>
             </div>
           </div>
         </div>
@@ -136,28 +141,6 @@
           </div>
         </div>
 
-        <!-- 今日学习分布卡：截图标配，直观显示「学了哪些模块 + 各多久」 -->
-        <div class="card today-dist" id="today-dist">
-          <div class="td-head">
-            <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 今日学习分布</h2>
-            <span class="td-total" id="td-total">合计 0m</span>
-          </div>
-          <div id="td-rows" class="td-rows"></div>
-          <div class="td-empty" id="td-empty" hidden>今天还没开始计时，去对应模块点「开始」吧～</div>
-        </div>
-
-        <!-- 次级信息：今日得分 / 累计等级卡片组（距考研已上移到四指标卡） -->
-        <div class="today-score-card" id="today-score-card">
-          <div class="sc-item">
-            <div class="sc-label">今日得分</div>
-            <div class="sc-value" id="agg-score">0</div>
-          </div>
-          <div class="sc-item">
-            <div class="sc-label">累计等级</div>
-            <div class="sc-value" id="agg-level">Lv.0</div>
-          </div>
-        </div>
-
         <div id="agg-phase" class="agg-phase"></div>
         <!-- 科目进度聚合条（H1 新增） -->
         <div id="agg-subject-progress" class="agg-subject-progress"></div>
@@ -170,46 +153,69 @@
         <div class="home-quick" id="home-quick"></div>
       </div></div>
 
-      <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
-      <div class="section">
-<div class="card checkin-card" id="checkinCard">
-        <h2 class="card-title"><span class="ic-inline" data-icon="check"></span> 今日打卡</h2>
-        <div class="checkin-inner">
-          <div class="checkin-streak"><span class="ic-inline" data-icon="fire"></span> 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
-          <button class="checkin-btn" id="btn-checkin-today" type="button" aria-label="今日打卡">
-            <span class="ci-ring"></span>
-            <span class="ci-label" id="ci-label">今日打卡</span>
-          </button>
-          <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
+      <!-- 折叠区：打卡 / 待办 / 错题复习 / 今日分布 / 今日得分（P4 首屏收敛，默认收起） -->
+      <details class="home-more">
+        <summary class="home-more-sum">展开更多（打卡 · 待办 · 错题 · 分布 · 得分）</summary>
+
+        <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
+        <div class="card checkin-card" id="checkinCard">
+          <h2 class="card-title"><span class="ic-inline" data-icon="check"></span> 今日打卡</h2>
+          <div class="checkin-inner">
+            <div class="checkin-streak"><span class="ic-inline" data-icon="fire"></span> 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
+            <button class="checkin-btn" id="btn-checkin-today" type="button" aria-label="今日打卡">
+              <span class="ci-ring"></span>
+              <span class="ci-label" id="ci-label">今日打卡</span>
+            </button>
+            <div class="checkin-dots" id="checkinDots" aria-hidden="true"></div>
+          </div>
         </div>
-      </div></div>
 
-
-      <!-- 快速开始引导卡（H3 新增） -->
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 今日待办</h2>
-        <div class="btn-row">
-          <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
+        <!-- 快速开始引导卡（H3 新增） -->
+        <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 今日待办</h2>
+          <div class="btn-row">
+            <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
+          </div>
+          <div id="plan-list" class="plan-list"></div>
+          <div class="plan-add">
+            <select id="plan-subject" style="max-width:140px"><option value="">不指定科目</option></select>
+            <input type="text" id="plan-text" placeholder="添加自定义计划项，如：复盘英语阅读错题" />
+            <input type="number" id="plan-min" placeholder="分钟" min="0" style="max-width:90px" />
+            <button id="btn-add-plan" class="btn btn-ghost">添加</button>
+          </div>
         </div>
-        <div id="plan-list" class="plan-list"></div>
-        <div class="plan-add">
-          <select id="plan-subject" style="max-width:140px"><option value="">不指定科目</option></select>
-          <input type="text" id="plan-text" placeholder="添加自定义计划项，如：复盘英语阅读错题" />
-          <input type="number" id="plan-min" placeholder="分钟" min="0" style="max-width:90px" />
-          <button id="btn-add-plan" class="btn btn-ghost">添加</button>
+
+        <!-- 错题复习主动提醒（记忆曲线） -->
+        <div class="card" id="mistake-review-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题复习</h2>
+          <div id="mistake-review-body" class="mistake-review-body"></div>
         </div>
-      </div></div>
 
+        <!-- 今日学习分布卡（从首屏移入折叠区） -->
+        <div class="card today-dist" id="today-dist">
+          <div class="td-head">
+            <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 今日学习分布</h2>
+            <span class="td-total" id="td-total">合计 0m</span>
+          </div>
+          <div id="td-rows" class="td-rows"></div>
+          <div class="td-empty" id="td-empty" hidden>今天还没开始计时，去对应模块点「开始」吧～</div>
+        </div>
 
-      <!-- 错题复习主动提醒（记忆曲线） -->
-      <div class="section">
-<div class="card" id="mistake-review-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题复习</h2>
-        <div id="mistake-review-body" class="mistake-review-body"></div>
-      </div></div>
+        <!-- 次级信息：今日得分 / 累计等级 -->
+        <div class="today-score-card" id="today-score-card">
+          <div class="sc-item">
+            <div class="sc-label">今日得分</div>
+            <div class="sc-value" id="agg-score">0</div>
+          </div>
+          <div class="sc-item">
+            <div class="sc-label">累计等级</div>
+            <div class="sc-value" id="agg-level">Lv.0</div>
+          </div>
+        </div>
 
-    
+      </details>
+
+      <!-- 按模块计时（首屏第 4 块，保留功能） -->
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="timer"></span> 按模块计时</h2>
@@ -1100,14 +1106,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822l"></script>
-  <script src="iconset.js?v=20260822l"></script>
-  <script src="words.js?v=20260822l"></script>
-  <script src="store.js?v=20260822l"></script>
-  <script src="charts.js?v=20260822l"></script>
-  <script src="share.js?v=20260822l"></script>
-  <script src="md5.js?v=20260822l"></script>
-  <script src="sentences.js?v=20260822l"></script>
-  <script src="app.js?v=20260822l"></script>
+  <script src="qrcode.min.js?v=20260822m"></script>
+  <script src="iconset.js?v=20260822m"></script>
+  <script src="words.js?v=20260822m"></script>
+  <script src="store.js?v=20260822m"></script>
+  <script src="charts.js?v=20260822m"></script>
+  <script src="share.js?v=20260822m"></script>
+  <script src="md5.js?v=20260822m"></script>
+  <script src="sentences.js?v=20260822m"></script>
+  <script src="app.js?v=20260822m"></script>
 </body>
 </html>

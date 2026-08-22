@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822l';
+  var APP_VERSION = '20260822m';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3528,6 +3528,20 @@
         '“每天进步 1%”'
       ];
       cdQuote.textContent = quotes[new Date().getDate() % quotes.length];
+    }
+    // ====== P4 首页收敛：hero 问候 + 连续天数 + 目标日期 ======
+    var heroGreet = document.getElementById('hero-greet');
+    if (heroGreet) {
+      var h = new Date().getHours();
+      var greetWord = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : h < 22 ? '晚上好' : '夜深了';
+      heroGreet.textContent = greetWord + '，之之';
+    }
+    var heroStreak = document.getElementById('hero-streak-day');
+    if (heroStreak) heroStreak.textContent = Store.consecutiveStreak();
+    var heroTarget = document.getElementById('hero-target');
+    if (heroTarget) {
+      var tgt = Store.getConfig().examDate;
+      heroTarget.textContent = tgt ? ('目标 ' + tgt) : '目标未设置';
     }
     // 今日学习时长
     var today = Store.getDay(Store.todayStr()) || {};

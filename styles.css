@@ -871,6 +871,48 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   transition: width .5s ease; box-shadow: 0 0 8px rgba(255,255,255,.4);
 }
 
+/* --- P4 首页收敛：hero 问候 + 连续天数 + 目标 --- */
+.hero-greet {
+  position: relative; z-index: 1;
+  font-size: 15px; font-weight: 600; opacity: .92; margin-bottom: 14px;
+  letter-spacing: .01em;
+}
+.hero-meta {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin-top: 14px; font-size: 13px; font-weight: 500; opacity: .9;
+}
+.hero-streak { display: inline-flex; align-items: center; gap: 5px; }
+.hero-streak .ic-inline { width: 16px; height: 16px; }
+.hero-streak .ic-inline.ic svg { width: 16px; height: 16px; }
+.hero-streak b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.hero-target { opacity: .85; }
+
+/* --- P4 首页收敛：次级块折叠 --- */
+.home-more {
+  position: relative; z-index: 1;
+  margin: var(--sp-4) 0 0;
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--card); padding: 4px 18px 18px;
+  box-shadow: var(--shadow-sm);
+}
+.home-more-sum {
+  cursor: pointer; user-select: none; list-style: none;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  padding: 14px 0; display: flex; align-items: center;
+  border-bottom: 1px solid var(--line); margin-bottom: 16px;
+}
+.home-more-sum::-webkit-details-marker { display: none; }
+.home-more-sum::before {
+  content: ''; width: 0; height: 0; margin-right: 8px;
+  border-left: 5px solid var(--primary);
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  transition: transform .2s ease;
+}
+.home-more[open] > .home-more-sum::before { transform: rotate(90deg); }
+.home-more .card { margin-bottom: 14px; }
+.home-more .card:last-child { margin-bottom: 0; }
+
 /* --- 4. 四指标卡 --- */
 .today-stats {
   position: relative; z-index: 1;
