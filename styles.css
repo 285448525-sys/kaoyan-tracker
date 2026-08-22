@@ -229,7 +229,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .ic-inline.ic svg { width: 16px; height: 16px; display: block; }
 /* 侧栏 / 底栏导航图标：无底色，随文字色 */
-.tab-ic, .btb-btn .tab-ic { display: inline-flex; color: inherit; width: 20px; height: 20px; flex: none; }
+.tab-ic, .btb-btn .tab-ic { display: inline-flex; align-items: center; justify-content: center; color: inherit; width: 20px; height: 20px; flex: none; }
 .tab-ic.ic svg, .btb-btn .tab-ic.ic svg { width: 20px; height: 20px; display: block; }
 /* 通用图标包裹（如 stat-icon 内、fab 内） */
 .ic { display: inline-flex; align-items: center; justify-content: center; color: var(--primary-deep); }
