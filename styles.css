@@ -1214,6 +1214,14 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   --shadow-hover: 0 8px 26px -6px rgba(0,0,0,.42);
   --shadow-modal: 0 18px 44px -14px rgba(0,0,0,.5);
   --section-bg: #16202A;
+  /* 深色模式：把大面积亮蓝渐变压暗，改用低饱和主色混合 */
+  --grad-hero: linear-gradient(135deg,
+              color-mix(in srgb, var(--primary-strong) 22%, var(--bg)) 0%,
+              color-mix(in srgb, var(--primary) 16%, var(--bg)) 55%,
+              color-mix(in srgb, var(--primary-deep) 12%, var(--bg)) 100%);
+  --grad-cta:  linear-gradient(120deg,
+              color-mix(in srgb, var(--primary-strong) 22%, var(--surface-2)),
+              color-mix(in srgb, var(--primary-bright) 14%, var(--surface-2)));
 }
 :root[data-theme="dark"] body { background: var(--bg); color: var(--ink); }
 :root[data-theme="dark"] input,
@@ -1554,6 +1562,59 @@ input:focus, select:focus, textarea:focus {
 :root[data-theme="dark"] .bottom-tabbar { background: #1a1d2e; border-top-color: var(--line); box-shadow: 0 -4px 12px rgba(0,0,0,.3); }
 :root[data-theme="dark"] .fab-action { box-shadow: 0 6px 20px -4px rgba(0,0,0,.6); }
 :root[data-theme="dark"] .tag { background: rgba(151, 155, 196, .12); color: var(--primary-bright); }
+
+/* ============ 深色模式全局导航/英雄区适配（修复侧栏亮蓝突兀） ============ */
+:root[data-theme="dark"] .side-nav {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+:root[data-theme="dark"] .side-nav .brand-logo {
+  background: var(--primary-soft);
+  color: var(--primary-bright);
+}
+:root[data-theme="dark"] .side-nav h1 { color: var(--ink); }
+:root[data-theme="dark"] .side-nav .brand-sub { color: var(--muted); opacity: 1; }
+:root[data-theme="dark"] .side-menu .tab-btn { color: var(--ink-2); }
+:root[data-theme="dark"] .side-menu .tab-btn:hover { background: var(--surface-2); color: var(--ink); }
+:root[data-theme="dark"] .side-menu .tab-btn.active {
+  background: var(--primary-soft);
+  color: var(--primary-bright);
+  border-left-color: var(--primary);
+}
+:root[data-theme="dark"] .side-divider { background: var(--line); }
+:root[data-theme="dark"] .side-group-title,
+:root[data-theme="dark"] .nav-group-title { color: var(--muted); opacity: 1; }
+:root[data-theme="dark"] .nav-toggle {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+:root[data-theme="dark"] .bottom-tabbar .btb-btn.active {
+  color: var(--primary-bright);
+  background: var(--primary-soft);
+}
+:root[data-theme="dark"] .fab-action {
+  background: var(--surface-2);
+  color: var(--primary-bright);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px -4px rgba(0,0,0,.6);
+}
+:root[data-theme="dark"] .sub-tab-btn.active {
+  background: var(--primary-soft);
+  color: var(--primary-bright);
+  border-color: var(--primary);
+}
+:root[data-theme="dark"] .countdown-card { background: var(--grad-hero); }
+:root[data-theme="dark"] .checkin-btn {
+  background: var(--grad-cta);
+  box-shadow: 0 10px 26px -6px rgba(62, 155, 232, .25);
+}
+:root[data-theme="dark"] .btn-primary { background: var(--primary-deep); }
+:root[data-theme="dark"] .today-countdown-card::before {
+  background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+}
 
 /* ============ Toast 升级 ============ */
 .toast {
