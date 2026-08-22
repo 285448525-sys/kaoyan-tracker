@@ -825,7 +825,7 @@
   /* ---------- 主题 ---------- */
   function getTheme() { return state.theme === 'dark' ? 'dark' : 'light'; }
   function setTheme(t) { state.theme = (t === 'dark') ? 'dark' : 'light'; save(); }
-  var COLOR_SCHEMES = ['mist', 'brown']; // 清新蓝默认 + 暖棕唯一备选（方案 29 Block 1 收敛）
+  var COLOR_SCHEMES = ['mist']; // 方案 34：清新蓝唯一主色，brown 备选已删除
   function getColorScheme() { return (COLOR_SCHEMES.indexOf(state.colorScheme) >= 0) ? state.colorScheme : 'mist'; }
   function setColorScheme(s) { state.colorScheme = (COLOR_SCHEMES.indexOf(s) >= 0) ? s : 'mist'; save(); }
 

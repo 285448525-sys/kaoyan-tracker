@@ -1,10 +1,10 @@
-/* jsdom 验证：方案 29 第一版（Block 1 配色 + Block 2 图标）
+/* jsdom 验证：方案 29 第一版（Block 1 配色 + Block 2 图标）+ 方案 34 色系重设计
  * 验收点：
  *  1) iconset.js 加载 + Icon.fill 把 [data-icon] 注入 <svg>
  *  2) 侧栏/底栏/卡片标题无残留装饰性 emoji 主图标
- *  3) :root --primary 为清新蓝 #3E9BE8
- *  4) store COLOR_SCHEMES 收敛为 ['mist','brown']（删 sage/rose/lavender）
- *  5) index.html 背景配色 chips 只剩 清新蓝 + 暖棕
+ *  3) :root --primary 为清新蓝 #3E9BE8；--bg 为净白微蓝 #F5F9FC（方案 34）
+ *  4) store COLOR_SCHEMES 收敛为单色 ['mist']（删 sage/rose/lavender/brown）
+ *  5) index.html 背景配色 chips 仅剩 清新蓝 1 项
  *  6) 渲染无 runtime error
  */
 const fs = require('fs');
@@ -65,39 +65,41 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
 // 1) iconset.js + Icon.fill
 ok(!!window.Icon && typeof window.Icon.fill === 'function', 'iconset.js 加载且 Icon.fill 存在');
 const sideIcons = document.querySelectorAll('.side-nav .tab-ic svg');
-ok(sideIcons.length === 8, '侧栏 8 个导航图标已注入 SVG（实际 ' + sideIcons.length + '）');
+// 侧栏 8 个 tab：7 个用 SVG（home/math/cs408/vocab/mistakes/mock/data），设置用 emoji ⚙️（用户要求）
+ok(sideIcons.length === 7, '侧栏 7 个导航图标已注入 SVG（设置用 emoji，实际 ' + sideIcons.length + '）');
 const btbIcons = document.querySelectorAll('.bottom-tabbar .tab-ic svg');
 ok(btbIcons.length === 5, '底栏 5 个导航图标已注入 SVG（实际 ' + btbIcons.length + '）');
 const inlineIcons = document.querySelectorAll('.ic-inline svg');
 ok(inlineIcons.length >= 30, '卡片标题内联图标 ≥30 处已注入 SVG（实际 ' + inlineIcons.length + '）');
 
-// 2) 无残留装饰性 emoji 主图标（侧栏/底栏/卡片标题直系 span 不再含 emoji 文本）
+// 2) 侧栏/底栏主图标无残留"破损"装饰 emoji（用户于 v20260822h 明确把设置等改为 emoji，
+//    故此处仅校验导航标签文字本身不含 emoji，标题区 emoji 为有意设计，不计入）
 const decoEmoji = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
-let residual = 0;
-document.querySelectorAll('.side-nav .tab-btn span, .bottom-tabbar .btb-btn span, .card-title').forEach(function (n) {
-  // 只看"纯文本"节点（不含 svg 子元素）
-  const hasSvg = n.querySelector('svg');
-  if (hasSvg) return;
-  if (decoEmoji.test(n.textContent || '')) residual++;
+let residualNav = 0;
+document.querySelectorAll('.side-nav .tab-btn .tab-label, .bottom-tabbar .btb-btn span').forEach(function (n) {
+  if (decoEmoji.test(n.textContent || '')) residualNav++;
 });
-ok(residual === 0, '侧栏/底栏/卡片标题无残留装饰 emoji（实际 ' + residual + '）');
+ok(residualNav === 0, '侧栏/底栏导航标签文字无残留 emoji（实际 ' + residualNav + '）');
 
-// 3) 配色 token
+// 3) 配色 token（方案 34）
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 ok(/--primary:\s*#3E9BE8/.test(css), ':root --primary 为清新蓝 #3E9BE8');
-ok(/--bg:\s*#F4F8FC/.test(css), ':root --bg 为近白微蓝 #F4F8FC');
+ok(/--bg:\s*#F5F9FC/.test(css), ':root --bg 为净白微蓝 #F5F9FC（方案 34）');
+ok(/--bg-tint:/.test(css), ':root 新增 --bg-tint 微光晕');
+ok(/--primary-bright:/.test(css), ':root 新增 --primary-bright');
+ok(/--primary-soft-2:/.test(css), ':root 新增 --primary-soft-2');
 ok(!/--primary:\s*#5B9FC9/.test(css.split('--primary: #3E9BE8')[1] || ''), ':root 主色无旧雾蓝 #5B9FC9');
 
-// 4) store COLOR_SCHEMES 收敛
+// 4) store COLOR_SCHEMES 收敛为单色（方案 34 删 brown）
 const storeJs = fs.readFileSync(path.join(ROOT, 'store.js'), 'utf8');
 const m = storeJs.match(/var COLOR_SCHEMES = \[([^\]]+)\]/);
-ok(!!m && m[1].replace(/\s/g, '').indexOf("'sage'") === -1 && m[1].replace(/\s/g, '').indexOf("'rose'") === -1 && m[1].replace(/\s/g, '').indexOf("'lavender'") === -1, 'store COLOR_SCHEMES 已删 sage/rose/lavender');
-ok(!!m && /'mist'/.test(m[1]) && /'brown'/.test(m[1]), 'store 仍保留 mist + brown');
+ok(!!m && m[1].replace(/\s/g, '').indexOf("'sage'") === -1 && m[1].replace(/\s/g, '').indexOf("'rose'") === -1 && m[1].replace(/\s/g, '').indexOf("'lavender'") === -1 && m[1].replace(/\s/g, '').indexOf("'brown'") === -1, 'store COLOR_SCHEMES 已删 sage/rose/lavender/brown');
+ok(!!m && /'mist'/.test(m[1]) && !/'brown'/.test(m[1]), 'store 仅保留 mist（单一主色）');
 
-// 5) index.html chips 只剩 2 个
+// 5) index.html chips 仅剩 1 个（清新蓝）
 const htmlNow = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const chipCount = (htmlNow.match(/data-scheme="/g) || []).length;
-ok(chipCount === 2, 'index.html 背景配色 chips 收敛为 2（实际 ' + chipCount + '）');
+ok(chipCount === 1, 'index.html 背景配色 chips 收敛为 1（实际 ' + chipCount + '）');
 
 // 6) 渲染无错误
 ok(runtimeErrors.length === 0, '无 runtime error（实际 ' + runtimeErrors.length + (runtimeErrors[0] ? '：' + runtimeErrors[0] : '') + '）');

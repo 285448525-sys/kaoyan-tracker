@@ -1,35 +1,40 @@
 :root {
-  /* ===== 清新蓝主色（方案 29 · Block 1） ===== */
-  --primary: #3E9BE8;        /* 图标描边 / 边框 / 浅填充 / 链接 */
-  --primary-strong: #2C84D4; /* 主按钮实底 / hover */
-  --primary-deep: #1F6FB8;   /* active / 选中深态（白字 ≥5:1 AA） */
-  --primary-soft: #E7F3FC;   /* 图标底色圆 / 选中浅底 */
-  --primary-softer: #F3F9FE; /* 超大浅蓝背景块 */
+  /* ===== 清新蓝主色（方案 34 · 唯一品牌色） ===== */
+  --primary:        #3E9BE8;   /* 图标描边 / 边框 / 浅填充 / 链接 */
+  --primary-strong: #2C84D4;   /* 主按钮实底 / hover */
+  --primary-deep:   #1F6FB8;   /* active / 选中深态（白字 ≥5:1 AA） */
+  --primary-bright: #6FB6EE;   /* 渐变高光 / 聚焦光环浅端 */
+  --primary-soft:   #E7F3FC;   /* 图标底色圆 / 选中浅底（≈12% 主色） */
+  --primary-soft-2: #F2F8FD;   /* 更浅蓝底（分组展开底 / 空状态底） */
+  --primary-softer: #F3F9FE;   /* 超大浅蓝背景块 */
 
-  --bg: #F4F8FC;             /* 整体页面背景（近白微蓝） */
-  --card: #ffffff;
-  --surface-2: #EEF4FA;      /* 输入框 / 次级块 / hover 底 */
-  --ink: #1E2B3A;            /* 主文字（深蓝黑 ≈13:1 AAA） */
-  --ink-2: #44566B;          /* 次要文字 ≈7.5:1 AAA */
-  --muted: #586A7E;          /* 说明文字 ≈5.4:1 AA */
-  --muted-2: #9DB0C4;        /* 占位符（仅非关键） */
-  --line: #E1EAF3;           /* 描边 / 分割线 */
+  /* ===== 净白微彩底 · 中性层 ===== */
+  --bg:        #F5F9FC;        /* 页面背景（近白微蓝，比旧 #F4F8FC 更净） */
+  --bg-tint:   rgba(62,155,232,.05); /* 右上角极淡蓝微光晕 */
+  --card:      #FFFFFF;        /* 卡片 / 表面 */
+  --surface-2: #EEF4FA;        /* 输入框 / 次级块 / hover 底 */
+
+  /* ===== 文字 ===== */
+  --ink:   #1E2B3A;   /* 主文字（深蓝黑 ≈13:1 AAA） */
+  --ink-2: #44566B;   /* 次要文字 ≈7.5:1 AAA */
+  --muted: #5C6E80;   /* 说明文字 ≈5.0:1 AA */
+  --muted-2: #9DB0C4; /* 占位符（仅非关键） */
+
+  /* ===== 线 ===== */
+  --line:        #E3ECF4; /* 描边 / 分割线（比旧 #E1EAF3 更通透） */
   --line-strong: #CFE0EA;
-  --on-primary: #FFFFFF;     /* 主色上的文字 */
 
-  /* 辅助色（仅状态语义，不抢主色） */
-  --accent: #46C2B5;         /* 完成 / 进度 */
-  --warn: #FFA94D;           /* 提醒 / 激励 */
-  --danger: #F0655F;         /* 删除 / 结束 */
-  --success: #34C77B;        /* 正确 / 达标 */
-  --primary-weak: #E7F3FC;   /* 兼容旧引用（= primary-soft） */
-  --primary-ink: #1F6FB8;    /* 兼容旧引用（= primary-deep） */
-  --primary-l: #5B9FC9;      /* 兼容旧引用（focus 光环等） */
-  --primary-d: #2C84D4;      /* 兼容旧引用（= primary-strong，渐变深端） */
-  --ok: #34C77B;
-  --ok-weak: #E8F7F1;
-  --danger-weak: #FDECEB;
-  --warn-weak: #FFF3E6;
+  --on-primary: #FFFFFF; /* 主色上的文字 */
+
+  /* ===== 功能语义色（低饱和一档） ===== */
+  --ok:      #34B97B; /* 正确 / 达标（降饱和绿） */
+  --ok-weak: #E8F7F1; /* 绿浅底 */
+  --success: #34B97B; /* 正确 / 达标（= ok，保留别名） */
+  --warn:    #E59A4E; /* 提醒 / 激励（降饱和琥珀） */
+  --warn-weak: #FCF3E7;
+  --danger:  #E06B66; /* 删除 / 结束（降饱和红） */
+  --danger-weak: #FCECEB;
+  --accent:  var(--primary); /* 强调描边统一用主色，不另起色 */
 
   --radius: 16px;
   --radius-sm: 12px;
@@ -66,7 +71,7 @@ body {
 
 /* Header */
 .app-header {
-  background: linear-gradient(120deg, var(--primary), var(--primary-d));
+  background: linear-gradient(120deg, var(--primary), var(--primary-strong));
   color: #fff;
   padding: 18px 16px calc(18px + env(safe-area-inset-top)) 16px;
 }
@@ -317,14 +322,14 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .summary-big { font-size: 28px; font-weight: 800; color: var(--primary); }
 .fab-share {
   position: absolute; right: 16px; bottom: 16px;
-  background: linear-gradient(120deg, var(--primary), var(--primary-d)); color: #fff;
+  background: linear-gradient(120deg, var(--primary), var(--primary-strong)); color: #fff;
   border: none; border-radius: 24px; padding: 12px 18px; font-weight: 700; font-size: 14px;
   cursor: pointer; box-shadow: 0 8px 20px rgba(62, 155, 232, .35);
 }
 .fab-share:active { transform: scale(0.96); }
 
 /* Countdown */
-.countdown-card { background: linear-gradient(120deg, var(--primary), var(--primary-d)); color: #fff; text-align: center; }
+.countdown-card { background: linear-gradient(120deg, var(--primary), var(--primary-strong)); color: #fff; text-align: center; }
 .countdown { font-size: 18px; font-weight: 600; }
 .countdown b { font-size: 30px; }
 
@@ -397,7 +402,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   border: 1px solid var(--line); background: var(--surface-2); border-radius: 20px;
   padding: 7px 14px; font-size: 13px; cursor: pointer; color: var(--muted);
 }
-.chip.active { background: var(--primary-weak); color: var(--primary-ink); border-color: var(--primary); }
+.chip.active { background: var(--primary-soft); color: var(--primary-deep); border-color: var(--primary); }
 .mistake-list { display: grid; gap: 10px; }
 .mistake-item { background: #f9fafb; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 .mistake-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 6px; flex-wrap: wrap; }
@@ -482,7 +487,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* Sidebar nav */
 .side-nav {
   position: fixed; top: 0; left: 0; bottom: 0; width: 240px; z-index: 60;
-  background: linear-gradient(165deg, var(--primary), var(--primary-d));
+  background: linear-gradient(165deg, var(--primary), var(--primary-strong));
   color: #fff; padding: 18px 12px; display: flex; flex-direction: column; gap: 6px;
   overflow-y: auto; transition: transform .25s ease; box-shadow: var(--shadow);
 }
@@ -502,7 +507,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .side-menu .tab-btn span:first-child { font-size: 18px; line-height: 1; }
 .side-menu .tab-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
-.side-menu .tab-btn.active { background: var(--primary-weak); color: var(--primary-ink); border-left: 3px solid var(--primary); padding-left: 9px; }
+.side-menu .tab-btn.active { background: var(--primary-soft); color: var(--primary-deep); border-left: 3px solid var(--primary); padding-left: 9px; }
 .side-divider { height: 1px; background: rgba(255,255,255,.2); margin: 10px 6px; }
 .side-group-title { font-size: 11px; opacity: .7; padding: 2px 12px; letter-spacing: .5px; }
 .nav-group { display: flex; flex-direction: column; gap: 4px; }
@@ -734,7 +739,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* --- 0. 本模块新增令牌（并入 :root，配色规范 v1 N1） --- */
 :root {
   --grad-hero: linear-gradient(135deg, var(--primary-strong) 0%, var(--primary) 60%, var(--primary-deep) 100%);
-  --grad-cta:  linear-gradient(120deg, var(--primary), var(--primary-l));
+  --grad-cta:  linear-gradient(120deg, var(--primary), var(--primary-bright));
   --glass-fill: color-mix(in srgb, var(--card) 72%, transparent);
   --glass-line: color-mix(in srgb, var(--primary) 14%, transparent);
   --primary-25: color-mix(in srgb, var(--primary) 25%, transparent);
@@ -746,7 +751,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   overflow: hidden;
   background: linear-gradient(135deg,
               var(--card) 0%,
-              color-mix(in srgb, var(--primary-l) 8%, var(--card)) 55%,
+              color-mix(in srgb, var(--primary-bright) 8%, var(--card)) 55%,
               color-mix(in srgb, var(--primary) 10%, var(--card)) 100%);
   border: 1px solid var(--glass-line);
   border-radius: var(--radius-lg);
@@ -773,7 +778,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .today-head-text { min-width: 0; }
 .today-eyebrow {
   font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--primary-l); font-weight: 700;
+  color: var(--primary-bright); font-weight: 700;
 }
 .today-date {
   font-size: 28px; font-weight: 800; letter-spacing: -.015em;
@@ -794,7 +799,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--primary) 65%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
   filter: brightness(1.05);
 }
-.today-cheer:focus-visible { outline: 2px solid var(--primary-l); outline-offset: 2px; }
+.today-cheer:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
 .today-cheer:active { transform: translateY(0); filter: brightness(.95); }
 .today-cheer.is-pulsing { animation: cheer-pulse 1.4s ease-in-out 1; }
 @keyframes cheer-pulse {
@@ -864,7 +869,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--primary) 32%, transparent);
   border-color: var(--primary-25);
 }
-.stat-block:focus-within { outline: 2px solid var(--primary-l); outline-offset: 2px; }
+.stat-block:focus-within { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
 .stat-icon {
   width: 40px; height: 40px; border-radius: 10px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -939,7 +944,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   border-color: var(--primary-25);
 }
 .quick-entry:active { transform: translateY(0); background: color-mix(in srgb, var(--primary) 18%, transparent); }
-.quick-entry:focus-visible { outline: 2px solid var(--primary-l); outline-offset: 2px; }
+.quick-entry:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
 .qe-ic {
   width: 44px; height: 44px; border-radius: 12px; flex: none;
   display: inline-flex; align-items: center; justify-content: center;
@@ -996,7 +1001,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .btn-bad:hover { background: #dc2626; }
 :root[data-theme="dark"] .flashcard { background: linear-gradient(135deg, #11321f, #0f2a1c); border-color: #14532d; }
 :root[data-theme="dark"] .flash-back { background: #0f2a1c; border-color: #14532d; }
-:root[data-theme="dark"] .box-badge { background: #1e2a4d; border-color: #334155; color: var(--primary-l); }
+:root[data-theme="dark"] .box-badge { background: #1e2a4d; border-color: #334155; color: var(--primary-bright); }
 
 /* ============ A3：薄弱点分析报告 ============ */
 .weakness-card { border-left: 4px solid #ef4444; }
@@ -1105,24 +1110,30 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* ============ 深色主题 ============ */
 :root[data-theme="dark"] {
-  --bg: #121A21;
-  --card: #1d1d23;
+  --bg:        #121A21;
+  --bg-tint:   rgba(91,174,234,.08);
+  --card:      #1B242E;        /* 比旧 #1d1d23 偏蓝，与清新蓝呼应 */
   --surface-2: #1A2530;
-  --ink: #E6EEF4;
+  --ink:   #E6EEF4;
   --ink-2: #9FB4C2;
   --muted: #7E97A8;
-  --line: #243644;
-  --line-strong: #34343c;
-  --primary: #5BAEEA;
-  --primary-d: #3E9BE8;
-  --primary-l: #8FC9EF;
-  --primary-weak: #16242E;
-  --primary-ink: #EAF3FA;
-  --accent: #6FA0BE;
-  --danger: #cf9aa0;
-  --ok: #7fae8c;
-  --warn: #d3b27e;
-  --ok-weak: #1f2a23; --danger-weak: #2c2224; --warn-weak: #2a2418;
+  --line:        #243644;
+  --line-strong: #314556;
+  --primary:        #5BAEEA;
+  --primary-strong: #3E9BE8;
+  --primary-deep:   #2C84D4;
+  --primary-bright: #8FC9EF;
+  --primary-soft:   rgba(91,174,234,.16);
+  --primary-soft-2: rgba(91,174,234,.10);
+  --primary-softer: rgba(91,174,234,.08);
+  --accent:  var(--primary);
+  --ok:      #5FB98C;
+  --ok-weak: #1f2a23;
+  --warn:    #D3B27E;
+  --warn-weak: #2a2418;
+  --danger:  #CF9AA0;
+  --danger-weak: #2c2224;
+  --success: #5FB98C;
   --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
   --shadow: 0 6px 20px rgba(0,0,0,.36);
   --shadow-hover: 0 8px 26px -6px rgba(0,0,0,.42);
@@ -1246,7 +1257,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .back-top {
   position: fixed; right: 20px; bottom: 24px; z-index: 80;
   width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-d)); color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff;
   border: none; cursor: pointer; font-size: 18px; font-weight: 700;
   box-shadow: 0 8px 20px rgba(62, 155, 232, .3);
   opacity: 0; transform: translateY(20px); pointer-events: none;
@@ -1312,7 +1323,7 @@ h3.card-sub { font-size: 15px; font-weight: 700; color: var(--ink); margin: 2px 
 .manual-item-title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
 .manual-item-body { font-size: 13.5px; line-height: 1.65; color: var(--muted); }
 :root[data-theme="dark"] .manual-item { background: #23263a; border-color: #3b3f5c; }
-:root[data-theme="dark"] .manual-group-title { border-left-color: var(--primary-l); }
+:root[data-theme="dark"] .manual-group-title { border-left-color: var(--primary-bright); }
 
 /* ============ 引导卡底部按钮 ============ */
 .onboarding-foot { margin-top: 12px; }
@@ -1403,7 +1414,7 @@ input:focus, select:focus, textarea:focus {
 .tag {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
-  background: var(--primary-weak); color: var(--primary-ink);
+  background: var(--primary-soft); color: var(--primary-deep);
 }
 
 /* ============ 移动端底部 Tab Bar ============ */
@@ -1425,7 +1436,7 @@ input:focus, select:focus, textarea:focus {
 }
 .bottom-tabbar .btb-btn span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .bottom-tabbar .btb-btn span:first-child { font-size: 20px; line-height: 1.2; }
-.bottom-tabbar .btb-btn.active { color: var(--primary-ink); background: var(--primary-weak); border-radius: 10px; }
+.bottom-tabbar .btb-btn.active { color: var(--primary-deep); background: var(--primary-soft); border-radius: 10px; }
 .bottom-tabbar .btb-btn:active { transform: scale(0.92); }
 
 /* ============ FAB 悬浮操作按钮（移动端） ============ */
@@ -1433,7 +1444,7 @@ input:focus, select:focus, textarea:focus {
   display: none;
   position: fixed; bottom: calc(64px + max(env(safe-area-inset-bottom), 12px)); right: 16px; z-index: 79;
   width: 52px; height: 52px; border-radius: 50%; border: none;
-  background: linear-gradient(120deg, var(--primary), var(--primary-d));
+  background: linear-gradient(120deg, var(--primary), var(--primary-strong));
   color: #fff; font-size: 24px; cursor: pointer;
   box-shadow: 0 8px 22px -4px rgba(20, 30, 50, .32);
   align-items: center; justify-content: center;
@@ -1461,7 +1472,7 @@ input:focus, select:focus, textarea:focus {
 :root[data-theme="dark"] .btn-ghost { background: #2a2d42; border-color: var(--line); }
 :root[data-theme="dark"] .bottom-tabbar { background: #1a1d2e; border-top-color: var(--line); box-shadow: 0 -4px 12px rgba(0,0,0,.3); }
 :root[data-theme="dark"] .fab-action { box-shadow: 0 6px 20px -4px rgba(0,0,0,.6); }
-:root[data-theme="dark"] .tag { background: rgba(151, 155, 196, .12); color: var(--primary-l); }
+:root[data-theme="dark"] .tag { background: rgba(151, 155, 196, .12); color: var(--primary-bright); }
 
 /* ============ 空状态升级 ============ */
 .empty-state {
@@ -1618,17 +1629,17 @@ input:focus, select:focus, textarea:focus {
 /* --- 8. 深色主题（统一收口到 :root[data-theme="dark"]，修复 F3） --- */
 :root[data-theme="dark"] .today-aggregate {
   background: linear-gradient(135deg,
-              color-mix(in srgb, var(--primary-d) 22%, var(--bg)) 0%,
+              color-mix(in srgb, var(--primary-strong) 22%, var(--bg)) 0%,
               color-mix(in srgb, var(--primary) 18%, var(--bg)) 100%);
-  border-color: color-mix(in srgb, var(--primary-l) 22%, transparent);
+  border-color: color-mix(in srgb, var(--primary-bright) 22%, transparent);
 }
 :root[data-theme="dark"] .stat-block {
   background: color-mix(in srgb, var(--card) 80%, transparent);
-  border-color: color-mix(in srgb, var(--primary-l) 20%, transparent);
+  border-color: color-mix(in srgb, var(--primary-bright) 20%, transparent);
 }
 :root[data-theme="dark"] .today-score-card .sc-item {
   background: color-mix(in srgb, var(--card) 80%, transparent);
-  border-color: color-mix(in srgb, var(--primary-l) 20%, transparent);
+  border-color: color-mix(in srgb, var(--primary-bright) 20%, transparent);
   box-shadow: none;
 }
 :root[data-theme="dark"] .today-cheer {
@@ -1650,7 +1661,7 @@ input:focus, select:focus, textarea:focus {
 .checkin-btn {
   position: relative; width: 132px; height: 132px; border-radius: 50%;
   border: none; cursor: pointer; font-family: inherit;
-  background: linear-gradient(135deg, var(--primary), var(--primary-d));
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #fff; display: grid; place-items: center; text-align: center;
   box-shadow: 0 10px 26px -6px rgba(62, 155, 232, .55);
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
@@ -1667,7 +1678,7 @@ input:focus, select:focus, textarea:focus {
 @keyframes ciPop { 0% { transform: scale(0.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .checkin-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 320px; }
 .ci-dot { width: 14px; height: 14px; border-radius: 50%; background: #e2e8f0; }
-.ci-dot.done { background: linear-gradient(135deg, var(--primary), var(--primary-d)); }
+.ci-dot.done { background: linear-gradient(135deg, var(--primary), var(--primary-strong)); }
 .ci-dot.today { box-shadow: 0 0 0 3px rgba(62, 155, 232, .25); }
 @media (max-width: 560px) {
   .checkin-btn { width: 116px; height: 116px; }
@@ -1817,24 +1828,7 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .
 }
 
 /* ============================================================
-   背景配色选择器（方案 29 · Block 1 收敛）
-   默认锁定清新蓝（:root 已是清新蓝，data-scheme="mist" 无覆盖块 = 默认）。
-   仅保留「brown 暖棕」作为唯一备选强调色；sage / rose / lavender 已删除。
-   仅浅色模式生效；深色模式保持原深色调，不受 data-scheme 影响。
+   背景配色选择器（方案 34 · 唯一主色）
+   考研站全站唯一配色基准 = 清新蓝「mist」；brown 备选已删除，来源单一。
+   深色模式由 [data-theme="dark"] 控制，不受 data-scheme 影响。
    ============================================================ */
-/* 配色选择器的色点预览 */
-.scheme-dot {
-  display: inline-block; width: 16px; height: 16px; border-radius: 50%;
-  margin-right: 6px; vertical-align: -3px; border: 1px solid rgba(0,0,0,.12);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
-}
-
-/* 暖棕（对象指定，醒目但低饱和；唯一保留的备选） */
-:root:not([data-theme="dark"])[data-scheme="brown"] {
-  --bg: #EFE6DA; --card: #FBF7F1; --surface-2: #F6EFE6;
-  --ink: #3A2E22; --ink-2: #6B5743; --muted: #977F68;
-  --line: #E6D9C8; --line-strong: #D4C2AC;
-  --primary: #A9744E; --primary-d: #855031; --primary-l: #C69876;
-  --primary-weak: #F2E8DD; --primary-ink: #5C3A22; --accent: #B98A66;
-  --section-bg: #E9DCCB;
-}
