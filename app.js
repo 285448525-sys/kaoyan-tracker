@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822a';
+  var APP_VERSION = '20260822b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3452,6 +3452,29 @@
     });
   }
 
+  /* ============ 快捷入口网格（方案 29 · Block 5）============ */
+  // 从侧栏 .tab-btn 派生，保证导航文案/图标与侧栏一致；点击直接 switchTab
+  function renderQuickEntries() {
+    var box = document.getElementById('home-quick');
+    if (!box) return;
+    var btns = document.querySelectorAll('#sideNav .tab-btn');
+    box.innerHTML = '';
+    btns.forEach(function (b) {
+      var tab = b.getAttribute('data-tab');
+      var icEl = b.querySelector('.tab-ic');
+      var icon = icEl ? icEl.getAttribute('data-icon') : '';
+      var labelEl = b.querySelector('.tab-label');
+      var label = labelEl ? labelEl.textContent.trim() : (tab || '');
+      var card = el('button', 'quick-entry', '');
+      card.setAttribute('type', 'button');
+      card.setAttribute('aria-label', label);
+      card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span><span class="qe-label">' + label + '</span>';
+      card.addEventListener('click', function () { switchTab(tab); });
+      box.appendChild(card);
+    });
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
+  }
+
   function renderTodayAggregate() {
     if (!refs.aggCountdown) return;
     // 日期（顶部）
@@ -4360,6 +4383,8 @@
   function init() {
     // 注入线性 SVG 图标占位（方案 29 · Block 2）：把 [data-icon] 批量替换为图标
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(document);
+    // 快捷入口网格（方案 29 · Block 5）：从侧栏 tab 派生，保持导航一致
+    renderQuickEntries();
 
     refs.majorSelect = $('major-select');
     refs.nicknameInput = $('nickname-input');
