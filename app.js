@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822v';
+  var APP_VERSION = '20260822w';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -4310,6 +4310,10 @@
     // 快捷入口网格（方案 29 · Block 5）：从侧栏 tab 派生，保持导航一致
     renderQuickEntries();
 
+    // 导航切换最高优先级：无论后续渲染是否报错，先把导航/路由绑定好
+    // （避免某个模块渲染异常导致整页导航失效、点不动）
+    initTabs();
+
     refs.majorSelect = $('major-select');
     refs.nicknameInput = $('nickname-input');
     refs.examDate = $('exam-date');
@@ -4889,17 +4893,22 @@
     CS408_MISTAKE_CATS.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; refs.mistakeCs408Cat.appendChild(o); });
 
     // 主题初始化 + 设置面板绑定 + 键盘快捷键 + 今日聚合
+    // try/catch 包裹：即使某模块渲染异常，也不影响已绑定的导航/路由
+    try {
     initThemeSetting();
     applyTheme();
     initColorSchemeSetting();
     applyColorScheme();
     initKeyboardShortcuts();
 
-    initTabs();
+    // 注意：initTabs() 已在 init 开头调用，确保导航优先可用
     renderAll();
     applySidebar();
     renderTodayAggregate();
     renderCheckinCard();
+    } catch (e) {
+      if (window.console) console.error('[init] 渲染阶段异常（导航已可用，不影响切换）:', e);
+    }
 
     // Hash 路由：刷新/前进后退/直接访问 #math 等自动打开对应模块
     function applyHash() {
@@ -4985,6 +4994,26 @@
     function registerSW() {
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
         navigator.serviceWorker.register('sw.js').catch(function () {});   // file:// 下不注册，应用照常在线跑
+        // 发版后新 SW 就绪 → 自动刷新一次，用户无需手动强刷即可拿到最新版
+        navigator.serviceWorker.ready.then(function (reg) {
+          reg.addEventListener('updatefound', function () {
+            var nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', function () {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                // 仅刷新一次，避免 reload 循环
+                if (!window.__swReloaded) {
+                  window.__swReloaded = true;
+                  window.location.reload();
+                }
+              }
+            });
+          });
+        });
+        // 当前页面被新 SW 接管时也刷新
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!window.__swReloaded) { window.__swReloaded = true; window.location.reload(); }
+        });
       }
     }
     if (document.readyState === 'complete') registerSW();
