@@ -595,13 +595,19 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* Mobile: drawer */
 @media (max-width: 860px) {
-  .side-nav { transform: translateX(-100%); width: 220px; box-shadow: none; }
-  body.nav-open .side-nav { transform: translateX(0); box-shadow: var(--shadow); }
-  body.nav-open .nav-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 55; }
+  /* 关闭态必须完全不可交互：transform 仅移动视觉位置，元素仍留在命中测试树中，
+     在某些安卓 WebView 会拦截视口内点击（表现为“点了导航没反应”）。
+     故关闭态显式 pointer-events:none + visibility:hidden，彻底移除命中。 */
+  .side-nav { transform: translateX(-100%); width: 220px; box-shadow: none; pointer-events: none; visibility: hidden; }
+  body.nav-open .side-nav { transform: translateX(0); box-shadow: var(--shadow); pointer-events: auto; visibility: visible; }
+  body.nav-open .nav-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 55; pointer-events: auto; }
   .nav-toggle { display: flex; }
   .app-main { margin-left: 0; padding-top: 64px; }
   .practice-options { grid-template-columns: 1fr; }
 }
+/* 导航控件消除 300ms 点击延迟/吞点：安卓上缺 touch-action 会导致 tap 被吞或延迟，
+   表现为点击导航项“无响应”。 */
+.nav-toggle, .tab-btn, .btb-btn, .sub-tab-btn { touch-action: manipulation; }
 
 /* Sidebar collapse toggle */
 .nav-collapse {
