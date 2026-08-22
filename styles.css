@@ -100,6 +100,24 @@ body {
 .card:hover {
   box-shadow: var(--shadow-hover);
 }
+/* 可选：轻上移（仅非列表型大卡用 .card--lift） */
+.card--lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+/* 卡片统一继承段（方案 35 · P2）：散落卡片类共享 .card 的
+   background/border/radius/shadow；各自专属布局与内部间距保留。
+   注意：带功能语义强调条（border-left 红/绿/橙）或专属渐变的卡片不在此列，
+   保留其专属 background/border 声明（来源为功能色，非品牌裸 hex）。
+   .onboarding-card / .countdown-card 有专属渐变，已排除。 */
+.stat-card, .sub-card, .ai-card, .kp-card, .checkin-card, .pomodoro-card,
+.today-score-card, .cloud-sync-card, .translator-card, .weakness-card,
+.word-card, .wrongbook-card,
+.flashcard-card, .syn-card, .reminder, .sub-tab-btn {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
 .card-title { font-size: 15px; margin: 0 0 14px; font-weight: 700; color: var(--ink); }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .card-head .card-title { margin-bottom: 0; }
@@ -175,15 +193,16 @@ h3.sub-title { font-weight: 700; color: var(--ink); }
 
 input, select, textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 16px; /* 移动端防聚焦缩放 */
   font-family: inherit;
   -webkit-appearance: none;
   appearance: none;
   background: var(--surface-2);
   color: var(--ink);
+  transition: border-color .16s ease, box-shadow .16s ease;
 }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--primary);
@@ -247,8 +266,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn-primary { background: var(--primary-strong); color: #fff; }
 .btn-primary:hover { background: var(--primary-deep); }
-.btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-.btn-ghost:hover { border-color: var(--primary); background: var(--primary-soft); }
+.btn-ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { border-color: var(--primary); background: var(--surface-2); }
 .btn-danger { background: var(--danger-weak); color: var(--danger); }
 .btn.full { width: 100%; margin-top: 6px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -554,7 +573,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .practice-feedback { text-align: center; margin-top: 14px; font-size: 14px; font-weight: 600; }
 .practice-actions { display: flex; gap: 10px; margin-top: 14px; }
 .practice-actions .btn { flex: 1; }
-.btn-dontknow { background: #fef3c7; color: #b45309; }
+.btn-dontknow { background: var(--warn-weak); color: var(--warn); border-color: transparent; }
+.btn-dontknow:hover { background: var(--warn); color: #fff; }
 
 /* vocab: 生词复习 */
 .review-en { font-size: 32px; font-weight: 800; text-align: center; color: var(--ink); margin: 6px 0; }
@@ -995,10 +1015,10 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .flash-a { font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
 .flash-actions { display: flex; gap: 10px; }
 .flash-actions .btn { flex: 1; }
-.btn-ok { background: #10b981; color: #fff; border-color: #10b981; }
-.btn-ok:hover { background: #059669; }
-.btn-bad { background: #ef4444; color: #fff; border-color: #ef4444; }
-.btn-bad:hover { background: #dc2626; }
+.btn-ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn-ok:hover { background: color-mix(in srgb, var(--ok) 85%, #000); }
+.btn-bad { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-bad:hover { background: color-mix(in srgb, var(--danger) 85%, #000); }
 :root[data-theme="dark"] .flashcard { background: linear-gradient(135deg, #11321f, #0f2a1c); border-color: #14532d; }
 :root[data-theme="dark"] .flash-back { background: #0f2a1c; border-color: #14532d; }
 :root[data-theme="dark"] .box-badge { background: #1e2a4d; border-color: #334155; color: var(--primary-bright); }
@@ -1027,7 +1047,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .wk-chapters { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 .wk-note { font-size: 13px; color: var(--muted); margin-top: 10px; }
 :root[data-theme="dark"] .wk-priority { background: #2a1a1d; border-color: #5c2f33; }
-:root[data-theme="dark"] .wk-bar { background: #2a2d42; }
+:root[data-theme="dark"] .wk-bar { background: var(--surface-2); }
 
 /* ============ 408 知识点速查卡 ============ */
 .kp-list { display: grid; gap: 10px; margin-top: 4px; }
@@ -1144,21 +1164,21 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
-  background: #272a3d; color: var(--ink); border-color: var(--line);
+  background: var(--surface-2); color: var(--ink); border-color: var(--line);
 }
 :root[data-theme="dark"] input:focus,
 :root[data-theme="dark"] select:focus,
 :root[data-theme="dark"] textarea:focus {
-  box-shadow: 0 0 0 3px rgba(151, 155, 196, 0.22);
+  box-shadow: 0 0 0 4px var(--primary-soft);
 }
-:root[data-theme="dark"] .btn-ghost { background: #2a2d42; color: var(--primary); }
-:root[data-theme="dark"] .icon-btn { background: #2a2d42; border-color: var(--line); color: var(--muted); }
+:root[data-theme="dark"] .btn-ghost { background: var(--surface-2); color: var(--ink); }
+:root[data-theme="dark"] .icon-btn { background: var(--surface-2); border-color: var(--line); color: var(--muted); }
 :root[data-theme="dark"] .icon-btn:hover { border-color: var(--primary); color: var(--primary); background: #313548; }
 :root[data-theme="dark"] .practice-settings { background: rgba(151, 155, 196, 0.05); }
 :root[data-theme="dark"] .practice-settings input[type="number"] { background: #272a3d; color: var(--ink); border-color: var(--line); }
 :root[data-theme="dark"] .ai-explain-box { background: rgba(151, 155, 196, 0.06); }
 :root[data-theme="dark"] .btn-danger { background: #3a2226; color: var(--danger); }
-:root[data-theme="dark"] .mini-btn { background: #2a2d42; color: var(--ink); }
+:root[data-theme="dark"] .mini-btn { background: var(--surface-2); color: var(--ink); }
 :root[data-theme="dark"] .mini-btn:hover { background: #313548; }
 :root[data-theme="dark"] .card { background: var(--card); }
 :root[data-theme="dark"] .toggle-row,
@@ -1176,9 +1196,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] .kp-card,
 :root[data-theme="dark"] .yr-row { background: #272a3d; border-color: var(--line); }
 :root[data-theme="dark"] .plan-item.done { background: #1c3a2e; border-color: #2f6b53; }
-:root[data-theme="dark"] .timer-row.running { background: #2a2d42; border-color: var(--primary); }
+:root[data-theme="dark"] .timer-row.running { background: var(--surface-2); border-color: var(--primary); }
 :root[data-theme="dark"] .chapter-item { background: #272a3d; border-color: var(--line); }
-:root[data-theme="dark"] .chapter-item.current { background: #2a2d42; }
+:root[data-theme="dark"] .chapter-item.current { background: var(--surface-2); }
 :root[data-theme="dark"] .chapter-bar,
 :root[data-theme="dark"] .yr-bar { background: #313548; }
 :root[data-theme="dark"] .goal-bar { background: #313548; }
@@ -1186,13 +1206,13 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] .practice-opt.correct { background: #1c3a2e; border-color: var(--ok); color: #6ee7b7; }
 :root[data-theme="dark"] .practice-opt.wrong { background: #3a2226; border-color: var(--danger); color: #fca5a5; }
 :root[data-theme="dark"] .chip { background: #272a3d; border-color: var(--line); color: var(--muted); }
-:root[data-theme="dark"] .word-card { background: #2a2d42; border-color: #3b3f5c; }
+:root[data-theme="dark"] .word-card { background: var(--surface-2); border-color: #3b3f5c; }
 :root[data-theme="dark"] .word-card.err { background: #3a2226; border-color: #5c2f33; }
 :root[data-theme="dark"] .clause { background: #272a3d; border-color: var(--line); }
 :root[data-theme="dark"] .sg-chip { background: #272a3d; border-color: var(--line); }
 :root[data-theme="dark"] .feat-chip { background: #3a3420; color: #fbbf24; }
 :root[data-theme="dark"] .pron-row { background: #272a3d; }
-:root[data-theme="dark"] .clause-main { background: #2a2d42; }
+:root[data-theme="dark"] .clause-main { background: var(--surface-2); }
 :root[data-theme="dark"] .syn-card { background: #3a3220; border-color: #5c4a26; }
 :root[data-theme="dark"] .method-text { background: #272a3d; border-color: var(--line); color: var(--ink); }
 :root[data-theme="dark"] .grid-line { stroke: #313548; }
@@ -1217,8 +1237,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 @keyframes pulse { 0%,100% { box-shadow: 0 6px 24px rgba(62, 155, 232, .08); } 50% { box-shadow: 0 6px 28px rgba(62, 155, 232, .18); } }
 :root[data-theme="dark"] .onboarding-card { background: linear-gradient(135deg, #2a2d42, #2e2640); border-color: var(--primary); }
 .onboarding-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.ob-step { background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center; position: relative; cursor: pointer; transition: all .18s ease; border: 1px solid var(--line); }
-:root[data-theme="dark"] .ob-step { background: #272a3d; }
+.ob-step { background: var(--card); border-radius: var(--radius); padding: 12px 10px; text-align: center; position: relative; cursor: pointer; transition: all .18s ease; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
 .ob-step:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 6px 16px rgba(62, 155, 232, .12); }
 .ob-step.done { opacity: .7; }
 .ob-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-weight: 800; margin: 0 auto 8px; font-size: 14px; }
@@ -1386,10 +1405,10 @@ h3.card-sub { font-size: 15px; font-weight: 700; color: var(--ink); margin: 2px 
 .btn-primary:hover { background: var(--primary-deep); box-shadow: 0 6px 20px -4px rgba(31,111,184,.45); }
 .btn-primary:active { transform: scale(0.98); }
 .btn-ghost {
-  background: #fff; color: var(--ink); border: 1px solid var(--line);
+  background: var(--card); color: var(--ink); border: 1px solid var(--line);
   padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer;
 }
-.btn-ghost:hover { border-color: var(--primary); background: var(--primary-soft); }
+.btn-ghost:hover { border-color: var(--primary); background: var(--surface-2); }
 .btn-danger {
   background: var(--danger-weak); color: var(--danger); border: 1px solid rgba(240,101,95,.25);
   padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer;
@@ -1469,7 +1488,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ============ 深色模式补充 ============ */
 :root[data-theme="dark"] .btn-primary { box-shadow: 0 4px 14px -4px rgba(107,111,156,.45); }
-:root[data-theme="dark"] .btn-ghost { background: #2a2d42; border-color: var(--line); }
+:root[data-theme="dark"] .btn-ghost { background: var(--surface-2); border-color: var(--line); }
 :root[data-theme="dark"] .bottom-tabbar { background: #1a1d2e; border-top-color: var(--line); box-shadow: 0 -4px 12px rgba(0,0,0,.3); }
 :root[data-theme="dark"] .fab-action { box-shadow: 0 6px 20px -4px rgba(0,0,0,.6); }
 :root[data-theme="dark"] .tag { background: rgba(151, 155, 196, .12); color: var(--primary-bright); }
@@ -1576,9 +1595,9 @@ input:focus, select:focus, textarea:focus {
 
 /* 深色主题适配 */
 :root[data-theme="dark"] .book-head { background: #272a3d; }
-:root[data-theme="dark"] .book-head:hover { background: #2a2d42; }
-:root[data-theme="dark"] .book-count { background: #2a2d42; }
-:root[data-theme="dark"] .subject-summary { background: #2a2d42; }
+:root[data-theme="dark"] .book-head:hover { background: var(--surface-2); }
+:root[data-theme="dark"] .book-count { background: var(--surface-2); }
+:root[data-theme="dark"] .subject-summary { background: var(--surface-2); }
 :root[data-theme="dark"] .subject-subtree { background: #272a3d; border-left-color: #3b3f5c; }
 :root[data-theme="dark"] .heat-cell { background: #313548; }
 :root[data-theme="dark"] .card-hint { color: #9ca3af; }
