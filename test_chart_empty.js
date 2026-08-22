@@ -136,7 +136,7 @@ if (sb) testContainer('renderSubjectBars(app)', sb, '还没有科目时长', '�
 // 10) subject-stats
 var ss = document.getElementById('subject-stats');
 ok(!!ss, 'subject-stats 容器存在');
-if (ss) testContainer('renderSubjectStats', ss, '暂无科目统计', '去设置科目', []);
+if (ss) testContainer('renderSubjectStats', ss, '科目统计还是空的', '去设置科目', []);
 
 // ===== 第三部分：app.js 按钮点击 → 真实路由（practice/cs408 变 active）=====
 // 恢复真实 switchTab/showSub 以便验证 DOM 路由

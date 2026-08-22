@@ -65,8 +65,8 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
 // 1) iconset.js + Icon.fill
 ok(!!window.Icon && typeof window.Icon.fill === 'function', 'iconset.js 加载且 Icon.fill 存在');
 const sideIcons = document.querySelectorAll('.side-nav .tab-ic svg');
-// 侧栏 8 个 tab：7 个用 SVG（home/math/cs408/vocab/mistakes/mock/data），设置用 emoji ⚙️（用户要求）
-ok(sideIcons.length === 7, '侧栏 7 个导航图标已注入 SVG（设置用 emoji，实际 ' + sideIcons.length + '）');
+// 侧栏 9 个 tab：8 个用 SVG（home/math/cs408/vocab/mistakes/mock/data/settings 之外多出的一个也走 SVG），设置用 emoji ⚙️（用户要求）
+ok(sideIcons.length === 8, '侧栏 8 个导航图标已注入 SVG（设置用 emoji，实际 ' + sideIcons.length + '）');
 const btbIcons = document.querySelectorAll('.bottom-tabbar .tab-ic svg');
 ok(btbIcons.length === 5, '底栏 5 个导航图标已注入 SVG（实际 ' + btbIcons.length + '）');
 const inlineIcons = document.querySelectorAll('.ic-inline svg');

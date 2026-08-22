@@ -53,7 +53,7 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
 console.log('===== FAB 拍题按钮：存在 + 图标 + 语义 =====');
 const fab = document.getElementById('fabAction');
 ok(!!fab, '#fabAction 悬浮按钮存在');
-ok(fab && (fab.textContent || '').indexOf('📷') >= 0, 'FAB 图标为 📷（拍题）');
+ok(fab && !!fab.querySelector('[data-icon="camera"]'), 'FAB 图标为相机 SVG（data-icon=camera，拍题入口，非 emoji）');
 ok(fab && /拍题/.test(fab.getAttribute('aria-label') || ''), 'FAB aria-label 含「拍题」');
 
 console.log('===== FAB 点击：跳到错题页 + 拉起相机 =====');
