@@ -46,66 +46,51 @@ function ok(name, cond, extra) {
 }
 
 // ---------- 1) 卡片 DOM 结构 ----------
-ok('首页存在 #today-dist 卡', !!document.getElementById('today-dist'));
-ok('存在 #td-rows 容器', !!document.getElementById('td-rows'));
-ok('存在 #td-total 合计', !!document.getElementById('td-total'));
-ok('存在 #td-empty 空态', !!document.getElementById('td-empty'));
+var distBox0 = document.getElementById('home-distribution');
+ok('首页存在 #home-distribution 块', !!distBox0);
+ok('存在 .hs-body 容器', !!(distBox0 && distBox0.querySelector('.hs-body')));
 ok('init 后暴露 window.__renderTodayAggregate', typeof window.__renderTodayAggregate === 'function');
 
-// ---------- 2) 空态（无计时） ----------
-const tdRows = document.getElementById('td-rows');
-const tdTotal = document.getElementById('td-total');
-const tdEmpty = document.getElementById('td-empty');
-ok('空态：#td-rows 无行', tdRows.querySelectorAll('.td-row').length === 0, 'rows=' + tdRows.querySelectorAll('.td-row').length);
-ok('空态：#td-total = 合计 0m', tdTotal.textContent === '合计 0m', tdTotal.textContent);
-ok('空态：#td-empty 可见（hidden=false）', tdEmpty.hidden === false);
+// ---------- 2) 空态（无计时，触发 home 渲染） ----------
+window.__switchTab('home');
+var distBox = document.getElementById('home-distribution');
+var distBody = distBox.querySelector('.hs-body');
+ok('空态：.hs-body 显示 .hs-empty 提示', !!distBody.querySelector('.hs-empty'), distBody.innerHTML.slice(0, 40));
 
 // ---------- 3) 填充态：注入科目 + 今日时长，重渲染 ----------
 Store.upsertSubject({ key: 'math', name: '数学', type: 'math' });
 Store.upsertSubject({ key: 'english', name: '英语', type: 'english' });
 Store.upsertSubject({ key: 'cs408', name: '408', type: 'cs408' });
 Store.setDayDurations(Store.todayStr(), { math: 150, english: 60, cs408: 0 });
-window.__renderTodayAggregate();
+window.__switchTab('home'); // 重新渲染 home → renderHomeDistribution
 
-const rows = tdRows.querySelectorAll('.td-row');
+var rows = distBody.querySelectorAll('.td-row');
 ok('填充态：仅 math(150) 与 english(60) 有行（cs408 0 被过滤）', rows.length === 2, 'rows=' + rows.length);
 
-// 按时长降序：第一行应为 数学(150)
-const firstName = rows[0].querySelector('.td-name').textContent;
-const secondName = rows[1].querySelector('.td-name').textContent;
+var firstName = rows[0].querySelector('.td-name').textContent;
+var secondName = rows[1].querySelector('.td-name').textContent;
 ok('排序：第一行=数学（150m 最大）', firstName === '数学', firstName);
 ok('排序：第二行=英语（60m）', secondName === '英语', secondName);
 
-// 合计 150+60=210m = 3h 30m
-ok('合计：210m → 合计 3h 30m', tdTotal.textContent === '合计 3h 30m', tdTotal.textContent);
+var totalEl = distBody.querySelector('.hs-total');
+ok('合计：210m → 合计 3h 30m', totalEl && totalEl.textContent === '合计 3h 30m', totalEl ? totalEl.textContent : 'no-total');
 
-// 各自行时长文本
-const firstTime = rows[0].querySelector('.td-time').textContent;
-const secondTime = rows[1].querySelector('.td-time').textContent;
+var firstTime = rows[0].querySelector('.td-time').textContent;
+var secondTime = rows[1].querySelector('.td-time').textContent;
 ok('第一行时长=2h 30m', firstTime === '2h 30m', firstTime);
-ok('第二行时长=1h 0m（方案 fmtMinShort 定义）', secondTime === '1h 0m', secondTime);
+ok('第二行时长=1h 0m（fmtMinShort）', secondTime === '1h 0m', secondTime);
 
-// 科目语义色（内联 style）
-const firstDot = rows[0].querySelector('.td-dot').getAttribute('style') || '';
-const secondDot = rows[1].querySelector('.td-dot').getAttribute('style') || '';
-ok('数学色点= #8b5cf6', firstDot.indexOf('#8b5cf6') >= 0, firstDot);
-ok('英语色点= #3b82f6', secondDot.indexOf('#3b82f6') >= 0, secondDot);
-
-// 色条宽度（max=150 → 数学100%，英语 round(60/150*100)=40%，均≥6）
-const firstFill = rows[0].querySelector('.td-fill').getAttribute('style') || '';
-const secondFill = rows[1].querySelector('.td-fill').getAttribute('style') || '';
-ok('数学色条 width:100%', firstFill.indexOf('width:100%') >= 0, firstFill);
+// 科目色点 / 色条存在（颜色由 subjectColorClass 决定，不绑定具体色值）
+var firstDot = rows[0].querySelector('.td-dot').getAttribute('style') || '';
+var firstFill = rows[0].querySelector('.td-fill').getAttribute('style') || '';
+ok('数学行含色点(td-dot)与色条(td-fill)', firstDot.indexOf('background') >= 0 && firstFill.indexOf('width:') >= 0, firstFill);
+var secondFill = rows[1].querySelector('.td-fill').getAttribute('style') || '';
 ok('英语色条 width:40%', secondFill.indexOf('width:40%') >= 0, secondFill);
-
-// 空态已隐藏
-ok('填充态：#td-empty 隐藏（hidden=true）', tdEmpty.hidden === true);
 
 // ---------- 4) 清空后回到空态 ----------
 Store.setDayDurations(Store.todayStr(), {});
-window.__renderTodayAggregate();
-ok('清空后：#td-rows 无行', tdRows.querySelectorAll('.td-row').length === 0);
-ok('清空后：#td-total = 合计 0m', tdTotal.textContent === '合计 0m', tdTotal.textContent);
-ok('清空后：#td-empty 再次可见', tdEmpty.hidden === false);
+window.__switchTab('home');
+ok('清空后：.hs-body 回到 .hs-empty', distBody.querySelectorAll('.td-row').length === 0 && !!distBody.querySelector('.hs-empty'));
 
 // ---------- 5) 版本一致性 ----------
 const appJs = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');

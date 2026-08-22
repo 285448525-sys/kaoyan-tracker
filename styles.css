@@ -1932,24 +1932,24 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .timer-page { display: block; }
 .timer-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
 .timer-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
-.timer-summary { display: flex; flex-direction: column; gap: 8px; }
-.ts-total { font-size: 14px; margin-bottom: 4px; }
+.timer-summary { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ts-total { font-size: 14px; margin-bottom: var(--sp-1); }
 .ts-total b { color: var(--primary); font-size: 16px; }
-.ts-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ts-row { display: flex; align-items: center; gap: var(--sp-2); font-size: 13px; }
 .ts-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .ts-name { flex: 1; }
 .ts-time { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* 倒计时卡密度微调：压缩首页高度，省出首屏空间 */
-.today-countdown-card { padding: 16px 18px; }
-.countdown-body { gap: 12px; }
+.today-countdown-card { padding: var(--sp-4) 18px; }
+.countdown-body { gap: var(--sp-3); }
 .today-stats { gap: 10px; }
 .stat-block { padding: 10px 12px; }
 
 /* 待办折叠 */
-.plan-add-fold { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.plan-add-fold { margin-top: 10px; border-top: 1px solid var(--line); padding-top: var(--sp-2); }
 .plan-add-summary { cursor: pointer; font-size: 13px; color: var(--primary); user-select: none; }
-.plan-add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.plan-add { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); align-items: center; }
 .plan-add input[type="text"] { flex: 1; min-width: 160px; }
 
 /* 移动端：首页单列不溢出 */

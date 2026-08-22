@@ -36,12 +36,12 @@ if (typeof window.__switchTab !== 'function') { try { document.dispatchEvent(new
 let pass = 0, fail = 0;
 function ok(c, n) { if (c) { pass++; console.log('✅ ' + n); } else { fail++; console.log('❌ ' + n); } }
 
-const REQUIRED = ['home', 'math', 'cs408', 'vocab', 'mistakes', 'mock', 'data', 'settings'];
+const REQUIRED = ['home', 'timer', 'math', 'cs408', 'vocab', 'mistakes', 'mock', 'data', 'settings'];
 const BOTTOM = ['home', 'math', 'cs408', 'vocab', 'mistakes']; // 底部仅高频 5 项，其余 3 项在 ☰ 抽屉
 
 // 1) 8 个顶层容器唯一
 const found = REQUIRED.filter(function (c) { const e = document.querySelectorAll('#tab-' + c); return e.length === 1 && e[0].classList.contains('tab-panel'); });
-ok(found.length === 8, '8 个顶层容器唯一存在（' + found.length + '/8）');
+ok(found.length === 9, '9 个顶层容器唯一存在（' + found.length + '/9）');
 
 // 2) 旧 id 不残留
 ok(document.getElementById('tab-dashboard') === null, 'tab-dashboard 不残留');
@@ -50,7 +50,7 @@ ok(document.getElementById('tab-practice') === null, 'tab-practice 不残留');
 // 3) 侧栏 8 + 底栏 8，data-tab 集合一致
 const side = Array.prototype.slice.call(document.querySelectorAll('.side-menu .tab-btn')).map(function (b) { return b.getAttribute('data-tab'); }).sort();
 const btb = Array.prototype.slice.call(document.querySelectorAll('.bottom-tabbar .btb-btn')).map(function (b) { return b.getAttribute('data-tab'); }).sort();
-ok(side.length === 8 && JSON.stringify(side) === JSON.stringify(REQUIRED.slice().sort()), '侧栏 8 .tab-btn 集合正确');
+ok(side.length === 9 && JSON.stringify(side) === JSON.stringify(REQUIRED.slice().sort()), '侧栏 9 .tab-btn 集合正确');
 ok(btb.length === 5 && JSON.stringify(btb) === JSON.stringify(BOTTOM.slice().sort()), '底栏 5 .btb-btn 集合正确');
 
 // 4) 切换：showTab('math') 后仅 tab-math.active

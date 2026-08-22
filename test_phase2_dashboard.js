@@ -56,11 +56,11 @@ ok('含 stat-countdown（距考研）块', !!document.querySelector('.today-stat
 const cdNum = document.getElementById('agg-countdown');
 ok('距考研 stat 初值存在（agg-countdown）', !!cdNum);
 
-// 3) today-score-card 收敛为 2 项（得分/等级），无 距考研重复
-const scItems = document.querySelectorAll('#today-score-card .sc-item');
-ok('today-score-card 收敛为 2 项（得分/等级）', scItems.length === 2, '实际 ' + scItems.length);
-const scLabels = Array.from(scItems).map(function (s) { return s.querySelector('.sc-label') ? s.querySelector('.sc-label').textContent : ''; });
-ok('今日得分 / 累计等级 标签齐全', scLabels.indexOf('今日得分') >= 0 && scLabels.indexOf('累计等级') >= 0, JSON.stringify(scLabels));
+// 3) 首页学习板块「今日得分」块（P4c：home-scores 取代 today-score-card）
+window.__switchTab('home'); // 显式触发首页渲染（init 不重渲染 home 块）
+const scBox = document.getElementById('home-scores');
+ok('首页学习板块含「今日得分」块 (home-scores)', !!scBox);
+ok('home-scores 渲染分数与等级 (hs-num/hs-sub)', !!(scBox && scBox.querySelector('.hs-num') && scBox.querySelector('.hs-sub')));
 
 // 4) 快捷入口网格由侧栏派生 8 张卡片
 const quickCards = document.querySelectorAll('#home-quick .quick-entry');

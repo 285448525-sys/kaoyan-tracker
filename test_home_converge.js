@@ -32,7 +32,8 @@ ok('错题复习 mistake-review-card 平铺', /id="mistake-review-card"/.test(ht
 // 计时板块常驻（独立 home-timer-rows，不与计时页 timer-rows 冲突）
 ok('home-timer-card 存在', /id="home-timer-card"/.test(html));
 ok('home-timer-rows 存在（独立于计时页）', /id="home-timer-rows"/.test(html));
-ok('首页旧 timer-rows 已移除', !/id="timer-rows"/.test(html));
+var hcHome = (function () { var hi = html.indexOf('id="tab-home"'); var nx = html.indexOf('id="tab-', hi + 10); return html.slice(hi, nx < 0 ? html.length : nx); })();
+ok('首页旧 timer-rows 已移除', !/id="timer-rows"/.test(hcHome));
 
 // 顺序：快捷入口 → 计时(home-timer) → 学习(home-study) → 打卡 → 待办 → 错题
 const quickIdx = html.indexOf('id="home-quick-card"');
@@ -47,7 +48,7 @@ ok('顺序 学习→打卡→待办→错题', checkinIdx > studyIdx && planIdx 
 
 // 番茄钟详细设置（计时页）保留，首页番茄钟仅显示+按钮
 ok('计时页 pomodoro-card 保留', /class="card pomodoro-card"/.test(html));
-ok('首页 home-pomo 显示块存在', /id="home-pomo"/.test(html));
+ok('首页计时板块含「去计时页」入口 (data-goto=timer)', /data-goto="timer"/.test(html));
 
 console.log(`\n==== P4b 首页平铺验收：通过 ${pass} / 失败 ${fail} ====`);
 process.exit(fail ? 1 : 0);

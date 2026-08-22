@@ -58,7 +58,7 @@ try {
 } catch (e) {}
 
 // ---- 1) 8 个顶层容器存在且唯一 ----
-const containers = ['home', 'math', 'cs408', 'vocab', 'mistakes', 'mock', 'data', 'settings'];
+const containers = ['home', 'timer', 'math', 'cs408', 'vocab', 'mistakes', 'mock', 'data', 'settings'];
 containers.forEach(function (c) {
   const el = document.querySelectorAll('#tab-' + c);
   ok(el.length === 1 && el[0].classList.contains('tab-panel'), '容器 tab-' + c + ' 存在且仅一个 tab-panel');
@@ -78,7 +78,7 @@ ok(JSON.stringify(btbTabs) === JSON.stringify(btbExpected.slice().sort()), '底�
 
 // ---- 4) 侧栏 8 个 tab-btn ----
 const sbtn = document.querySelectorAll('.side-menu .tab-btn');
-ok(sbtn.length === 8, '侧栏有 8 个 tab-btn（实际 ' + sbtn.length + '）');
+ok(sbtn.length === 9, '侧栏有 9 个 tab-btn（实际 ' + sbtn.length + '）');
 
 // ---- 5) sub-panel / sub-tab-btn 数量合理 ----
 const subPanels = document.querySelectorAll('.sub-panel');
@@ -146,8 +146,8 @@ ok(!!document.querySelector('#tab-mistakes #sub-sentences'), 'tab-mistakes 含 #
 ['exam-date', 'ai-key', 'sync-code', 'goal-hours', 'btn-export', 'w-duration'].forEach(function (id) {
   ok(!document.querySelector('#tab-home #' + id), 'tab-home 不含设置控件 #' + id);
 });
-ok(!!document.querySelector('#tab-home #timer-rows'), '计时器 DOM 保留在首页');
-ok(!!document.querySelector('#tab-home #pomo-time'), '番茄钟 DOM 保留在首页');
+ok(!!document.querySelector('#tab-timer #timer-rows'), '计时器 DOM 保留在计时页');
+ok(!!document.querySelector('#tab-timer #pomo-time'), '番茄钟 DOM 保留在计时页');
 
 // ---- 13) 运行时无错误 ----
 ok(runtimeErrors.length === 0, 'window 运行时错误 0（实际 ' + runtimeErrors.length + '）');
