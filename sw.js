@@ -1,13 +1,14 @@
-/* 考研学习记录 · Service Worker（v20260822w）
- * HTML/shell 走 network-first（保证每次拿到最新外壳，不发版后还显示旧的）；
- * 静态资源（app.js/styles.css/图标等）走 cache-first + 后台更新（stale-while-revalidate）。
+/* 考研学习记录 · Service Worker（v20260822y）
+ * 【根治导航/页面卡旧版】shell(index.html) 永远走网络、绝不缓存，
+ *   旧 SW 曾 cache-first 缓存了"所有模块同一内容"的旧 index.html 并顶替新版 → 用户反复看到故障页。
+ * 静态资源（app.js?/styles.css?/图标等带 ?v= 版本号）走 cache-first + 后台更新（stale-while-revalidate），
+ *   版本号天然隔离，发版即换新。
  * 排除 /api/* 与跨域，保证同步/AI 实时走网络。
- * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步），否则旧 SW 不更新、用户拿不到新外壳。
- * 新 SW 激活后强制 reload，用户无需手动强刷即可拿到新版。
+ * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步）。
  */
-const SW_VERSION = '20260822x';
+const SW_VERSION = '20260822y';
 const CACHE = 'kaoyan-pwa-' + SW_VERSION;
-const PRECACHE = ['./', './index.html', './manifest.webmanifest'];
+const PRECACHE = ['./', './manifest.webmanifest'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -44,14 +45,10 @@ self.addEventListener('fetch', function (e) {
                 url.pathname.endsWith('/index.html') ||
                 url.pathname === '' ;
   if (isShell) {
-    // 外壳：network-first，失败时退回缓存（保证发版后立即拿到新 index.html/shell）
+    // 外壳：永远走网络、绝不缓存（根治"旧 SW 缓存旧 index.html 顶替新版"）。
+    // 失败时退回缓存仅作离线兜底，正常网络下用户永远拿到最新 index.html。
     e.respondWith(
-      fetch(req).then(function (res) {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(function (c) { c.put(req, res.clone()); });
-        }
-        return res;
-      }).catch(function () {
+      fetch(req).catch(function () {
         return caches.match(req).then(function (hit) { return hit || fetch(req); });
       })
     );
