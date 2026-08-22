@@ -8,8 +8,8 @@
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="favicon.svg" />
-  <meta name="theme-color" content="#5B9FC9" />
-  <meta name="theme-color" content="#7FB8DB" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#3E9BE8" />
+  <meta name="theme-color" content="#1F6FB8" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Open Graph / 社交分享卡片（发群邀请时显示预览图与标题） -->
   <meta property="og:type" content="website" />
@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260818g" />
+  <link rel="stylesheet" href="styles.css?v=20260822a" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -36,14 +36,14 @@
       </div>
     </div>
     <nav class="side-menu">
-      <button class="tab-btn active" data-tab="home"><span>🏠</span><span class="tab-label">首页</span></button>
-      <button class="tab-btn" data-tab="math"><span>📐</span><span class="tab-label">数学</span></button>
-      <button class="tab-btn" data-tab="cs408"><span>💻</span><span class="tab-label">408</span></button>
-      <button class="tab-btn" data-tab="vocab"><span>📝</span><span class="tab-label">词汇</span></button>
-      <button class="tab-btn" data-tab="mistakes"><span>📌</span><span class="tab-label">错题</span></button>
-      <button class="tab-btn" data-tab="mock"><span>📊</span><span class="tab-label">模考</span></button>
-      <button class="tab-btn" data-tab="data"><span>📈</span><span class="tab-label">数据</span></button>
-      <button class="tab-btn" data-tab="settings"><span>⚙️</span><span class="tab-label">设置</span></button>
+      <button class="tab-btn active" data-tab="home"><span class="tab-ic" data-icon="home"></span><span class="tab-label">首页</span></button>
+      <button class="tab-btn" data-tab="math"><span class="tab-ic" data-icon="math"></span><span class="tab-label">数学</span></button>
+      <button class="tab-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span class="tab-label">408</span></button>
+      <button class="tab-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span class="tab-label">词汇</span></button>
+      <button class="tab-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span class="tab-label">错题</span></button>
+      <button class="tab-btn" data-tab="mock"><span class="tab-ic" data-icon="mock"></span><span class="tab-label">模考</span></button>
+      <button class="tab-btn" data-tab="data"><span class="tab-ic" data-icon="data"></span><span class="tab-label">数据</span></button>
+      <button class="tab-btn" data-tab="settings"><span class="tab-ic" data-icon="settings"></span><span class="tab-label">设置</span></button>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
@@ -63,14 +63,14 @@
             <div class="today-eyebrow">考研学习记录 · 每日打卡</div>
             <div class="today-date" id="today-date">--</div>
           </div>
-          <button id="btn-cheer" class="today-cheer" type="button" title="点一下，给自己一点鼓励">💪 加油！</button>
+          <button id="btn-cheer" class="today-cheer" type="button" title="点一下，给自己一点鼓励"><span class="ic-inline" data-icon="cheer"></span> 加油！</button>
         </div>
 
 
         <!-- 倒计时独立卡片：深色渐变紫（设计方案核心视觉） -->
         <div class="today-countdown-card" id="today-countdown-card">
           <div class="countdown-top">
-            <span class="countdown-tag" id="cd-target">🎯 目标院校 / 专业</span>
+            <span class="countdown-tag" id="cd-target"><span class="ic-inline" data-icon="target"></span> 目标院校 / 专业</span>
             <span class="countdown-quote" id="cd-quote">“每天进步一点点”</span>
           </div>
           <div class="countdown-body">
@@ -90,7 +90,7 @@
         <!-- 四大主指标卡（时长/打卡/计划/趋势） -->
         <div class="today-stats">
           <div class="stat-block stat-focus" data-zero-toggle>
-            <div class="stat-icon">⏱</div>
+            <div class="stat-icon"><span data-icon="timer"></span></div>
             <div class="stat-value">
               <span class="num" id="agg-minutes">0</span>
               <span class="unit">min</span>
@@ -98,7 +98,7 @@
             <div class="stat-label">今日专注时长</div>
           </div>
           <div class="stat-block stat-streak" data-zero-toggle>
-            <div class="stat-icon">🔥</div>
+            <div class="stat-icon"><span data-icon="fire"></span></div>
             <div class="stat-value">
               <span class="num" id="agg-streak">0</span>
               <span class="unit">天</span>
@@ -106,7 +106,7 @@
             <div class="stat-label">连续打卡</div>
           </div>
           <div class="stat-block stat-plan" data-zero-toggle>
-            <div class="stat-icon">✅</div>
+            <div class="stat-icon"><span data-icon="check"></span></div>
             <div class="stat-value">
               <span class="num" id="agg-plan-done">0</span>
               <span class="sep">/</span>
@@ -119,7 +119,7 @@
         <!-- 今日学习分布卡：截图标配，直观显示「学了哪些模块 + 各多久」 -->
         <div class="card today-dist" id="today-dist">
           <div class="td-head">
-            <h2 class="card-title">📚 今日学习分布</h2>
+            <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 今日学习分布</h2>
             <span class="td-total" id="td-total">合计 0m</span>
           </div>
           <div id="td-rows" class="td-rows"></div>
@@ -150,9 +150,9 @@
       <!-- 今日打卡卡片：居中大按钮 + 连续天数 + 最近打卡时间轴 -->
       <div class="section">
 <div class="card checkin-card" id="checkinCard">
-        <h2 class="card-title">✅ 今日打卡</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="check"></span> 今日打卡</h2>
         <div class="checkin-inner">
-          <div class="checkin-streak">🔥 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
+          <div class="checkin-streak"><span class="ic-inline" data-icon="fire"></span> 已连续打卡 <span class="cs-num" id="ci-streak">0</span><span class="cs-unit">天</span></div>
           <button class="checkin-btn" id="btn-checkin-today" type="button" aria-label="今日打卡">
             <span class="ci-ring"></span>
             <span class="ci-label" id="ci-label">今日打卡</span>
@@ -165,7 +165,7 @@
       <!-- 快速开始引导卡（H3 新增） -->
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📅 今日待办</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 今日待办</h2>
         <div class="btn-row">
           <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
         </div>
@@ -182,21 +182,21 @@
       <!-- 错题复习主动提醒（记忆曲线） -->
       <div class="section">
 <div class="card" id="mistake-review-card">
-        <h2 class="card-title">📌 错题复习</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题复习</h2>
         <div id="mistake-review-body" class="mistake-review-body"></div>
       </div></div>
 
     
       <div class="section">
 <div class="card">
-        <h2 class="card-title">⏱ 按模块计时</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="timer"></span> 按模块计时</h2>
         <div id="timer-rows" class="timer-rows"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card pomodoro-card">
-        <h2 class="card-title">🍅 番茄钟 / 倒计时（可自定义）</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="tomato"></span> 番茄钟 / 倒计时（可自定义）</h2>
         <div class="pomo-setup">
           <div class="field-row" style="margin-bottom:8px">
             <label>学习(分)</label>
@@ -219,7 +219,7 @@
       </div></div>
 
       <details class="smart-plan-fold">
-        <summary class="card-title">⚡ 智能计划（每日学习量建议）</summary>
+        <summary class="card-title"><span class="ic-inline" data-icon="bolt"></span> 智能计划（每日学习量建议）</summary>
         <div id="smart-plan" class="smart-plan"></div>
       </details>
 
@@ -230,14 +230,14 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📐 数学章节进度</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="math"></span> 数学章节进度</h2>
         <div id="math-chapters" class="chapter-list"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🧮 分类选择题刷题</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 分类选择题刷题</h2>
         <div class="field-row">
           <label>分类</label>
           <select id="math-practice-cat">
@@ -278,14 +278,14 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">💻 408 章节进度</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="cs408"></span> 408 章节进度</h2>
         <div id="cs408-chapters" class="chapter-list"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🧮 408 分类刷题</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 分类刷题</h2>
         <div class="field-row">
           <label>分类</label>
           <select id="cs408-practice-cat">
@@ -323,7 +323,7 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🧠 408 知识点速查卡</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 知识点速查卡</h2>
         <div class="plan-add">
           <select id="kp-subject" style="max-width:160px">
             <option value="数据结构">数据结构</option>
@@ -345,7 +345,7 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📅 408 历年真题年份记录</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 408 历年真题年份记录</h2>
         <div class="plan-add">
           <input type="number" id="yr-year" placeholder="年份，如 2024" min="2000" max="2099" style="max-width:120px" />
           <input type="number" id="yr-score" placeholder="得分" min="0" max="150" style="max-width:100px" />
@@ -365,14 +365,14 @@
       <div id="sub-mistakes" class="sub-panel active">
       <div class="section">
       <div class="card">
-        <h2 class="card-title">📌 错题 / 感悟整理</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题 / 感悟整理</h2>
         <p class="card-hint">把题目 / 感悟直接粘贴到下面，三步搞定：① 🪄 <b>智能整理</b>（AI 自动归类到 通用 / 数学 / 408）；② <b>直接存为感悟</b>；③ <b>手动归档</b>（自定义范围与分类）。</p>
         <div class="field">
           <label>内容（粘贴题目 / 感悟）</label>
           <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
         </div>
         <div class="btn-row" style="margin-top:10px">
-          <button id="btn-smart-organize" class="btn btn-primary" type="button">🪄 智能整理</button>
+          <button id="btn-smart-organize" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="wand"></span> 智能整理</button>
           <button id="btn-save-direct" class="btn btn-ghost" type="button">直接存为感悟</button>
           <button id="btn-manual-organize" class="btn btn-ghost" type="button">手动归档 ▾</button>
         </div>
@@ -416,11 +416,11 @@
 
       <div class="section">
 <div class="card" id="ai-solve-card">
-        <h2 class="card-title">📷 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="camera"></span> 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
         <p class="card-hint">拍照前请先在 <a href="javascript:void(0)" id="link-open-vision">「设置 → 连接与密钥 → AI 能力 → 视觉模型」</a> 填好支持看图的模型（豆包 / 通义千问VL / GPT-4o）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
         <div class="ai-solve-row">
-          <button id="btn-capture-cam" class="btn btn-primary" type="button">📷 拍照</button>
-          <button id="btn-capture-lib" class="btn btn-ghost" type="button">🖼 相册</button>
+          <button id="btn-capture-cam" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="camera"></span> 拍照</button>
+          <button id="btn-capture-lib" class="btn btn-ghost" type="button"><span class="ic-inline" data-icon="image"></span> 相册</button>
           <input id="ai-file-cam" type="file" accept="image/*" capture="environment" hidden />
           <input id="ai-file-lib" type="file" accept="image/*" hidden />
           <button id="btn-solve" class="btn btn-ghost" type="button" hidden>求解</button>
@@ -440,7 +440,7 @@
 
       <div class="section">
 <div class="card flashcard-card">
-        <h2 class="card-title">🃏 错题速查卡（记忆曲线复习）</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="card"></span> 错题速查卡（记忆曲线复习）</h2>
         <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。数学答对升一箱（间隔拉长），408 标记已回顾；答错回到最短间隔，到期自动提醒。</p>
         <div class="field-row">
           <label>范围</label>
@@ -451,7 +451,7 @@
           </select>
         </div>
         <div class="btn-row">
-          <button id="btn-mistake-flash-start" class="btn btn-primary">🔄 抽取待复习</button>
+          <button id="btn-mistake-flash-start" class="btn btn-primary"><span class="ic-inline" data-icon="refresh"></span> 抽取待复习</button>
         </div>
         <div id="mistake-flashcard-box" class="flashcard-wrap"></div>
       </div></div>
@@ -461,7 +461,7 @@
       <div id="sub-sentences" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🧩 长难句分析</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="puzzle"></span> 长难句分析</h2>
         <textarea id="sentence-input" rows="4" placeholder="粘贴一句长难句，例如：Although the theory has been widely accepted, many researchers still question whether it can explain the phenomenon that we observed."></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button id="btn-analyze" class="btn btn-primary">开始分析</button>
@@ -480,7 +480,7 @@
       <div id="sub-words" class="sub-panel active">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📝 生词记录</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 生词记录</h2>
         <div class="field-row">
           <label>单词</label>
           <input type="text" id="word-input" placeholder="输入英文单词，如 abandon" autocomplete="off" />
@@ -515,7 +515,7 @@
 
       <div class="section">
 <div class="card translator-query-card">
-        <h2 class="card-title">🌐 即时翻译（百度翻译接口）</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="globe"></span> 即时翻译（百度翻译接口）</h2>
         <div class="field-row">
           <label>单词</label>
           <input type="text" id="trans-input" placeholder="输入英文单词，如 algorithm" autocomplete="off" />
@@ -531,7 +531,7 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📥 批量导入生词</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="import"></span> 批量导入生词</h2>
         <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
@@ -563,10 +563,10 @@
 
       <div class="section">
 <div class="card wrongbook-card">
-        <h2 class="card-title">📕 查词记录（翻译查词自动归档） <span id="wrong-count" class="count-pill">0</span></h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="bookRed"></span> 查词记录（翻译查词自动归档） <span id="wrong-count" class="count-pill">0</span></h2>
         <div class="btn-row" style="margin-bottom:10px">
           <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
-          <button id="btn-ai-summarize-wrong" class="btn btn-ghost">🤖 AI 归纳全书查词</button>
+          <button id="btn-ai-summarize-wrong" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
         </div>
         <div id="wrong-ai-summary" class="ai-summary-box"></div>
         <div id="wrong-list" class="mistake-list"></div>
@@ -578,7 +578,7 @@
       <div class="section">
 <div class="card">
         <div class="card-head">
-          <h2 class="card-title">🔁 复习 / 自测</h2>
+          <h2 class="card-title"><span class="ic-inline" data-icon="refresh"></span> 复习 / 自测</h2>
           <div class="mode-switch">
             <button type="button" class="mode-btn active" data-mode="review">记忆曲线复习</button>
             <button type="button" class="mode-btn" data-mode="practice">测验模式</button>
@@ -630,7 +630,7 @@
     </div>
       <div id="sub-hf" class="sub-panel">    <div class="section">
 <details class="card hfwords-fold">
-        <summary class="card-title">📚 考研真题阅读高频词</summary>
+        <summary class="card-title"><span class="ic-inline" data-icon="book"></span> 考研真题阅读高频词</summary>
         <p class="card-sub">本地词库共 <span id="hf-count">0</span> 词</p>
         <input type="text" id="hf-search" placeholder="搜索单词或释义，如 affect / 影响" />
         <div id="hf-list" class="hf-list"></div>
@@ -643,7 +643,7 @@
     <section id="tab-mock" class="tab-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📊 模考成绩</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 模考成绩</h2>
         <div class="field-row"><label>考试名称</label><input type="text" id="exam-name" placeholder="如 9月模拟考" /></div>
         <div class="field-row"><label>考试日期</label><input type="date" id="exam-date2" /></div>
         <div id="exam-scores" class="dyn-grid"></div>
@@ -665,7 +665,7 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📊 近 30 天学习得分</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 近 30 天学习得分</h2>
         <div id="score-summary" class="score-summary"></div>
         <div id="score-bars" class="score-bars"></div>
         <p class="card-sub">得分 = 学习时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，满分 100；没学习的日子记为 0 分，不注水。</p>
@@ -674,7 +674,7 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🏅 成就与等级</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="medal"></span> 成就与等级</h2>
         <div id="badges-level" class="badges-level"></div>
         <div class="badges-count" id="badges-count"></div>
         <div id="badges-grid" class="badges-grid"></div>
@@ -683,14 +683,14 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🎯 目标进度与差距</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 目标进度与差距</h2>
         <div id="goal-progress" class="goal"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🔥 学习热力图</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="fire"></span> 学习热力图</h2>
         <div class="mheat-nav">
           <button id="heat-prev" class="mini-btn">‹</button>
           <span id="heat-label" class="mheat-label"></span>
@@ -703,31 +703,31 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🧭 综合掌握度雷达图</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="radar"></span> 综合掌握度雷达图</h2>
         <div id="subject-radar"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card weakness-card" id="weakness-card">
-        <h2 class="card-title">📉 薄弱点分析报告（基于刷题正确率）</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 薄弱点分析报告（基于刷题正确率）</h2>
         <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
         <div id="weakness-report"></div>
       </div></div>
 
 
       <details class="charts-fold">
-        <summary>📊 更多图表（学习时长分布 · 成绩趋势 · 各科目统计）</summary>
+        <summary><span class="ic-inline" data-icon="chart"></span> 更多图表（学习时长分布 · 成绩趋势 · 各科目统计）</summary>
         <div class="card">
-          <h2 class="card-title">🍰 今日学习时长分布</h2>
+          <h2 class="card-title"><span class="ic-inline" data-icon="pie"></span> 今日学习时长分布</h2>
           <div id="today-pie"></div>
         </div>
         <div class="card">
-          <h2 class="card-title">📈 成绩趋势</h2>
+          <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 成绩趋势</h2>
           <div id="trend" class="trend-wrap"></div>
         </div>
         <div class="card">
-          <h2 class="card-title">📚 各科目学习统计</h2>
+          <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 各科目学习统计</h2>
           <div id="subject-bars" class="subject-bars"></div>
           <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
         </div>
@@ -735,7 +735,7 @@
     </div>
       <div id="sub-records" class="sub-panel"><div class="section">
 <div class="card">
-        <h2 class="card-title">📝 每日学习记录</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 每日学习记录</h2>
         <div class="field-row">
           <label>日期</label>
           <input type="date" id="manual-date" />
@@ -758,7 +758,7 @@
       <div id="sub-progress" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🎯 模块掌握情况</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 模块掌握情况</h2>
         <div id="mastery-list" class="mastery-list"></div>
         <div class="plan-add">
           <input type="text" id="module-name" placeholder="新增模块名，如 高数·极限" />
@@ -769,17 +769,17 @@
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📚 学科章节进度</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 学科章节进度</h2>
         <div id="subject-chapters"></div>
       </div></div>
 
 
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🗺️ 学习计划</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="compass"></span> 学习计划</h2>
         <div class="btn-row">
-          <button id="btn-smart-plan" class="btn btn-primary">⚡ 按进度智能生成计划</button>
-          <button id="btn-ai-plan" class="btn btn-primary">🤖 AI 生成计划</button>
+          <button id="btn-smart-plan" class="btn btn-primary"><span class="ic-inline" data-icon="bolt"></span> 按进度智能生成计划</button>
+          <button id="btn-ai-plan" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 生成计划</button>
         </div>
         <div id="plan-items" class="plan-items"></div>
         <div class="plan-add">
@@ -793,18 +793,18 @@
       <div id="sub-summary" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📋 今日学习总结</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="list"></span> 今日学习总结</h2>
         <div id="summary-body"></div>
         <div class="field" style="margin-top:14px">
           <label>写总结 / 心得（也会出现在分享卡）</label>
           <textarea id="summary-edit" rows="3" placeholder="今天学得怎么样？写点总结或心得……"></textarea>
         </div>
         <div class="btn-row" style="margin-top:10px">
-          <button id="btn-save-summary" class="btn btn-primary">💾 保存总结</button>
+          <button id="btn-save-summary" class="btn btn-primary"><span class="ic-inline" data-icon="download"></span> 保存总结</button>
         </div>
         <div class="btn-row" style="margin-top:8px">
-          <button id="btn-share-summary" class="btn btn-primary">📤 分享今日卡片</button>
-          <button id="btn-ai-summary" class="btn btn-ghost">🤖 AI 生成学习总结</button>
+          <button id="btn-share-summary" class="btn btn-primary"><span class="ic-inline" data-icon="upload"></span> 分享今日卡片</button>
+          <button id="btn-ai-summary" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 生成学习总结</button>
         </div>
         <div id="ai-summary-out" class="ai-summary-out"></div>
       </div></div>
@@ -864,20 +864,17 @@
         <div class="field-row">
           <label>主题模式</label>
           <div class="chip-row" id="theme-mode-group" role="radiogroup" aria-label="主题模式">
-            <button type="button" class="chip" data-theme="light" role="radio" aria-checked="false">☀️ 浅色</button>
-            <button type="button" class="chip" data-theme="dark" role="radio" aria-checked="false">🌙 深色</button>
+            <button type="button" class="chip" data-theme="light" role="radio" aria-checked="false"><span class="ic-inline" data-icon="sun"></span> 浅色</button>
+            <button type="button" class="chip" data-theme="dark" role="radio" aria-checked="false"><span class="ic-inline" data-icon="moon"></span> 深色</button>
           </div>
         </div>
         <div class="field-row">
           <label>背景配色</label>
           <div class="chip-row" id="color-scheme-group" role="radiogroup" aria-label="背景配色">
-            <button type="button" class="chip" data-scheme="mist" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#F4F9FC,#5B9FC9)"></span>雾蓝</button>
+            <button type="button" class="chip" data-scheme="mist" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#F4F8FC,#3E9BE8)"></span>清新蓝</button>
             <button type="button" class="chip" data-scheme="brown" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#EFE6DA,#A9744E)"></span>暖棕</button>
-            <button type="button" class="chip" data-scheme="sage" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#EDF1EC,#7C9A82)"></span>灰绿</button>
-            <button type="button" class="chip" data-scheme="rose" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#F6EEEC,#BB8E93)"></span>藕粉</button>
-            <button type="button" class="chip" data-scheme="lavender" role="radio" aria-checked="false"><span class="scheme-dot" style="background:linear-gradient(135deg,#F1EEF5,#8E84A8)"></span>丁香</button>
           </div>
-          <span class="hint">全部低饱和度；深色模式下固定深色，不随此项变化。</span>
+          <span class="hint">清新蓝为默认；暖棕为备选强调色；深色模式下固定深色，不随此项变化。</span>
         </div>
       </div></div>
 
@@ -938,7 +935,7 @@
         <summary class="fold-summary">连接与密钥（可选）</summary>
         <div class="fold-content">
           <div class="sub-card cloud-sync-card">
-            <h3 class="card-sub">☁️ 云端账号（手机号 · 可选 · 多设备同步）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="cloud"></span> 云端账号（手机号 · 可选 · 多设备同步）</h3>
             <p class="card-sub">用手机号作为唯一账号：首次填写即注册并上传数据；换设备登录只需输入同一手机号即可同步。无需记密码。</p>
             <div class="field-row">
               <label>手机号码</label>
@@ -946,12 +943,12 @@
             </div>
             <p class="sync-hint">💡 手机号即账号，无需密码。不填也能正常使用，仅本机保存。换设备登录时输入同一手机号即可访问你的数据。</p>
             <div class="btn-row">
-              <button id="btn-sync-confirm" class="btn btn-primary">📱 注册 / 登录</button>
+              <button id="btn-sync-confirm" class="btn btn-primary"><span class="ic-inline" data-icon="phone"></span> 注册 / 登录</button>
             </div>
             <div id="sync-status" class="import-status"></div>
           </div>
           <div class="sub-card translator-card">
-            <h3 class="card-sub">🔑 翻译 API 密钥（自行申请填写 · 可选）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="key"></span> 翻译 API 密钥（自行申请填写 · 可选）</h3>
             <div class="field-row">
               <label>APP ID</label>
               <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
@@ -967,7 +964,7 @@
             </div>
           </div>
           <div class="sub-card ai-card">
-            <h3 class="card-sub">🤖 AI 能力（可选）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="robot"></span> AI 能力（可选）</h3>
             <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
             <div class="field-row">
               <label>DeepSeek API Key</label>
@@ -981,7 +978,7 @@
             </div>
           </div>
           <div class="sub-card vision-card">
-            <h3 class="card-sub">👁 视觉模型配置（拍照 / 智能整理错题 · 独立一轨）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="eye"></span> 视觉模型配置（拍照 / 智能整理错题 · 独立一轨）</h3>
             <p class="hint">拍照解答、智能整理错题走这一轨（看图的模型）。与上方文本 AI 互不干扰，可分别填不同服务商。选预设会自动带出接口地址与模型名，再填 Key 即可。</p>
             <div class="field-row">
               <label>服务商预设</label>
@@ -1016,7 +1013,7 @@
       <div id="sub-sites" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">🌐 考研资料与网课网站</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="globe"></span> 考研资料与网课网站</h2>
         <div id="curated-sites" class="site-group"></div>
       </div></div>
 
@@ -1035,10 +1032,10 @@
       <div id="sub-manual" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title">📖 考研学习记录 · 使用说明</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 考研学习记录 · 使用说明</h2>
         <p class="card-sub">按「快速上手 / 核心流程 / 专项科目 / 英语词汇 / 工具资源」五部分组织。新手引导会带你完整过一遍，之后随时回来查。</p>
         <div class="manual-actions">
-          <button id="btn-restart-tour" class="btn btn-primary">🚀 重看新手完整引导</button>
+          <button id="btn-restart-tour" class="btn btn-primary"><span class="ic-inline" data-icon="rocket"></span> 重看新手完整引导</button>
         </div>
         <div id="manual-list" class="manual-list"></div>
       </div></div>
@@ -1046,10 +1043,10 @@
     </div>
       <div id="sub-guide" class="sub-panel">      <div class="section">
 <div id="today-onboarding" class="card onboarding-card" hidden>
-        <h2 class="card-title">🚀 30 秒快速开始</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="rocket"></span> 30 秒快速开始</h2>
         <div id="onboarding-steps" class="onboarding-steps"></div>
         <div class="onboarding-foot">
-          <button id="btn-start-tour" class="btn btn-primary">📚 完整功能引导（带你过一遍所有功能）</button>
+          <button id="btn-start-tour" class="btn btn-primary"><span class="ic-inline" data-icon="book"></span> 完整功能引导（带你过一遍所有功能）</button>
         </div>
       </div></div>
 
@@ -1072,22 +1069,23 @@
 
   <!-- 移动端底部 Tab Bar -->
   <nav class="bottom-tabbar" id="bottomTabbar" aria-label="底部导航">
-    <button class="btb-btn active" data-tab="home"><span>🏠</span><span>首页</span></button>
-    <button class="btb-btn" data-tab="math"><span>📐</span><span>数学</span></button>
-    <button class="btb-btn" data-tab="cs408"><span>💻</span><span>408</span></button>
-    <button class="btb-btn" data-tab="vocab"><span>📝</span><span>词汇</span></button>
-    <button class="btb-btn" data-tab="mistakes"><span>📌</span><span>错题</span></button>
+    <button class="btb-btn active" data-tab="home"><span class="tab-ic" data-icon="home"></span><span>首页</span></button>
+    <button class="btb-btn" data-tab="math"><span class="tab-ic" data-icon="math"></span><span>数学</span></button>
+    <button class="btb-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span>408</span></button>
+    <button class="btb-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span>词汇</span></button>
+    <button class="btb-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span>错题</span></button>
   </nav>
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
-  <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题">📷</button>
+  <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260818g"></script>
-  <script src="words.js?v=20260818g"></script>
-  <script src="store.js?v=20260818g"></script>
-  <script src="charts.js?v=20260818g"></script>
-  <script src="share.js?v=20260818g"></script>
-  <script src="md5.js?v=20260818g"></script>
-  <script src="sentences.js?v=20260818g"></script>
-  <script src="app.js?v=20260818g"></script>
+  <script src="qrcode.min.js?v=20260822a"></script>
+  <script src="icons.js?v=20260822a"></script>
+  <script src="words.js?v=20260822a"></script>
+  <script src="store.js?v=20260822a"></script>
+  <script src="charts.js?v=20260822a"></script>
+  <script src="share.js?v=20260822a"></script>
+  <script src="md5.js?v=20260822a"></script>
+  <script src="sentences.js?v=20260822a"></script>
+  <script src="app.js?v=20260822a"></script>
 </body>
 </html>

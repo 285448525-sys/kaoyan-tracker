@@ -1,80 +1,107 @@
-/* UI 重新设计专项验证（v20260817h）：低饱和高级风调色板 + 组件令牌 + 旧艳色清扫 + 版本一致 */
+/* jsdom 验证：方案 29 第一版（Block 1 配色 + Block 2 图标）
+ * 验收点：
+ *  1) icons.js 加载 + Icon.fill 把 [data-icon] 注入 <svg>
+ *  2) 侧栏/底栏/卡片标题无残留装饰性 emoji 主图标
+ *  3) :root --primary 为清新蓝 #3E9BE8
+ *  4) store COLOR_SCHEMES 收敛为 ['mist','brown']（删 sage/rose/lavender）
+ *  5) index.html 背景配色 chips 只剩 清新蓝 + 暖棕
+ *  6) 渲染无 runtime error
+ */
 const fs = require('fs');
 const path = require('path');
+const { JSDOM, VirtualConsole } = require('jsdom');
 
 const ROOT = __dirname;
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')
+  .replace(/<script[\s\S]*?<\/script>/g, '');
+
+const vc = new VirtualConsole();
+const jsdomErrors = [];
+vc.on('jsdomError', function (e) { jsdomErrors.push(e.message); });
+vc.on('error', function () {});
+vc.on('warn', function () {});
+
+const dom = new JSDOM(html, {
+  runScripts: 'outside-only',
+  url: 'https://kaoyan-tracker.pages.dev/',
+  pretendToBeVisual: true,
+  virtualConsole: vc
+});
+const { window } = dom;
+const { document } = window;
+
+window.matchMedia = window.matchMedia || function () { return { matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }; };
+window.requestAnimationFrame = window.requestAnimationFrame || function (cb) { return setTimeout(function () { cb(Date.now()); }, 0); };
+window.confirm = function () { return true; };
+window.alert = function () {};
+function mockCtx() { return new Proxy({}, { get: function () { return function () { return mockCtx(); }; }, set: function () { return true; } }); }
+window.HTMLCanvasElement.prototype.getContext = function () { return mockCtx(); };
+window.HTMLCanvasElement.prototype.toDataURL = function () { return 'data:image/png;base64,'; };
+window.HTMLCanvasElement.prototype.toBlob = function (cb) { if (cb) cb({}); };
+window.fetch = window.fetch || function () { return Promise.reject(new Error('fetch disabled in test')); };
+
+const runtimeErrors = [];
+window.addEventListener('error', function (e) {
+  const st = e.error && e.error.stack ? e.error.stack.split('\n').slice(0, 4).join(' ← ') : '';
+  runtimeErrors.push((e.message || 'window error') + (st ? ' [STACK] ' + st : ''));
+});
+window.addEventListener('unhandledrejection', function (e) { runtimeErrors.push('promise: ' + (e.reason && e.reason.message || e.reason)); });
+
+// 加载顺序：icons.js 必须在 app.js 之前（app.js init 调用 Icon.fill）
+const order = ['qrcode.min.js', 'icons.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+for (const f of order) {
+  const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
+  try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
+}
+if (typeof window.__switchTab !== 'function') {
+  try { document.dispatchEvent(new window.Event('DOMContentLoaded')); } catch (e) { console.error('❌ init 触发失败: ' + e.message); process.exit(1); }
+}
+if (!window.Store || typeof window.__switchTab !== 'function') { console.error('❌ Store / init 未就绪'); process.exit(1); }
+
+const Store = window.Store;
 let pass = 0, fail = 0;
 function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else { fail++; console.log('❌ ' + name); } }
 
+// 1) icons.js + Icon.fill
+ok(!!window.Icon && typeof window.Icon.fill === 'function', 'icons.js 加载且 Icon.fill 存在');
+const sideIcons = document.querySelectorAll('.side-nav .tab-ic svg');
+ok(sideIcons.length === 8, '侧栏 8 个导航图标已注入 SVG（实际 ' + sideIcons.length + '）');
+const btbIcons = document.querySelectorAll('.bottom-tabbar .tab-ic svg');
+ok(btbIcons.length === 5, '底栏 5 个导航图标已注入 SVG（实际 ' + btbIcons.length + '）');
+const inlineIcons = document.querySelectorAll('.ic-inline svg');
+ok(inlineIcons.length >= 30, '卡片标题内联图标 ≥30 处已注入 SVG（实际 ' + inlineIcons.length + '）');
+
+// 2) 无残留装饰性 emoji 主图标（侧栏/底栏/卡片标题直系 span 不再含 emoji 文本）
+const decoEmoji = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
+let residual = 0;
+document.querySelectorAll('.side-nav .tab-btn span, .bottom-tabbar .btb-btn span, .card-title').forEach(function (n) {
+  // 只看"纯文本"节点（不含 svg 子元素）
+  const hasSvg = n.querySelector('svg');
+  if (hasSvg) return;
+  if (decoEmoji.test(n.textContent || '')) residual++;
+});
+ok(residual === 0, '侧栏/底栏/卡片标题无残留装饰 emoji（实际 ' + residual + '）');
+
+// 3) 配色 token
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-const cssNoComment = css.replace(/\/\*[\s\S]*?\*\//g, '');
+ok(/--primary:\s*#3E9BE8/.test(css), ':root --primary 为清新蓝 #3E9BE8');
+ok(/--bg:\s*#F4F8FC/.test(css), ':root --bg 为近白微蓝 #F4F8FC');
+ok(!/--primary:\s*#5B9FC9/.test(css.split('--primary: #3E9BE8')[1] || ''), ':root 主色无旧雾蓝 #5B9FC9');
 
-// ---- 解析 :root 与深色块 ----
-function parseBlock(re) {
-  const m = css.match(re);
-  if (!m) return {};
-  const body = m[1];
-  const out = {};
-  body.replace(/--([a-z0-9-]+)\s*:\s*([^;]+);/g, function (_, k, v) { out['--' + k] = v.trim(); return ''; });
-  return out;
-}
-const light = parseBlock(/:root\s*\{([^}]*)\}/);
-const dark = parseBlock(/:root\[data-theme="dark"\]\s*\{([^}]*)\}/);
+// 4) store COLOR_SCHEMES 收敛
+const storeJs = fs.readFileSync(path.join(ROOT, 'store.js'), 'utf8');
+const m = storeJs.match(/var COLOR_SCHEMES = \[([^\]]+)\]/);
+ok(!!m && m[1].replace(/\s/g, '').indexOf("'sage'") === -1 && m[1].replace(/\s/g, '').indexOf("'rose'") === -1 && m[1].replace(/\s/g, '').indexOf("'lavender'") === -1, 'store COLOR_SCHEMES 已删 sage/rose/lavender');
+ok(!!m && /'mist'/.test(m[1]) && /'brown'/.test(m[1]), 'store 仍保留 mist + brown');
 
-function hexToRgb(h) {
-  h = h.replace('#', '');
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-function lin(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
-function luminance(h) { const [r, g, b] = hexToRgb(h); return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); }
-function hslSat(h) {
-  const [r, g, b] = hexToRgb(h).map(v => v / 255);
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-  const l = (mx + mn) / 2;
-  if (mx === mn) return 0;
-  const d = mx - mn;
-  return d / (1 - Math.abs(2 * l - 1));
-}
+// 5) index.html chips 只剩 2 个
+const htmlNow = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const chipCount = (htmlNow.match(/data-scheme="/g) || []).length;
+ok(chipCount === 2, 'index.html 背景配色 chips 收敛为 2（实际 ' + chipCount + '）');
 
-console.log('===== 浅色新令牌齐全 =====');
-const needLight = ['--bg','--card','--primary','--primary-weak','--primary-ink','--surface-2','--ink-2','--line-strong','--ok-weak','--shadow-sm','--fs-base','--sp-4'];
-for (const t of needLight) ok(typeof light[t] === 'string' && light[t].length, '浅色令牌 ' + t + ' 已定义（=' + (light[t] || '') + '）');
+// 6) 渲染无错误
+ok(runtimeErrors.length === 0, '无 runtime error（实际 ' + runtimeErrors.length + (runtimeErrors[0] ? '：' + runtimeErrors[0] : '') + '）');
+ok(jsdomErrors.length === 0, '无 jsdom error（实际 ' + jsdomErrors.length + (jsdomErrors[0] ? '：' + jsdomErrors[0] : '') + '）');
 
-console.log('===== 主色去饱和：S < 55% =====');
-ok(light['--primary'] === '#5B9FC9', '浅色 --primary 已更新为亮雾蓝 #5B9FC9（配色改造）');
-const sat = hslSat(light['--primary'] || '#000');
-ok(sat < 0.55, '浅色 --primary 饱和度 S=' + (sat * 100).toFixed(1) + '% < 55%（旧 ≈78%）');
-
-console.log('===== 页面底/卡片明度差 ΔL ∈ [4,14] =====');
-const Lbg = luminance(light['--bg']), Lcard = luminance(light['--card']);
-const dL = Math.abs(Lcard - Lbg) * 100;
-ok(dL >= 4 && dL <= 14, '浅色 --bg/--card 明度差 ΔL=' + dL.toFixed(2) + ' ∈ [4,14]（既分得开又不刺眼）');
-
-console.log('===== 深色令牌已更新 =====');
-ok(dark['--primary'] === '#7FB8DB', '深色 --primary 已更新为 #7FB8DB');
-ok(dark['--bg'] === '#121A21', '深色 --bg 已更新为 #121A21');
-ok(dark['--card'] === '#1d1d23', '深色 --card 已更新为 #1d1d23');
-ok(dark['--primary-weak'] === '#16242E' && dark['--primary-ink'] === '#EAF3FA', '深色 --primary-weak/--primary-ink 已定义');
-
-console.log('===== 旧艳色已清（注释外无裸色）=====');
-for (const c of ['#4f46e5', '#6366f1', '#06b6d4']) {
-  ok(cssNoComment.indexOf(c) === -1, '注释外已无裸色 ' + c);
-}
-
-console.log('===== 字号令牌落地 =====');
-ok(/body\s*\{[^}]*font-size:\s*var\(--fs-base\)/.test(css), 'body 使用 var(--fs-base) 统一正文字号');
-
-console.log('===== 版本一致 =====');
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-const versionMatch = app.match(/var APP_VERSION = '([^']+)';/);
-const expectedVersion = versionMatch ? versionMatch[1] : null;
-ok(expectedVersion, 'app.js APP_VERSION 已定义（实际 ' + expectedVersion + '）');
-const vRe = new RegExp('\\?v=' + expectedVersion, 'g');
-const vCount = (html.match(vRe) || []).length;
-ok(vCount === 9, 'index.html 含 9 处 ?v=' + expectedVersion + '（实际 ' + vCount + '）');
-
-console.log('\n===== 结果 =====');
-console.log('PASS ' + pass + ' / FAIL ' + fail);
-process.exit(fail ? 1 : 0);
+console.log('\n==== 结果：' + pass + ' 通过 / ' + fail + ' 失败 ====');
+process.exit(fail === 0 ? 0 : 1);

@@ -135,7 +135,7 @@
       cs408Years: [],        // 408 历年真题年份记录 [{id,year,score,total,note}]
       aiSolved: [],          // 拍题自动解答记录 [{id,image(压缩dataURL),answer,model,created}]
       theme: 'light',        // 主题：'light' | 'dark'
-      colorScheme: 'mist', // 背景配色：'mist'（雾蓝默认）| 'brown' | 'sage' | 'rose' | 'lavender'（全部低饱和度；浅色下生效，深色保持原样）
+      colorScheme: 'mist', // 背景配色：'mist'（清新蓝默认）| 'brown'（暖棕唯一备选，浅色生效；方案 29 Block 1 收敛）
       timer: { subjectKey: null, startTs: 0, accumulated: 0, running: false },
       _seq: 1
     };
@@ -214,7 +214,7 @@
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
-        colorScheme: (typeof p.colorScheme === 'string' && ['mist', 'brown', 'sage', 'rose', 'lavender'].indexOf(p.colorScheme) >= 0) ? p.colorScheme : 'mist',
+        colorScheme: (typeof p.colorScheme === 'string' && ['mist', 'brown'].indexOf(p.colorScheme) >= 0) ? p.colorScheme : 'mist',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
@@ -740,7 +740,7 @@
         cs408Years: (p.cs408Years && Array.isArray(p.cs408Years)) ? p.cs408Years : [],
         aiSolved: (p.aiSolved && Array.isArray(p.aiSolved)) ? p.aiSolved : [],
         theme: (p.theme === 'dark') ? 'dark' : 'light',
-        colorScheme: (typeof p.colorScheme === 'string' && ['mist', 'brown', 'sage', 'rose', 'lavender'].indexOf(p.colorScheme) >= 0) ? p.colorScheme : 'mist',
+        colorScheme: (typeof p.colorScheme === 'string' && ['mist', 'brown'].indexOf(p.colorScheme) >= 0) ? p.colorScheme : 'mist',
         timer: (p.timer && typeof p.timer === 'object') ? p.timer : d.timer,
         mathVolume: (typeof p.mathVolume === 'string') ? p.mathVolume : d.mathVolume,
         cs408BooksCollapsed: (p.cs408BooksCollapsed && typeof p.cs408BooksCollapsed === 'object') ? p.cs408BooksCollapsed : {},
@@ -825,7 +825,7 @@
   /* ---------- 主题 ---------- */
   function getTheme() { return state.theme === 'dark' ? 'dark' : 'light'; }
   function setTheme(t) { state.theme = (t === 'dark') ? 'dark' : 'light'; save(); }
-  var COLOR_SCHEMES = ['mist', 'brown', 'sage', 'rose', 'lavender'];
+  var COLOR_SCHEMES = ['mist', 'brown']; // 清新蓝默认 + 暖棕唯一备选（方案 29 Block 1 收敛）
   function getColorScheme() { return (COLOR_SCHEMES.indexOf(state.colorScheme) >= 0) ? state.colorScheme : 'mist'; }
   function setColorScheme(s) { state.colorScheme = (COLOR_SCHEMES.indexOf(s) >= 0) ? s : 'mist'; save(); }
 

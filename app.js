@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260818g';
+  var APP_VERSION = '20260822a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2661,8 +2661,9 @@
     refs.aiAnswer.innerHTML = '';
     refs.aiAnswer.appendChild(el('div', 'ai-answer-body', text));
     var row = el('div', 'ai-answer-actions');
-    var save = el('button', 'btn btn-primary', '💾 存入本地');
+    var save = el('button', 'btn btn-primary');
     save.type = 'button';
+    save.innerHTML = (window.Icon ? Icon.svg('download') : '') + ' 存入本地';
     save.addEventListener('click', function () {
       var c = Store.getVisionConfig();
       Store.addAiSolved({ id: 'ai' + Store.nextSeq(), image: aiPendingDataUrl, answer: text, model: c.model, created: Store.todayStr() });
@@ -2797,7 +2798,8 @@
       var top = el('div', 'mistake-top');
       var toVocab = el('button', 'plan-del vocab-move', '移入生词本');
       toVocab.addEventListener('click', function () { Store.addVocab(w.word, w.cn); renderWords(); showToast('已移入生词本 ✅'); });
-      var aiBtn = el('button', 'plan-del ai-explain-btn', '🤖 AI 讲解');
+      var aiBtn = el('button', 'plan-del ai-explain-btn');
+      aiBtn.innerHTML = (window.Icon ? Icon.svg('robot') : '') + ' AI 讲解';
       aiBtn.addEventListener('click', function () { explainWrongWord(w, aiBtn); });
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWrongBook(); showToast('已从查词记录删除'); });
@@ -3262,18 +3264,18 @@
   }
 
   var BADGES = [
-    { id: 'start', icon: '🌱', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
-    { id: 'streak7', icon: '🔥', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
-    { id: 'streak21', icon: '🏔', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
-    { id: 'hours100', icon: '⏳', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
-    { id: 'hours200', icon: '💯', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
-    { id: 'vocab1000', icon: '📚', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
-    { id: 'exam1', icon: '🎯', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
-    { id: 'exam3', icon: '🏆', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
-    { id: 'mistake50', icon: '🐞', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
-    { id: 'allSubjects', icon: '🧠', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
-    { id: 'days30', icon: '📝', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
-    { id: 'sprint', icon: '🚀', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
+    { id: 'start', icon: 'seed', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
+    { id: 'streak7', icon: 'fire', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
+    { id: 'streak21', icon: 'mountain', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
+    { id: 'hours100', icon: 'clock', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
+    { id: 'hours200', icon: 'star', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
+    { id: 'vocab1000', icon: 'book', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
+    { id: 'exam1', icon: 'target', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
+    { id: 'exam3', icon: 'trophy', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
+    { id: 'mistake50', icon: 'bug', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
+    { id: 'allSubjects', icon: 'brain', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
+    { id: 'days30', icon: 'vocab', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
+    { id: 'sprint', icon: 'rocket', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
   ];
   function computeBadges(stats) {
     return BADGES.map(function (b) {
@@ -3375,7 +3377,7 @@
     badges.forEach(function (b) {
       if (b.earned) earned++;
       html += '<div class="badge-tile' + (b.earned ? ' earned' : '') + '">' +
-        '<div class="badge-icon">' + b.icon + '</div>' +
+        '<div class="badge-icon">' + (window.Icon ? Icon.svg(b.icon) : b.icon) + '</div>' +
         '<div class="badge-name">' + escapeHtml(b.name) + '</div>' +
         '<div class="badge-desc">' + escapeHtml(b.desc) + '</div>' +
         '<div class="badge-prog">' + (b.earned ? '✅ 已达成' : '进度 ' + escapeHtml(b.prog)) + '</div>' +
@@ -3664,51 +3666,52 @@
     refs.todayOnboarding.hidden = false;
 
     function stepCard(idx, icon, title, sub, done, tabKey) {
+      var ic = (window.Icon && Icon.paths[icon]) ? Icon.svg(icon) : icon;
       return '<div class="ob-step' + (done ? ' done' : '') + '" onclick="window.__switchTab(\'' + (tabKey || 'config') + '\')">' +
                '<div class="ob-step-num">' + (done ? '✓' : idx) + '</div>' +
-               '<div class="ob-step-icon">' + icon + '</div>' +
+               '<div class="ob-step-icon">' + ic + '</div>' +
                '<div class="ob-step-title">' + title + '</div>' +
                '<div class="ob-step-sub">' + sub + '</div>' +
                (idx < 4 ? '<div class="ob-step-arr">›</div>' : '') +
              '</div>';
     }
     refs.onboardingSteps.innerHTML =
-      stepCard(1, '⚙️', '基础配置', '设置昵称·考试日期·目标分', step1Done, 'config') +
-      stepCard(2, '📚', '勾选科目', '勾选你要考的科目和卷种', step2Done, 'config') +
-      stepCard(3, '🗺️', '制定计划', '自动或手动安排今日学习计划', step3Done, 'today') +
-      stepCard(4, '⏱', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
+      stepCard(1, 'gear', '基础配置', '设置昵称·考试日期·目标分', step1Done, 'config') +
+      stepCard(2, 'book', '勾选科目', '勾选你要考的科目和卷种', step2Done, 'config') +
+      stepCard(3, 'compass', '制定计划', '自动或手动安排今日学习计划', step3Done, 'today') +
+      stepCard(4, 'timer', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
   }
 
   /* ============ 说明书模块（UI 散落说明集中处，分组卡片式） ============ */
   var MANUAL_GROUPS = [
-    { cat: '🚀 快速上手', items: [
-      { t: '第一次使用', b: '点上方「🚀 重看新手完整引导」：引导会带你先配置考试科目、翻译 API 与 AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
+    { cat: '快速上手', items: [
+      { t: '第一次使用', b: '点上方「重看新手完整引导」：引导会带你先配置考试科目、翻译 API 与 AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
       { t: '每天的核心 4 步', b: '① 打开「今日学习」看总览 → ② 在「数据复盘 · 进度」安排任务 → ③ 在「今日学习」按模块计时 → ④ 睡前在「数据复盘 · 总结」打卡、在「数据复盘」看趋势。' }
     ]},
-    { cat: '📅 核心流程', items: [
-      { t: '📅 今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
-      { t: '🗺️ 计划', b: '「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项；计划与「数据复盘 · 记录」计时联动，完成会自动勾掉。' },
-      { t: '⏱ 今日学习 · 计时 / 番茄钟 / 倒计时', b: '每科一条独立计时器，开始/结束把时长记到今日；番茄钟默认 25+5 分钟可调，休息/结束弹提醒；倒计时适合套卷限时训练。' },
-      { t: '📋 总结 · 打卡分享', b: '写今日总结、生成打卡卡片分享到群（带二维码，朋友扫码可一起打卡）。' },
-      { t: '📊 数据 · 看板', b: '含：近 30 天得分、单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、薄弱点分析报告。全部来自你的本地记录。' }
+    { cat: '核心流程', items: [
+      { t: '今日 · 总览', b: '顶部聚合卡显示：距考研天数、今日学习分钟、计划完成度、连续打卡天数，以及各科目章节进度条。每天进来先看这里。' },
+      { t: '计划', b: '「自动制定计划」按科目与可用时间生成今日安排；也可手动添加「科目 + 内容 + 分钟」。给计划项加「说明」可标注注意事项；计划与「数据复盘 · 记录」计时联动，完成会自动勾掉。' },
+      { t: '今日学习 · 计时 / 番茄钟 / 倒计时', b: '每科一条独立计时器，开始/结束把时长记到今日；番茄钟默认 25+5 分钟可调，休息/结束弹提醒；倒计时适合套卷限时训练。' },
+      { t: '总结 · 打卡分享', b: '写今日总结、生成打卡卡片分享到群（带二维码，朋友扫码可一起打卡）。' },
+      { t: '数据 · 看板', b: '含：近 30 天得分、单月热力图、学习趋势、今日时长饼图、综合雷达图、科目进度、薄弱点分析报告。全部来自你的本地记录。' }
     ]},
-    { cat: '📚 专项科目', items: [
-      { t: '🧮 数学', b: '顶部下拉选择卷种（数一/数二/数三，切换按新大纲重置章节）；章节按「高数/线代/概率」分组折叠。可整理错题（Leitner 间隔复习 + 速查卡自测）、分类刷题与自定义题库。' },
-      { t: '💻 408', b: '数据结构/计组/操作系统/网络四书章节分组折叠，标记进度；错题支持 Leitner 间隔复习；另有知识点速记卡与历年真题得分追踪。' },
-      { t: '📌 错题本', b: '跨科目整理错题（今日感悟/问题/盲区/易错点等），标记回顾后按间隔复习自动排期，到期提醒。' }
+    { cat: '专项科目', items: [
+      { t: '数学', b: '顶部下拉选择卷种（数一/数二/数三，切换按新大纲重置章节）；章节按「高数/线代/概率」分组折叠。可整理错题（Leitner 间隔复习 + 速查卡自测）、分类刷题与自定义题库。' },
+      { t: '408', b: '数据结构/计组/操作系统/网络四书章节分组折叠，标记进度；错题支持 Leitner 间隔复习；另有知识点速记卡与历年真题得分追踪。' },
+      { t: '错题本', b: '跨科目整理错题（今日感悟/问题/盲区/易错点等），标记回顾后按间隔复习自动排期，到期提醒。' }
     ]},
-    { cat: '🗣️ 英语 · 词汇', items: [
-      { t: '🎴 背单词', b: '「英选译」四选一测验，不认识自动归入复习队列；右上齿轮可自定义每次题量、出题范围与模式。' },
-      { t: '🔁 生词复习', b: '按记忆曲线（Leitner）每天推送待复习生词，「认识/不认识」决定下次间隔，不认识自动回炉。' },
-      { t: '📚 高频词', b: '内置本地词库（阅读高频，离线可用），可搜索、筛选，勾选后一键加入生词本。' },
-      { t: '🧩 长难句', b: '粘贴真题/外刊长难句，自动拆解结构、标注考点词、归纳同义替换；配置 AI 后可一键深度分析（成分拆解/全文翻译/出题意图）。' },
-      { t: '📝 生词记录', b: '管理你的生词本：编辑释义、标记掌握、移入复习或删除；支持批量导入与翻译自动归档。' }
+    { cat: '英语 · 词汇', items: [
+      { t: '背单词', b: '「英选译」四选一测验，不认识自动归入复习队列；右上齿轮可自定义每次题量、出题范围与模式。' },
+      { t: '生词复习', b: '按记忆曲线（Leitner）每天推送待复习生词，「认识/不认识」决定下次间隔，不认识自动回炉。' },
+      { t: '高频词', b: '内置本地词库（阅读高频，离线可用），可搜索、筛选，勾选后一键加入生词本。' },
+      { t: '长难句', b: '粘贴真题/外刊长难句，自动拆解结构、标注考点词、归纳同义替换；配置 AI 后可一键深度分析（成分拆解/全文翻译/出题意图）。' },
+      { t: '生词记录', b: '管理你的生词本：编辑释义、标记掌握、移入复习或删除；支持批量导入与翻译自动归档。' }
     ]},
-    { cat: '🧰 工具 · 资源', items: [
-      { t: '🌐 资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
-      { t: '⚙️ 配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
-      { t: '☁️ 云端同步', b: '用手机号作为唯一账号：首次填写即注册并把数据上传到云端；换设备登录只需输入同一手机号即可同步，无需记密码。注册/登录二合一，下方状态会提示成功与否。' },
-      { t: '🌐 翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到查词记录。' },
+    { cat: '工具 · 资源', items: [
+      { t: '资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
+      { t: '配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
+      { t: '云端同步', b: '用手机号作为唯一账号：首次填写即注册并把数据上传到云端；换设备登录只需输入同一手机号即可同步，无需记密码。注册/登录二合一，下方状态会提示成功与否。' },
+      { t: '翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到查词记录。' },
       { t: '🤖 AI 助手', b: '在「配置」填你自己的大模型 API Key（OpenAI 兼容接口），即可启用长难句深度分析、错题智能归纳等能力。密钥仅存本机、经云端函数中转，不暴露到前端。' }
     ]}
   ];
@@ -3730,22 +3733,22 @@
 
   /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
   var TOUR_STEPS = [
-    { icon: '👋', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
-    { icon: '🔑', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
-    { icon: '🤖', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
-    { icon: '📅', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
-    { icon: '🚀', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
-    { icon: '🗺️', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
-    { icon: '⏱', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
-    { icon: '📋', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
-    { icon: '📊', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
-    { icon: '🧮', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
-    { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
-    { icon: '📌', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
-    { icon: '🔁', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（⚙️ 可自定义题量/范围/模式）。' },
-    { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
-    { icon: '☁️', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
-    { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
+    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
+    { icon: 'key', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
+    { icon: 'robot', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
+    { icon: 'calendar', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
+    { icon: 'rocket', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
+    { icon: 'compass', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
+    { icon: 'timer', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
+    { icon: 'list', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
+    { icon: 'chart', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
+    { icon: 'math', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
+    { icon: 'cs408', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
+    { icon: 'mistakes', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
+    { icon: 'refresh', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（设置可自定义题量/范围/模式）。' },
+    { icon: 'puzzle', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
+    { icon: 'cloud', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
+    { icon: 'book', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
   ];
   var tourIdx = 0, tourEl = null;
   function startTour() {
@@ -3795,7 +3798,8 @@
   function renderTourStep() {
     if (!tourEl) return;
     var s = TOUR_STEPS[tourIdx];
-    document.getElementById('tour-icon').textContent = s.icon;
+    var tourIconEl = document.getElementById('tour-icon');
+    if (tourIconEl) tourIconEl.innerHTML = (window.Icon && Icon.paths[s.icon]) ? Icon.svg(s.icon) : s.icon;
     document.getElementById('tour-title').textContent = (tourIdx + 1) + '/' + TOUR_STEPS.length + ' · ' + s.title;
     document.getElementById('tour-text').textContent = s.text;
     document.getElementById('tour-dot').textContent = (tourIdx + 1) + ' / ' + TOUR_STEPS.length;
@@ -4354,6 +4358,9 @@
   }
 
   function init() {
+    // 注入线性 SVG 图标占位（方案 29 · Block 2）：把 [data-icon] 批量替换为图标
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(document);
+
     refs.majorSelect = $('major-select');
     refs.nicknameInput = $('nickname-input');
     refs.examDate = $('exam-date');

@@ -1,6 +1,6 @@
-/* jsdom 全流程测试：版本 n —— 低饱和度背景配色选择器（雾蓝/暖棕/灰绿/藕粉/丁香）
- * 校验：① 设置页 5 个配色 chip 存在；② 点击切换 data-scheme 并持久化；③ 非法值清洗；
- *       ④ styles.css 含四套（非 mist）浅色覆盖块；⑤ 版本一致性。
+/* jsdom 全流程测试：版本 n —— 低饱和度背景配色选择器（清新蓝 / 暖棕，方案 29 Block 1 收敛）
+ * 校验：① 设置页 2 个配色 chip 存在；② 点击切换 data-scheme 并持久化；③ 非法值清洗；
+ *       ④ styles.css 含「暖棕」浅色覆盖块（非 mist）；⑤ 版本一致性。
  */
 const fs = require('fs');
 const path = require('path');
@@ -44,13 +44,13 @@ function ok(name, cond, extra) {
   else { fail++; console.log('❌ ' + name + (extra !== undefined ? ' → ' + extra : '')); }
 }
 
-// ---------- 1) 设置页 5 个配色 chip ----------
+// ---------- 1) 设置页 2 个配色 chip（mist/brown，删 sage/rose/lavender） ----------
 ok('设置页存在 #color-scheme-group', !!document.getElementById('color-scheme-group'));
 const chips = document.getElementById('color-scheme-group')
   ? Array.from(document.getElementById('color-scheme-group').querySelectorAll('.chip')).map(function (c) { return c.getAttribute('data-scheme'); })
   : [];
-ok('配色 chip = 5 项（mist/brown/sage/rose/lavender）', chips.length === 5 && ['mist','brown','sage','rose','lavender'].every(function (s) { return chips.indexOf(s) >= 0; }), JSON.stringify(chips));
-ok('每个配色 chip 含色点预览 .scheme-dot', document.getElementById('color-scheme-group').querySelectorAll('.scheme-dot').length === 5);
+ok('配色 chip = 2 项（mist/brown），已删 sage/rose/lavender', chips.length === 2 && ['mist','brown'].every(function (s) { return chips.indexOf(s) >= 0; }), JSON.stringify(chips));
+ok('每个配色 chip 含色点预览 .scheme-dot', document.getElementById('color-scheme-group').querySelectorAll('.scheme-dot').length === 2);
 
 // ---------- 2) 默认 data-scheme = mist（init 已应用） ----------
 ok('init 后 documentElement data-scheme = mist', document.documentElement.getAttribute('data-scheme') === 'mist');
@@ -59,44 +59,43 @@ ok('默认 Store.getColorScheme() = mist', Store.getColorScheme() === 'mist');
 // ---------- 3) 点击切换 + 持久化 ----------
 function clickScheme(s) {
   var chip = document.querySelector('#color-scheme-group .chip[data-scheme="' + s + '"]');
+  if (!chip) { throw new Error('chip 不存在: ' + s); }
   chip.dispatchEvent(new window.Event('click', { bubbles: true }));
 }
 clickScheme('brown');
 ok('点「暖棕」→ data-scheme=brown', document.documentElement.getAttribute('data-scheme') === 'brown');
 ok('点「暖棕」→ Store.getColorScheme()=brown（持久化）', Store.getColorScheme() === 'brown');
 ok('点「暖棕」→ 该 chip 高亮 active', document.querySelector('#color-scheme-group .chip[data-scheme="brown"]').classList.contains('active'));
-clickScheme('lavender');
-ok('点「丁香」→ data-scheme=lavender', document.documentElement.getAttribute('data-scheme') === 'lavender');
 clickScheme('mist');
-ok('点回「雾蓝」→ data-scheme=mist', document.documentElement.getAttribute('data-scheme') === 'mist');
+ok('点回「清新蓝」→ data-scheme=mist', document.documentElement.getAttribute('data-scheme') === 'mist');
 
 // ---------- 4) 非法值清洗 + 导入持久化 ----------
 Store.setColorScheme('neon');
 ok('非法配色值被清洗为 mist', Store.getColorScheme() === 'mist');
 Store.importJSON(JSON.stringify({ mistakes: [], mathMistakes: [], cs408Mistakes: [], colorScheme: 'sage' }));
-ok('importJSON 含 colorScheme=sage → 读取一致', Store.getColorScheme() === 'sage');
+ok('importJSON 含已删 colorScheme=sage → 清洗为 mist', Store.getColorScheme() === 'mist');
 Store.importJSON(JSON.stringify({ mistakes: [], colorScheme: 'rainbow' }));
 ok('importJSON 非法 colorScheme → 清洗为 mist', Store.getColorScheme() === 'mist');
 
 // ---------- 5) applyColorScheme 暴露并可重算 ----------
-Store.setColorScheme('sage');
+Store.setColorScheme('brown');
 window.applyColorScheme();
-ok('window.applyColorScheme() 存在且重算 data-scheme=sage', document.documentElement.getAttribute('data-scheme') === 'sage');
+ok('window.applyColorScheme() 存在且重算 data-scheme=brown', document.documentElement.getAttribute('data-scheme') === 'brown');
 
-// ---------- 6) styles.css 含四套（非 mist）浅色覆盖块 ----------
+// ---------- 6) styles.css 仅含「暖棕」浅色覆盖块（非 mist） ----------
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-['brown', 'sage', 'rose', 'lavender'].forEach(function (s) {
-  var re = new RegExp(':root:not\\(\\[data-theme="dark"\\]\\)\\[data-scheme="' + s + '"\\]');
-  var block = css.split('\n').filter(function (l) { return re.test(l); });
-  ok('styles.css 含浅色覆盖块 [data-scheme="' + s + '"]', block.length === 1, '匹配 ' + block.length);
-  var idx = css.search(re);
-  var seg = css.slice(idx, idx + 600);
-  ok('  └ 该块定义 --bg 与 --primary', /--bg:\s*#/.test(seg) && /--primary:\s*#/.test(seg));
-});
+const reBrown = /:root:not\(\[data-theme="dark"\]\)\[data-scheme="brown"\]/;
+var brownBlock = css.split('\n').filter(function (l) { return reBrown.test(l); });
+ok('styles.css 含浅色覆盖块 [data-scheme="brown"]', brownBlock.length === 1, '匹配 ' + brownBlock.length);
+var idxBrown = css.search(reBrown);
+var segBrown = css.slice(idxBrown, idxBrown + 600);
+ok('  └ 该块定义 --bg 与 --primary', /--bg:\s*#/.test(segBrown) && /--primary:\s*#/.test(segBrown));
 // 关键：覆盖块限定浅色（:not([data-theme="dark"])），深色不被污染
-ok('覆盖块均限定浅色（含 :not([data-theme="dark"])）', ['brown','sage','rose','lavender'].every(function (s) {
-  return css.indexOf(':root:not([data-theme="dark"])[data-scheme="' + s + '"]') >= 0;
-}));
+ok('覆盖块限定浅色（含 :not([data-theme="dark"])）', css.indexOf(':root:not([data-theme="dark"])[data-scheme="brown"]') >= 0);
+// 收敛校验：不得残留 sage/rose/lavender 覆盖块
+ok('styles.css 已删 sage 覆盖块', css.indexOf('[data-scheme="sage"]') === -1);
+ok('styles.css 已删 rose 覆盖块', css.indexOf('[data-scheme="rose"]') === -1);
+ok('styles.css 已删 lavender 覆盖块', css.indexOf('[data-scheme="lavender"]') === -1);
 
 // ---------- 7) 版本一致性 ----------
 const appJs = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
