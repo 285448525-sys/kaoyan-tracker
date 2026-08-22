@@ -2,16 +2,25 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <!-- 强制清理旧 Service Worker：任何版本加载都先 unregister 所有旧 SW，再注册当前新版；
-       不依赖"首次加载一次"，避免旧 SW 缓存的旧 index.html 反复顶替新版导致导航全失效。 -->
+  <!-- 强制清理旧 Service Worker 与旧缓存：任何版本加载都先 unregister 所有旧 SW 并清空
+       全部 Cache Storage（含旧 SW 写入的 kaoyan-pwa-* 缓存），再注册当前新版。
+       防止任何设备上残留的旧 SW/cache-first 把"所有模块同一内容"的旧 index.html 顶替新版。 -->
   <script>
     (function () {
       try {
         if (!('serviceWorker' in navigator)) return;
+        // 1) 注销所有已注册的旧 SW
         navigator.serviceWorker.getRegistrations().then(function (regs) {
-          if (!regs || !regs.length) return;
-          Promise.all(regs.map(function (r) { return r.unregister(); })).catch(function () {});
+          if (regs && regs.length) {
+            Promise.all(regs.map(function (r) { return r.unregister(); })).catch(function () {});
+          }
         }).catch(function () {});
+        // 2) 清空所有 Cache Storage（旧 SW 可能缓存了旧 index.html/app.js）
+        if (window.caches && window.caches.keys) {
+          caches.keys().then(function (keys) {
+            Promise.all(keys.map(function (k) { return caches.delete(k); })).catch(function () {});
+          }).catch(function () {});
+        }
       } catch (e) {}
     })();
   </script>
@@ -37,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822y" />
+  <link rel="stylesheet" href="styles.css?v=20260822z" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -1079,14 +1088,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822y"></script>
-  <script src="iconset.js?v=20260822y"></script>
-  <script src="words.js?v=20260822y"></script>
-  <script src="store.js?v=20260822y"></script>
-  <script src="charts.js?v=20260822y"></script>
-  <script src="share.js?v=20260822y"></script>
-  <script src="md5.js?v=20260822y"></script>
-  <script src="sentences.js?v=20260822y"></script>
-  <script src="app.js?v=20260822y"></script>
+  <script src="qrcode.min.js?v=20260822z"></script>
+  <script src="iconset.js?v=20260822z"></script>
+  <script src="words.js?v=20260822z"></script>
+  <script src="store.js?v=20260822z"></script>
+  <script src="charts.js?v=20260822z"></script>
+  <script src="share.js?v=20260822z"></script>
+  <script src="md5.js?v=20260822z"></script>
+  <script src="sentences.js?v=20260822z"></script>
+  <script src="app.js?v=20260822z"></script>
 </body>
 </html>
