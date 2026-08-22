@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822f" />
+  <link rel="stylesheet" href="styles.css?v=20260822g" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -36,14 +36,26 @@
       </div>
     </div>
     <nav class="side-menu">
-      <button class="tab-btn active" data-tab="home"><span class="tab-ic" data-icon="home"></span><span class="tab-label">首页</span></button>
-      <button class="tab-btn" data-tab="math"><span class="tab-ic" data-icon="math"></span><span class="tab-label">数学</span></button>
-      <button class="tab-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span class="tab-label">408</span></button>
-      <button class="tab-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span class="tab-label">词汇</span></button>
-      <button class="tab-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span class="tab-label">错题</span></button>
-      <button class="tab-btn" data-tab="mock"><span class="tab-ic" data-icon="mock"></span><span class="tab-label">模考</span></button>
-      <button class="tab-btn" data-tab="data"><span class="tab-ic" data-icon="data"></span><span class="tab-label">数据</span></button>
-      <button class="tab-btn" data-tab="settings"><span class="tab-ic" data-icon="settings"></span><span class="tab-label">设置</span></button>
+      <div class="nav-group">
+        <div class="nav-group-title">学习</div>
+        <button class="tab-btn active" data-tab="home"><span class="tab-ic" data-icon="home"></span><span class="tab-label">首页</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">学科</div>
+        <button class="tab-btn" data-tab="math"><span class="tab-ic" data-icon="math"></span><span class="tab-label">数学</span></button>
+        <button class="tab-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span class="tab-label">408</span></button>
+        <button class="tab-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span class="tab-label">词汇</span></button>
+        <button class="tab-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span class="tab-label">错题</span></button>
+        <button class="tab-btn" data-tab="mock"><span class="tab-ic" data-icon="mock"></span><span class="tab-label">模考</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">分析</div>
+        <button class="tab-btn" data-tab="data"><span class="tab-ic" data-icon="data"></span><span class="tab-label">数据</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">我的</div>
+        <button class="tab-btn" data-tab="settings"><span class="tab-ic" data-icon="settings"></span><span class="tab-label">设置</span></button>
+      </div>
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
@@ -1089,14 +1101,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822f"></script>
-  <script src="iconset.js?v=20260822f"></script>
-  <script src="words.js?v=20260822f"></script>
-  <script src="store.js?v=20260822f"></script>
-  <script src="charts.js?v=20260822f"></script>
-  <script src="share.js?v=20260822f"></script>
-  <script src="md5.js?v=20260822f"></script>
-  <script src="sentences.js?v=20260822f"></script>
-  <script src="app.js?v=20260822f"></script>
+  <script src="qrcode.min.js?v=20260822g"></script>
+  <script src="iconset.js?v=20260822g"></script>
+  <script src="words.js?v=20260822g"></script>
+  <script src="store.js?v=20260822g"></script>
+  <script src="charts.js?v=20260822g"></script>
+  <script src="share.js?v=20260822g"></script>
+  <script src="md5.js?v=20260822g"></script>
+  <script src="sentences.js?v=20260822g"></script>
+  <script src="app.js?v=20260822g"></script>
 </body>
 </html>
