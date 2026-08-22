@@ -72,7 +72,7 @@ ok(!!document.getElementById('wrong-ai-summary'), '查词记录存在 AI 归纳�
   document.getElementById('btn-ai-summarize-wrong').dispatchEvent(new window.Event('click'));
   setTimeout(function () {
     const box = document.getElementById('wrong-ai-summary');
-    ok(!!box && box.textContent.indexOf('暂无查词记录') >= 0, '空查词记录点击给出「暂无查词记录」提示（不崩溃）');
+    ok(!!box && box.textContent.indexOf('查词记录还是空的') >= 0, '空查词记录点击给出空态提示（不崩溃）');
     ok(runtimeErrors.length === 0, '空本点击不抛运行时错误（实际 ' + runtimeErrors.length + '）');
 
     // ================= 3) 有 key + 查词 → 渲染归纳文本 =================

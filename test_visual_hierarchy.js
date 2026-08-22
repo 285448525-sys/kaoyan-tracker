@@ -67,8 +67,9 @@ const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 console.log('===== Phase1：页面底色明度差 + 分区令牌 =====');
 const bgLight = readVar(css, 'bg');
-ok(bgLight && bgLight.toLowerCase() === '#f4f9fc', '--bg 已更新为冷调浅蓝白 #F4F9FC（配色改造）');
-ok(bgLight && (100 - lum100(bgLight)) >= 3, '浅色 --bg 与白卡存在明度差（发丝边+柔阴影补足分隔，实际 ' + (bgLight ? (100 - lum100(bgLight)).toFixed(1) : '?') + '）');
+ok(bgLight && bgLight.toLowerCase() === '#f5f9fc', '--bg 已更新为净白微蓝 #F5F9FC（v20260822j 配色改造）');
+ok(bgLight && lum100(bgLight) >= 95, '浅色 --bg 为净白微蓝（近白明度≥95，卡片靠发丝边+柔阴影分隔，而非靠 bg 强对比）');
+ok(/\.card\s*\{[^}]*border:\s*1px solid/.test(css), '.card 用 1px 发丝边作为卡片分隔（替代强 bg 对比，符合 v20260822j/n 设计）');
 
 const sectionBg = readVar(css, 'section-bg');
 ok(!!sectionBg, '--section-bg 已定义（分区底色带令牌）');
@@ -89,13 +90,13 @@ if (darkBlock) {
   const dbg = readVar(darkBlock[1], 'bg');
   const dsec = readVar(darkBlock[1], 'section-bg');
   ok(dbg && dbg.toLowerCase() === '#121a21', '深色 --bg 改为 #121A21（配色改造，比卡片更深）');
-  ok(dbg && (lum100('#1d1d23') - lum100(dbg)) >= 3, '深色 --bg 比卡片 #1d1d23 明度差 ≥ 3（实际 ' + (dbg ? (lum100('#1d1d23') - lum100(dbg)).toFixed(1) : '?') + '）');
+  ok(dbg && (lum100('#1b242e') - lum100(dbg)) >= 3, '深色 --bg 比卡片 #1B242E 明度差 ≥ 3（实际 ' + (dbg ? (lum100('#1b242e') - lum100(dbg)).toFixed(1) : '?') + '）');
   ok(!!dsec, '深色 --section-bg 已定义');
 }
 
 console.log('===== DOM 包裹：每个模块级 .card 都被 .section 包住 =====');
 const sections = document.querySelectorAll('.section');
-ok(sections.length === 43, '.section 数量 = 43（全站模块级卡片均已包裹），实际 ' + sections.length);
+ok(sections.length === 47, '.section 数量 = 47（全站模块级卡片均已包裹），实际 ' + sections.length);
 let badWrap = 0, nested = 0;
 sections.forEach(function (sec) {
   if (sec.children.length !== 1) badWrap++;
@@ -106,7 +107,7 @@ sections.forEach(function (sec) {
 });
 ok(badWrap === 0, '每个 .section 恰好包住 1 个 .card（无错位 / 无遗漏）');
 ok(nested === 0, '.section 无嵌套（包裹层级正确）');
-ok(document.querySelectorAll('.card').length >= 43, '总 .card 数量未减少（结构完整）');
+ok(document.querySelectorAll('.card').length >= 47, '总 .card 数量未减少（结构完整）');
 
 console.log('===== 运行期错误兜底 =====');
 ok(runtimeErrors.length === 0, '无运行期错误' + (runtimeErrors.length ? '：' + runtimeErrors.join('; ') : ''));
