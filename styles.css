@@ -1212,7 +1212,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .ob-step.done { opacity: .7; }
 .ob-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-weight: 800; margin: 0 auto 8px; font-size: 14px; }
 .ob-step.done .ob-step-num { background: var(--ok); }
-.ob-step-icon { font-size: 22px; margin-bottom: 4px; }
+.ob-step-icon { width: 28px; height: 28px; font-size: 22px; line-height: 28px; margin: 0 auto 6px; text-align: center; }
 .ob-step-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
 .ob-step-sub { font-size: 11px; color: var(--muted); }
 .ob-step-arr { position: absolute; right: -10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #CFE3F5; z-index: 2; }

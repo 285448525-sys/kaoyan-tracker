@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822g';
+  var APP_VERSION = '20260822h';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3264,18 +3264,18 @@
   }
 
   var BADGES = [
-    { id: 'start', icon: 'seed', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
-    { id: 'streak7', icon: 'fire', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
-    { id: 'streak21', icon: 'mountain', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
-    { id: 'hours100', icon: 'clock', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
-    { id: 'hours200', icon: 'star', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
-    { id: 'vocab1000', icon: 'book', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
-    { id: 'exam1', icon: 'target', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
-    { id: 'exam3', icon: 'trophy', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
-    { id: 'mistake50', icon: 'bug', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
-    { id: 'allSubjects', icon: 'brain', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
-    { id: 'days30', icon: 'vocab', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
-    { id: 'sprint', icon: 'rocket', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
+    { id: 'start', icon: '🌱', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
+    { id: 'streak7', icon: '🔥', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
+    { id: 'streak21', icon: '⛰️', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
+    { id: 'hours100', icon: '⏰', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
+    { id: 'hours200', icon: '⭐', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
+    { id: 'vocab1000', icon: '📖', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
+    { id: 'exam1', icon: '🎯', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
+    { id: 'exam3', icon: '🏆', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
+    { id: 'mistake50', icon: '🐞', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
+    { id: 'allSubjects', icon: '🧠', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
+    { id: 'days30', icon: '📝', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
+    { id: 'sprint', icon: '🚀', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
   ];
   function computeBadges(stats) {
     return BADGES.map(function (b) {
@@ -3377,7 +3377,7 @@
     badges.forEach(function (b) {
       if (b.earned) earned++;
       html += '<div class="badge-tile' + (b.earned ? ' earned' : '') + '">' +
-        '<div class="badge-icon">' + (window.Icon ? Icon.svg(b.icon) : b.icon) + '</div>' +
+        '<div class="badge-icon">' + b.icon + '</div>' +
         '<div class="badge-name">' + escapeHtml(b.name) + '</div>' +
         '<div class="badge-desc">' + escapeHtml(b.desc) + '</div>' +
         '<div class="badge-prog">' + (b.earned ? '✅ 已达成' : '进度 ' + escapeHtml(b.prog)) + '</div>' +
@@ -3689,20 +3689,19 @@
     refs.todayOnboarding.hidden = false;
 
     function stepCard(idx, icon, title, sub, done, tabKey) {
-      var ic = (window.Icon && Icon.paths[icon]) ? Icon.svg(icon) : icon;
       return '<div class="ob-step' + (done ? ' done' : '') + '" onclick="window.__switchTab(\'' + (tabKey || 'config') + '\')">' +
                '<div class="ob-step-num">' + (done ? '✓' : idx) + '</div>' +
-               '<div class="ob-step-icon">' + ic + '</div>' +
+               '<div class="ob-step-icon">' + icon + '</div>' +
                '<div class="ob-step-title">' + title + '</div>' +
                '<div class="ob-step-sub">' + sub + '</div>' +
                (idx < 4 ? '<div class="ob-step-arr">›</div>' : '') +
              '</div>';
     }
     refs.onboardingSteps.innerHTML =
-      stepCard(1, 'gear', '基础配置', '设置昵称·考试日期·目标分', step1Done, 'config') +
-      stepCard(2, 'book', '勾选科目', '勾选你要考的科目和卷种', step2Done, 'config') +
-      stepCard(3, 'compass', '制定计划', '自动或手动安排今日学习计划', step3Done, 'today') +
-      stepCard(4, 'timer', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
+      stepCard(1, '⚙️', '基础配置', '设置昵称·考试日期·目标分', step1Done, 'config') +
+      stepCard(2, '📚', '勾选科目', '勾选你要考的科目和卷种', step2Done, 'config') +
+      stepCard(3, '🧭', '制定计划', '自动或手动安排今日学习计划', step3Done, 'today') +
+      stepCard(4, '⏱️', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
   }
 
   /* ============ 说明书模块（UI 散落说明集中处，分组卡片式） ============ */
