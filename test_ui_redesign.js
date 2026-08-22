@@ -1,6 +1,6 @@
 /* jsdom 验证：方案 29 第一版（Block 1 配色 + Block 2 图标）
  * 验收点：
- *  1) icons.js 加载 + Icon.fill 把 [data-icon] 注入 <svg>
+ *  1) iconset.js 加载 + Icon.fill 把 [data-icon] 注入 <svg>
  *  2) 侧栏/底栏/卡片标题无残留装饰性 emoji 主图标
  *  3) :root --primary 为清新蓝 #3E9BE8
  *  4) store COLOR_SCHEMES 收敛为 ['mist','brown']（删 sage/rose/lavender）
@@ -47,8 +47,8 @@ window.addEventListener('error', function (e) {
 });
 window.addEventListener('unhandledrejection', function (e) { runtimeErrors.push('promise: ' + (e.reason && e.reason.message || e.reason)); });
 
-// 加载顺序：icons.js 必须在 app.js 之前（app.js init 调用 Icon.fill）
-const order = ['qrcode.min.js', 'icons.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+// 加载顺序：iconset.js 必须在 app.js 之前（app.js init 调用 Icon.fill）
+const order = ['qrcode.min.js', 'iconset.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
   try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
@@ -62,8 +62,8 @@ const Store = window.Store;
 let pass = 0, fail = 0;
 function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else { fail++; console.log('❌ ' + name); } }
 
-// 1) icons.js + Icon.fill
-ok(!!window.Icon && typeof window.Icon.fill === 'function', 'icons.js 加载且 Icon.fill 存在');
+// 1) iconset.js + Icon.fill
+ok(!!window.Icon && typeof window.Icon.fill === 'function', 'iconset.js 加载且 Icon.fill 存在');
 const sideIcons = document.querySelectorAll('.side-nav .tab-ic svg');
 ok(sideIcons.length === 8, '侧栏 8 个导航图标已注入 SVG（实际 ' + sideIcons.length + '）');
 const btbIcons = document.querySelectorAll('.bottom-tabbar .tab-ic svg');
