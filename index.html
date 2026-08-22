@@ -2,6 +2,22 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <!-- 强制清理旧 Service Worker：避免旧缓存顶着旧版导致导航/页面全部失效（仅在新版首次加载时执行一次） -->
+  <script>
+    (function () {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+        if (sessionStorage.getItem('sw_cleared_v20260822x')) return;
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          if (!regs || !regs.length) return;
+          Promise.all(regs.map(function (r) { return r.unregister(); })).then(function () {
+            sessionStorage.setItem('sw_cleared_v20260822x', '1');
+            location.reload(true);
+          });
+        }).catch(function () {});
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>考研学习记录 · 计时/计划/模考/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、模考成绩、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
@@ -24,7 +40,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822w" />
+  <link rel="stylesheet" href="styles.css?v=20260822x" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -1066,14 +1082,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822w"></script>
-  <script src="iconset.js?v=20260822w"></script>
-  <script src="words.js?v=20260822w"></script>
-  <script src="store.js?v=20260822w"></script>
-  <script src="charts.js?v=20260822w"></script>
-  <script src="share.js?v=20260822w"></script>
-  <script src="md5.js?v=20260822w"></script>
-  <script src="sentences.js?v=20260822w"></script>
-  <script src="app.js?v=20260822w"></script>
+  <script src="qrcode.min.js?v=20260822x"></script>
+  <script src="iconset.js?v=20260822x"></script>
+  <script src="words.js?v=20260822x"></script>
+  <script src="store.js?v=20260822x"></script>
+  <script src="charts.js?v=20260822x"></script>
+  <script src="share.js?v=20260822x"></script>
+  <script src="md5.js?v=20260822x"></script>
+  <script src="sentences.js?v=20260822x"></script>
+  <script src="app.js?v=20260822x"></script>
 </body>
 </html>

@@ -120,7 +120,7 @@ async function main() {
   }
 
   // ---- 4. 复制静态资源（不压缩）----
-  const staticFiles = ['favicon.svg', 'og-image.png', 'robots.txt', 'sitemap.xml', 'qrcode.min.js', '_worker.js', 'sw.js', 'manifest.webmanifest'];
+  const staticFiles = ['favicon.svg', 'og-image.png', 'robots.txt', 'sitemap.xml', 'qrcode.min.js', '_worker.js', 'sw.js', 'manifest.webmanifest', '_headers'];
   for (const f of staticFiles) {
     const src = path.join(ROOT, f);
     if (fs.existsSync(src)) {

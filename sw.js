@@ -5,7 +5,7 @@
  * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步），否则旧 SW 不更新、用户拿不到新外壳。
  * 新 SW 激活后强制 reload，用户无需手动强刷即可拿到新版。
  */
-const SW_VERSION = '20260822w';
+const SW_VERSION = '20260822x';
 const CACHE = 'kaoyan-pwa-' + SW_VERSION;
 const PRECACHE = ['./', './index.html', './manifest.webmanifest'];
 
