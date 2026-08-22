@@ -24,7 +24,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260822k" />
+  <link rel="stylesheet" href="styles.css?v=20260822l" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -59,7 +59,7 @@
     </nav>
     <button class="nav-collapse" id="navCollapse" title="折叠 / 展开侧边栏" aria-label="折叠侧边栏">‹</button>
   </aside>
-  <button class="nav-toggle" id="navToggle" aria-label="菜单">☰</button>
+  <button class="nav-toggle" id="navToggle" aria-label="菜单"><span class="tab-ic" data-icon="menu"></span></button>
   <div class="nav-backdrop" id="navBackdrop"></div>
 
   <main class="app-main">
@@ -234,7 +234,7 @@
             <span class="hint" style="margin:0">仅倒计时（无休息，计时结束不进入休息）</span>
           </div>
         </div>
-        <div class="pomo-display"><span id="pomo-mode" class="pomo-mode">🍅 学习中</span><span id="pomo-time" class="pomo-time">25:00</span></div>
+        <div class="pomo-display"><span id="pomo-mode" class="pomo-mode"><span class="ic-inline" data-icon="tomato"></span> 学习中</span><span id="pomo-time" class="pomo-time">25:00</span></div>
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-pomo-start" class="btn btn-primary">开始</button>
           <button id="btn-pomo-reset" class="btn btn-ghost">重置</button>
@@ -389,7 +389,7 @@
       <div class="section">
       <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题 / 感悟整理</h2>
-        <p class="card-hint">把题目 / 感悟直接粘贴到下面，三步搞定：① 🪄 <b>智能整理</b>（AI 自动归类到 通用 / 数学 / 408）；② <b>直接存为感悟</b>；③ <b>手动归档</b>（自定义范围与分类）。</p>
+        <p class="card-hint">把题目 / 感悟直接粘贴到下面，三步搞定：① <span class="ic-inline" data-icon="wand"></span> <b>智能整理</b>（AI 自动归类到 通用 / 数学 / 408）；② <b>直接存为感悟</b>；③ <b>手动归档</b>（自定义范围与分类）。</p>
         <div class="field">
           <label>内容（粘贴题目 / 感悟）</label>
           <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
@@ -887,8 +887,8 @@
         <div class="field-row">
           <label>主题模式</label>
           <div class="chip-row" id="theme-mode-group" role="radiogroup" aria-label="主题模式">
-            <button type="button" class="chip" data-theme="light" role="radio" aria-checked="false"><span class="ic-inline">☀️</span> 浅色</button>
-            <button type="button" class="chip" data-theme="dark" role="radio" aria-checked="false"><span class="ic-inline">🌙</span> 深色</button>
+            <button type="button" class="chip" data-theme="light" role="radio" aria-checked="false"><span class="ic-inline" data-icon="sun"></span> 浅色</button>
+            <button type="button" class="chip" data-theme="dark" role="radio" aria-checked="false"><span class="ic-inline" data-icon="moon"></span> 深色</button>
           </div>
         </div>
         <div class="field-row">
@@ -919,7 +919,7 @@
       <details class="config-fold">
         <summary class="fold-summary">高级：得分计算与计划</summary>
         <div class="fold-content">
-          <h3 class="card-sub">🎯 得分权重配置</h3>
+          <h3 class="card-sub"><span class="ic-inline" data-icon="target"></span> 得分权重配置</h3>
           <p class="card-hint">近 30 天每日得分按以下权重实时重算。默认 时长50 / 计划20 / 生词15 / 错题15；不考英语词汇的 408 考生可把「生词复习」调低或归零。</p>
           <div class="weight-row">
             <label>学习时长</label>
@@ -957,7 +957,7 @@
         <summary class="fold-summary">连接与密钥（可选）</summary>
         <div class="fold-content">
           <div class="sub-card cloud-sync-card">
-            <h3 class="card-sub"><span class="ic-inline">☁️</span> 云端账号（手机号 · 可选 · 多设备同步）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="cloud"></span> 云端账号（手机号 · 可选 · 多设备同步）</h3>
             <p class="card-sub">用手机号作为唯一账号：首次填写即注册并上传数据；换设备登录只需输入同一手机号即可同步。无需记密码。</p>
             <div class="field-row">
               <label>手机号码</label>
@@ -970,7 +970,7 @@
             <div id="sync-status" class="import-status"></div>
           </div>
           <div class="sub-card translator-card">
-            <h3 class="card-sub"><span class="ic-inline">🔑</span> 翻译 API 密钥（自行申请填写 · 可选）</h3>
+            <h3 class="card-sub"><span class="ic-inline" data-icon="key"></span> 翻译 API 密钥（自行申请填写 · 可选）</h3>
             <div class="field-row">
               <label>APP ID</label>
               <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
@@ -1035,7 +1035,7 @@
       <div id="sub-sites" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline">🌐</span> 考研资料与网课网站</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="globe"></span> 考研资料与网课网站</h2>
         <div id="curated-sites" class="site-group"></div>
       </div></div>
 
@@ -1054,10 +1054,10 @@
       <div id="sub-manual" class="sub-panel">
       <div class="section">
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline">📖</span> 考研学习记录 · 使用说明</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 考研学习记录 · 使用说明</h2>
         <p class="card-sub">按「快速上手 / 核心流程 / 专项科目 / 英语词汇 / 工具资源」五部分组织。新手引导会带你完整过一遍，之后随时回来查。</p>
         <div class="manual-actions">
-          <button id="btn-restart-tour" class="btn btn-primary"><span class="ic-inline">🚀</span> 重看新手完整引导</button>
+          <button id="btn-restart-tour" class="btn btn-primary"><span class="ic-inline" data-icon="rocket"></span> 重看新手完整引导</button>
         </div>
         <div id="manual-list" class="manual-list"></div>
       </div></div>
@@ -1065,7 +1065,7 @@
     </div>
       <div id="sub-guide" class="sub-panel">      <div class="section">
 <div id="today-onboarding" class="card onboarding-card" hidden>
-        <h2 class="card-title"><span class="ic-inline">🚀</span> 30 秒快速开始</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="rocket"></span> 30 秒快速开始</h2>
         <div id="onboarding-steps" class="onboarding-steps"></div>
         <div class="onboarding-foot">
           <button id="btn-start-tour" class="btn btn-primary"><span class="ic-inline" data-icon="book"></span> 完整功能引导（带你过一遍所有功能）</button>
@@ -1100,14 +1100,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260822k"></script>
-  <script src="iconset.js?v=20260822k"></script>
-  <script src="words.js?v=20260822k"></script>
-  <script src="store.js?v=20260822k"></script>
-  <script src="charts.js?v=20260822k"></script>
-  <script src="share.js?v=20260822k"></script>
-  <script src="md5.js?v=20260822k"></script>
-  <script src="sentences.js?v=20260822k"></script>
-  <script src="app.js?v=20260822k"></script>
+  <script src="qrcode.min.js?v=20260822l"></script>
+  <script src="iconset.js?v=20260822l"></script>
+  <script src="words.js?v=20260822l"></script>
+  <script src="store.js?v=20260822l"></script>
+  <script src="charts.js?v=20260822l"></script>
+  <script src="share.js?v=20260822l"></script>
+  <script src="md5.js?v=20260822l"></script>
+  <script src="sentences.js?v=20260822l"></script>
+  <script src="app.js?v=20260822l"></script>
 </body>
 </html>

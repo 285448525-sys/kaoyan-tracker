@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822k';
+  var APP_VERSION = '20260822l';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3264,18 +3264,18 @@
   }
 
   var BADGES = [
-    { id: 'start', icon: '🌱', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
-    { id: 'streak7', icon: '🔥', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
-    { id: 'streak21', icon: '⛰️', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
-    { id: 'hours100', icon: '⏰', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
-    { id: 'hours200', icon: '⭐', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
-    { id: 'vocab1000', icon: '📖', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
-    { id: 'exam1', icon: '🎯', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
+    { id: 'start', icon: 'seed', name: '起步', desc: '累计学习 ≥ 1 天', test: function (s) { return s.totalDays >= 1; }, prog: function (s) { return s.totalDays + '/1 天'; } },
+    { id: 'streak7', icon: 'fire', name: '七日坚持', desc: '连续打卡 ≥ 7 天', test: function (s) { return s.streak >= 7; }, prog: function (s) { return s.streak + '/7 天'; } },
+    { id: 'streak21', icon: 'mountain', name: '习惯养成', desc: '连续打卡 ≥ 21 天', test: function (s) { return s.streak >= 21; }, prog: function (s) { return s.streak + '/21 天'; } },
+    { id: 'hours100', icon: 'clock', name: '百分工时', desc: '累计学习 ≥ 100 小时', test: function (s) { return s.hours >= 100; }, prog: function (s) { return Math.floor(s.hours) + '/100 小时'; } },
+    { id: 'hours200', icon: 'star', name: '双百工时', desc: '累计学习 ≥ 200 小时', test: function (s) { return s.hours >= 200; }, prog: function (s) { return Math.floor(s.hours) + '/200 小时'; } },
+    { id: 'vocab1000', icon: 'book', name: '千词斩', desc: '生词本 ≥ 1000 词', test: function (s) { return s.vocabCount >= 1000; }, prog: function (s) { return s.vocabCount + '/1000 词'; } },
+    { id: 'exam1', icon: 'target', name: '模考初体验', desc: '录入 ≥ 1 次模考', test: function (s) { return s.examCount >= 1; }, prog: function (s) { return s.examCount + '/1 次'; } },
     { id: 'exam3', icon: '🏆', name: '模考三连', desc: '录入 ≥ 3 次模考', test: function (s) { return s.examCount >= 3; }, prog: function (s) { return s.examCount + '/3 次'; } },
-    { id: 'mistake50', icon: '🐞', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
-    { id: 'allSubjects', icon: '🧠', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
-    { id: 'days30', icon: '📝', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
-    { id: 'sprint', icon: '🚀', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
+    { id: 'mistake50', icon: 'bug', name: '错题猎人', desc: '整理 ≥ 50 条错题', test: function (s) { return s.mistakeCount >= 50; }, prog: function (s) { return s.mistakeCount + '/50 条'; } },
+    { id: 'allSubjects', icon: 'brain', name: '全能备考', desc: '4 个科目都有学习时长', test: function (s) { return s.subjWithTimeCount >= 4; }, prog: function (s) { return s.subjWithTimeCount + '/4 科'; } },
+    { id: 'days30', icon: 'doc', name: '笔记达人', desc: '累计学习 ≥ 30 天', test: function (s) { return s.totalDays >= 30; }, prog: function (s) { return s.totalDays + '/30 天'; } },
+    { id: 'sprint', icon: 'rocket', name: '冲刺在即', desc: '距考研 ≤ 30 天', test: function (s) { return s.remaining !== null && s.remaining <= 30 && s.remaining > 0; }, prog: function (s) { return s.remaining !== null ? s.remaining + ' 天' : '未设日期'; } }
   ];
   function computeBadges(stats) {
     return BADGES.map(function (b) {
@@ -3376,8 +3376,9 @@
     var html = '';
     badges.forEach(function (b) {
       if (b.earned) earned++;
+      var ic = (window.Icon && Icon.paths[b.icon]) ? Icon.svg(b.icon) : escapeHtml(b.icon);
       html += '<div class="badge-tile' + (b.earned ? ' earned' : '') + '">' +
-        '<div class="badge-icon">' + b.icon + '</div>' +
+        '<div class="badge-icon">' + ic + '</div>' +
         '<div class="badge-name">' + escapeHtml(b.name) + '</div>' +
         '<div class="badge-desc">' + escapeHtml(b.desc) + '</div>' +
         '<div class="badge-prog">' + (b.earned ? '✅ 已达成' : '进度 ' + escapeHtml(b.prog)) + '</div>' +
@@ -3755,21 +3756,21 @@
 
   /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
   var TOUR_STEPS = [
-    { icon: '👋', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
-    { icon: '🔑', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
+    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
+    { icon: 'key', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
     { icon: '🤖', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
-    { icon: '📅', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
-    { icon: '🚀', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
-    { icon: '🧭', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
-    { icon: '⏱️', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
-    { icon: '📋', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
-    { icon: '📊', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
+    { icon: 'calendar', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
+    { icon: 'rocket', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
+    { icon: 'compass', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
+    { icon: 'clock', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
+    { icon: 'list', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
+    { icon: 'chart', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
     { icon: '📐', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
     { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
     { icon: '🐞', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
-    { icon: '🔄', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（设置可自定义题量/范围/模式）。' },
+    { icon: 'refresh', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（设置可自定义题量/范围/模式）。' },
     { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
-    { icon: '☁️', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
+    { icon: 'cloud', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
     { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
   ];
   var tourIdx = 0, tourEl = null;

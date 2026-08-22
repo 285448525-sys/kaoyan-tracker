@@ -53,7 +53,7 @@
   --c-politics: #f97316;
   --c-english: #3b82f6;
   --c-math: #8b5cf6;
-  --c-major: #10b981;
+  --c-major: var(--ok);
 }
 
 * { box-sizing: border-box; }
@@ -645,11 +645,11 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .clause { display: flex; gap: 10px; align-items: flex-start; background: #f9fafb; border: 1px solid var(--line); border-left: 4px solid var(--muted); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
 .clause-main { border-left-color: var(--primary); background: #E7F3FC; }
 .clause-sub { border-left-color: #f59e0b; }
-.clause-coord { border-left-color: #10b981; }
+.clause-coord { border-left-color: var(--ok); }
 .clause-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; flex: none; white-space: nowrap; color: #fff; }
 .tag-main { background: var(--primary); }
 .tag-sub { background: #f59e0b; }
-.tag-coord { background: #10b981; }
+.tag-coord { background: var(--ok); }
 .clause-text { font-size: 14px; line-height: 1.6; }
 .tw-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .tw-item { background: #f9fafb; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
@@ -745,7 +745,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .pomo-setup { margin-bottom: 4px; }
 .pomo-setup .field-row label { width: auto; flex: none; font-size: 13px; }
 .pomo-setup .field-row input[type=number] { flex: none; }
-.pomo-display.break .pomo-time { color: #10b981; }
+.pomo-display.break .pomo-time { color: var(--ok); }
 .pomo-display.done .pomo-time { color: var(--ok); }
 .pomo-display.done .pomo-time { animation: pomo-done-pulse .8s ease-in-out 4; }
 .pomodoro-card:has(.pomo-display.done) { animation: pomo-card-flash 1s ease-in-out 2; }
@@ -1001,13 +1001,13 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* ============ 数学错题速查卡（Leitner 记忆曲线复习） ============ */
 .mistake-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .box-badge { font-size: 11px; font-weight: 700; color: var(--primary); background: #E7F3FC; border: 1px solid #CFE3F5; border-radius: 6px; padding: 2px 8px; }
-.flashcard-card { border-left: 4px solid #10b981; }
+.flashcard-card { border-left: 4px solid var(--ok); }
 .flashcard-wrap { margin-top: 6px; }
 .flash-overview { margin-bottom: 10px; }
 .flash-count { font-size: 13px; color: var(--muted); font-weight: 600; }
 .flashcard { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #a7f3d0; border-radius: 14px; padding: 16px; }
 .flash-progress { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.flash-cat { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: #10b981; border-radius: 6px; padding: 2px 8px; margin-bottom: 10px; }
+.flash-cat { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--ok); border-radius: 6px; padding: 2px 8px; margin-bottom: 10px; }
 .flash-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 .flash-front { margin-bottom: 12px; }
 .flash-q { font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
@@ -1353,6 +1353,7 @@ h3.card-sub { font-size: 15px; font-weight: 700; color: var(--ink); margin: 2px 
 @keyframes tourPop { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
 .tour-progress { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 10px; letter-spacing: 1px; }
 .tour-icon { font-size: 46px; text-align: center; line-height: 1; }
+.tour-icon svg { width: 46px; height: 46px; display: inline-block; color: var(--primary); }
 .tour-title { text-align: center; font-size: 18px; font-weight: 800; color: var(--ink); margin: 10px 0 8px; }
 .tour-text { font-size: 15px; line-height: 1.7; color: var(--muted); text-align: center; min-height: 84px; }
 .tour-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
@@ -1545,6 +1546,8 @@ input:focus, select:focus, textarea:focus {
 .badge-tile { border: 1px solid var(--line); border-radius: 12px; padding: 12px 10px; text-align: center; background: var(--bg); opacity: .72; transition: all .2s; }
 .badge-tile.earned { border-color: var(--primary); background: rgba(62, 155, 232, .08); opacity: 1; box-shadow: 0 2px 10px rgba(62, 155, 232, .12); }
 .badge-icon { font-size: 26px; line-height: 1; }
+.badge-icon svg { width: 26px; height: 26px; display: block; margin: 0 auto; color: var(--primary); }
+.badge-tile:not(.earned) .badge-icon svg { color: var(--muted); }
 .badge-name { font-weight: 700; font-size: 14px; margin-top: 4px; color: var(--ink); }
 .badge-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .badge-prog { font-size: 11px; color: var(--muted); margin-top: 6px; }
@@ -1561,7 +1564,7 @@ input:focus, select:focus, textarea:focus {
 .chapter-heatmap { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin: 8px 0 12px; }
 .heat-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
 .heat-cell { width: 14px; height: 14px; border-radius: 3px; background: #e5e7eb; transition: background .2s ease; cursor: default; }
-.heat-cell.done { background: var(--ok, #10b981); }
+.heat-cell.done { background: var(--ok); }
 .heat-cell.current { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,.3); }
 
 /* ============ P0-2 408 分书分组 ============ */
@@ -1691,7 +1694,7 @@ input:focus, select:focus, textarea:focus {
 .checkin-btn:active { transform: scale(0.93); }
 .checkin-btn.pulse .ci-ring { animation: ciPulse .6s ease-out; }
 @keyframes ciPulse { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35); } }
-.checkin-btn.done { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 10px 26px -6px rgba(16,185,129,.5); cursor: default; }
+.checkin-btn.done { background: linear-gradient(135deg, var(--ok), #059669); box-shadow: 0 10px 26px -6px rgba(16,185,129,.5); cursor: default; }
 .checkin-btn.done:active { transform: none; }
 .checkin-btn.pop { animation: ciPop .45s cubic-bezier(.2,1.4,.5,1); }
 @keyframes ciPop { 0% { transform: scale(0.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
