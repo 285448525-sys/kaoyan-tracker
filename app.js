@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822t';
+  var APP_VERSION = '20260822u';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1432,12 +1432,16 @@
   function switchTab(target) {
     var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math', mock:'mock', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
-    var btn = document.querySelector('.tab-btn[data-tab="' + real + '"]');
-    if (btn) { btn.click(); } else { showTab(real); }
+    showTab(real);
     if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
     else if (real === 'settings') { showSub('settings', target === 'sites' ? 'sites' : (target === 'manual' ? 'manual' : 'base')); }
     else if (real === 'mistakes') { showSub('mistakes', target === 'sentences' ? 'sentences' : 'mistakes'); }
+    // 同步地址栏 hash，让各模块拥有独立 URL
+    var nextHash = '#' + real;
+    if ((location.hash || '') !== nextHash) {
+      history.replaceState(null, '', nextHash);
+    }
   }
   function updateMathTabVisibility() {
     // 数学现为顶层 tab（tab-math），始终可见；内容区由对应 render 决定是否为空态
@@ -4449,6 +4453,9 @@
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
     if (target === 'settings') { showSub('settings', 'base'); renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); renderHelpManual(); renderSmartPlan(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
+    // 同步底部 tabbar 高亮
+    var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
+    btbBtns.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
   }
   function showSub(container, sub) {
     var root = document.getElementById('tab-' + container);
@@ -4483,14 +4490,15 @@
   function renderDashboardDigest() { renderTodayAggregate(); }
   function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () { showTab(btn.getAttribute('data-tab')); });
+      // 统一走 switchTab，确保地址栏 hash 与底部 tabbar 同步更新
+      btn.addEventListener('click', function () { switchTab(btn.getAttribute('data-tab')); });
     });
     // 任意「去计时页 / 打开计时」入口（首页计时块、首页跳转按钮）
     document.querySelectorAll('[data-goto]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         e.preventDefault();
         var t = el.getAttribute('data-goto');
-        if (t) showTab(t);
+        if (t) switchTab(t);
       });
     });
     updateMathTabVisibility();
@@ -4512,8 +4520,7 @@
     btbBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var target = btn.getAttribute('data-tab');
-        var sideBtn = document.querySelector('.tab-btn[data-tab="' + target + '"]');
-        if (sideBtn) sideBtn.click();
+        switchTab(target);
       });
     });
 
@@ -4531,16 +4538,6 @@
       });
     }
 
-    /* ===== 底部 Tab Bar 高亮同步 ===== */
-    var sideTabBtns = document.querySelectorAll('.tab-btn');
-    sideTabBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var target = btn.getAttribute('data-tab');
-        btbBtns.forEach(function (b) {
-          b.classList.toggle('active', b.getAttribute('data-tab') === target);
-        });
-      });
-    });
   }
 
   function init() {
@@ -5157,6 +5154,19 @@
     applySidebar();
     renderTodayAggregate();
     renderCheckinCard();
+
+    // Hash 路由：刷新/前进后退/直接访问 #math 等自动打开对应模块
+    function applyHash() {
+      var hash = (location.hash || '').replace(/^#/, '');
+      if (!hash) return;
+      var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math' };
+      var real = map[hash] || hash;
+      var activeBtn = document.querySelector('.tab-btn.active');
+      var current = activeBtn ? activeBtn.getAttribute('data-tab') : 'home';
+      if (real !== current) switchTab(hash);
+    }
+    window.addEventListener('hashchange', applyHash);
+    applyHash();
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
