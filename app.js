@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260822p';
+  var APP_VERSION = '20260822q';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -547,13 +547,36 @@
     var box = document.getElementById('home-scores');
     if (!box) return;
     var body = box.querySelector('.hs-body');
-    if (!body) return;
+    if (!body)  return;
     var today = Store.getDay(Store.todayStr()) || {};
     var score = scoreForDay(Store.todayStr(), today);
     var lvl = 'Lv.1';
     try { lvl = 'Lv.' + computeLevel(getStudyStats()).level; } catch (e) {}
     body.innerHTML = '<div class="hs-num">' + score + ' <span>分</span></div>' +
       '<div class="hs-sub">' + lvl + '</div>';
+  }
+
+  // 计时页「今日计时汇总」：复用 Store 当日 durations
+  function renderTimerSummary() {
+    var box = document.getElementById('timer-summary');
+    if (!box) return;
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
+    var subs = Store.getSubjects();
+    var rows = subs.map(function (s) {
+      var min = (day.durations && day.durations[s.key]) || 0;
+      return { name: s.name, min: min, color: subjectColorClass(s.key, s.name) };
+    }).filter(function (x) { return x.min > 0; })
+      .sort(function (a, b) { return b.min - a.min; });
+    var total = rows.reduce(function (s, x) { return s + x.min; }, 0);
+    if (!rows.length) { box.innerHTML = '<div class="hs-empty">今天还没开始计时，去上方点「开始」吧～</div>'; return; }
+    box.innerHTML = '<div class="ts-total">今日累计 <b>' + fmtMinShort(total) + '</b></div>' +
+      rows.map(function (r) {
+        return '<div class="ts-row">' +
+          '<span class="ts-dot" style="background:' + r.color + '"></span>' +
+          '<span class="ts-name">' + escapeHtml(r.name) + '</span>' +
+          '<span class="ts-time">' + fmtMinShort(r.min) + '</span>' +
+        '</div>';
+      }).join('');
   }
 
   /* ============ 全局计时常驻指示：计时运行时在所有 tab 可见 ============ */
@@ -4416,7 +4439,8 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); renderHomePomodoro(); renderHomeDistribution(); renderHomeReview(); renderHomeMistakes(); renderHomeScores(); }
+    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); renderHomeDistribution(); renderHomeReview(); renderHomeMistakes(); renderHomeScores(); }
+    if (target === 'timer') { renderTimerRows(); renderPomodoro(); renderTimerSummary(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
@@ -4460,6 +4484,14 @@
   function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { showTab(btn.getAttribute('data-tab')); });
+    });
+    // 任意「去计时页 / 打开计时」入口（首页计时块、首页跳转按钮）
+    document.querySelectorAll('[data-goto]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        var t = el.getAttribute('data-goto');
+        if (t) showTab(t);
+      });
     });
     updateMathTabVisibility();
     update408TabVisibility();
@@ -5125,12 +5157,6 @@
     applySidebar();
     renderTodayAggregate();
     renderCheckinCard();
-
-    // 首页番茄钟按钮（独立 id home-btn-pomo-*，避免与计时页 pomo-* 冲突）
-    var hpStart = document.getElementById('home-btn-pomo-start');
-    if (hpStart) hpStart.addEventListener('click', function () { togglePomodoro(); renderHomePomodoro(); });
-    var hpReset = document.getElementById('home-btn-pomo-reset');
-    if (hpReset) hpReset.addEventListener('click', function () { resetPomodoro(); renderHomePomodoro(); });
 
     // 暴露给 onboarding 步骤按钮跳转使用
     window.__switchTab = switchTab;
