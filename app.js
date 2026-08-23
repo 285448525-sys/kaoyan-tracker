@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260823c';
+  var APP_VERSION = '20260823d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -632,7 +632,13 @@
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
     refs.planList.innerHTML = '';
-    if (!plan.length) { emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } }); return; }
+    var emptyHintEl = document.getElementById('plan-empty-hint');
+    if (!plan.length) {
+      if (emptyHintEl) emptyHintEl.classList.remove('hidden');
+      emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } });
+      return;
+    }
+    if (emptyHintEl) emptyHintEl.classList.add('hidden');
     var subs = Store.getSubjects();
     var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
@@ -1531,6 +1537,21 @@
     return item;
   }
 
+  // 学科页统一学科头：图标 + 今日累计 + 总进度（纯展示，不改动章节数据）
+  function updateSubjectHero(key) {
+    var day = Store.getDay(Store.todayStr()) || { durations: {} };
+    var todayMin = (day.durations && day.durations[key]) || 0;
+    var total = 0, doneCount = 0;
+    if (key === 'math') { total = Store.getMathChapters().length; doneCount = Store.getMathDone().length; }
+    else if (key === 'cs408') { total = Store.get408Chapters().length; doneCount = Store.get408Done().length; }
+    else { var obj = Store.getSubjectChapters(key) || { chapters: [], done: [] }; total = (obj.chapters || []).length; doneCount = Array.isArray(obj.done) ? obj.done.length : 0; }
+    var pct = total ? Math.round(doneCount / total * 100) : 0;
+    var meta = document.getElementById(key + '-hero-meta');
+    var bar = document.getElementById(key + '-hero-bar');
+    if (meta) meta.textContent = '今日 ' + fmtMinShort(todayMin) + ' · 总进度 ' + pct + '%';
+    if (bar) bar.style.width = pct + '%';
+  }
+
   function renderChapterBlock(key, mount) {
     if (key === 'cs408') { renderCs408Grouped(mount); return; }
     if (key === 'math') { renderMathGrouped(mount); return; }
@@ -1814,6 +1835,7 @@
     var mount = el('div');
     box.appendChild(mount);
     renderMathGrouped(mount);
+    updateSubjectHero('math');
   }
 
   /* renderMathMistakes 已合并进 renderMistakeList（三套错题本统一列表） */
@@ -2011,6 +2033,7 @@
     var box = refs.cs408Chapters;
     if (!Store.get408Chapters().length) Store.set408Chapters(CS408_CHAPTERS_PREFILL.slice());
     renderChapterBlock('cs408', box);
+    updateSubjectHero('cs408');
   }
 
   /* render408Mistakes 已合并进 renderMistakeList（三套错题本统一列表） */
@@ -3406,7 +3429,13 @@
       var card = el('button', 'quick-entry', '');
       card.setAttribute('type', 'button');
       card.setAttribute('aria-label', label);
-      card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span><span class="qe-label">' + label + '</span>';
+      var sub = '';
+      if (tab === 'analysis') sub = '学习复盘';
+      else if (tab === 'data') sub = '时长/成绩';
+      else if (tab === 'exam') sub = '真题模考';
+      card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span>' +
+        '<span class="qe-text"><span class="qe-label">' + label + '</span>' +
+        (sub ? '<span class="qe-sub">' + sub + '</span>' : '') + '</span>';
       card.addEventListener('click', function () { switchTab(tab); });
       box.appendChild(card);
     });

@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260823c" />
+  <link rel="stylesheet" href="styles.css?v=20260823d" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -195,8 +195,12 @@
       <div class="section">
         <div class="card">
           <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 今日待办</h2>
+          <div id="plan-empty-hint" class="plan-empty-hint">
+            <span class="ic-inline" data-icon="sparkle"></span>
+            今天还没有计划，点下面按钮让 AI 帮你拆任务。
+          </div>
           <div class="btn-row">
-            <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
+            <button id="btn-auto-plan" class="btn btn  btn-primary">自动生成今日待办</button>
           </div>
           <div id="plan-list" class="plan-list"></div>
           <details class="plan-add-fold">
@@ -260,8 +264,21 @@
     <section id="tab-math" class="tab-panel">
 
       <div class="section">
+<div class="card subject-hero" data-subj="math">
+  <div class="subject-hero-head">
+    <div class="subject-hero-ic"><span data-icon="math"></span></div>
+    <div class="subject-hero-title">
+      <div class="subject-name">数学</div>
+      <div class="subject-meta" id="math-hero-meta">今日 0 min · 总进度 0%</div>
+    </div>
+  </div>
+  <div class="subject-progress">
+    <div class="subject-progress-bar" id="math-hero-bar"></div>
+  </div>
+</div>
+
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="math"></span> 数学章节进度</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="math"></span> 章节进度</h2>
         <div id="math-chapters" class="chapter-list"></div>
       </div></div>
 
@@ -285,20 +302,22 @@
         </div>
         <h3 class="sub-title">我的题库</h3>
         <div id="math-question-list" class="mistake-list"></div>
-        <div class="plan-add">
-          <input type="text" id="mq-cat" placeholder="分类，如 高等数学" />
-          <input type="text" id="mq-q" placeholder="题干" />
-        </div>
-        <div class="plan-add">
-          <input type="text" id="mq-opt0" placeholder="选项 A" />
-          <input type="text" id="mq-opt1" placeholder="选项 B" />
-          <input type="text" id="mq-opt2" placeholder="选项 C" />
-          <input type="text" id="mq-opt3" placeholder="选项 D" />
-        </div>
-        <div class="plan-add">
-          <input type="number" id="mq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
-          <input type="text" id="mq-explain" placeholder="解析（可选）" />
-          <button id="btn-add-mq" class="btn btn-ghost">添加题目</button>
+        <div class="question-form">
+          <div class="plan-add">
+            <input type="text" id="mq-cat" placeholder="分类，如 高等数学" />
+            <input type="text" id="mq-q" placeholder="题干" />
+          </div>
+          <div class="plan-add">
+            <input type="text" id="mq-opt0" placeholder="选项 A" />
+            <input type="text" id="mq-opt1" placeholder="选项 B" />
+            <input type="text" id="mq-opt2" placeholder="选项 C" />
+            <input type="text" id="mq-opt3" placeholder="选项 D" />
+          </div>
+          <div class="plan-add">
+            <input type="number" id="mq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
+            <input type="text" id="mq-explain" placeholder="解析（可选）" />
+            <button id="btn-add-mq" class="btn btn-ghost">添加题目</button>
+          </div>
         </div>
       </div></div>
 
@@ -308,8 +327,21 @@
     <section id="tab-cs408" class="tab-panel">
 
       <div class="section">
+<div class="card subject-hero" data-subj="cs408">
+  <div class="subject-hero-head">
+    <div class="subject-hero-ic"><span data-icon="chip"></span></div>
+    <div class="subject-hero-title">
+      <div class="subject-name">408 计算机专业基础</div>
+      <div class="subject-meta" id="cs408-hero-meta">今日 0 min · 总进度 0%</div>
+    </div>
+  </div>
+  <div class="subject-progress">
+    <div class="subject-progress-bar" id="cs408-hero-bar"></div>
+  </div>
+</div>
+
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="cs408"></span> 408 章节进度</h2>
+        <h2 class="card-title"><span class="ic-inline" data-icon="cs408"></span> 章节进度</h2>
         <div id="cs408-chapters" class="chapter-list"></div>
       </div></div>
 
@@ -334,20 +366,22 @@
         </div>
         <h3 class="sub-title">我的题库</h3>
         <div id="cs408-question-list" class="mistake-list"></div>
-        <div class="plan-add">
-          <input type="text" id="cq-cat" placeholder="分类，如 数据结构" />
-          <input type="text" id="cq-q" placeholder="题干" />
-        </div>
-        <div class="plan-add">
-          <input type="text" id="cq-opt0" placeholder="选项 A" />
-          <input type="text" id="cq-opt1" placeholder="选项 B" />
-          <input type="text" id="cq-opt2" placeholder="选项 C" />
-          <input type="text" id="cq-opt3" placeholder="选项 D" />
-        </div>
-        <div class="plan-add">
-          <input type="number" id="cq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
-          <input type="text" id="cq-explain" placeholder="解析（可选）" />
-          <button id="btn-add-cq" class="btn btn-ghost">添加题目</button>
+        <div class="question-form">
+          <div class="plan-add">
+            <input type="text" id="cq-cat" placeholder="分类，如 数据结构" />
+            <input type="text" id="cq-q" placeholder="题干" />
+          </div>
+          <div class="plan-add">
+            <input type="text" id="cq-opt0" placeholder="选项 A" />
+            <input type="text" id="cq-opt1" placeholder="选项 B" />
+            <input type="text" id="cq-opt2" placeholder="选项 C" />
+            <input type="text" id="cq-opt3" placeholder="选项 D" />
+          </div>
+          <div class="plan-add">
+            <input type="number" id="cq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
+            <input type="text" id="cq-explain" placeholder="解析（可选）" />
+            <button id="btn-add-cq" class="btn btn-ghost">添加题目</button>
+          </div>
         </div>
       </div></div>
 
@@ -1088,14 +1122,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260823c"></script>
-  <script src="iconset.js?v=20260823c"></script>
-  <script src="words.js?v=20260823c"></script>
-  <script src="store.js?v=20260823c"></script>
-  <script src="charts.js?v=20260823c"></script>
-  <script src="share.js?v=20260823c"></script>
-  <script src="md5.js?v=20260823c"></script>
-  <script src="sentences.js?v=20260823c"></script>
-  <script src="app.js?v=20260823c"></script>
+  <script src="qrcode.min.js?v=20260823d"></script>
+  <script src="iconset.js?v=20260823d"></script>
+  <script src="words.js?v=20260823d"></script>
+  <script src="store.js?v=20260823d"></script>
+  <script src="charts.js?v=20260823d"></script>
+  <script src="share.js?v=20260823d"></script>
+  <script src="md5.js?v=20260823d"></script>
+  <script src="sentences.js?v=20260823d"></script>
+  <script src="app.js?v=20260823d"></script>
 </body>
 </html>
