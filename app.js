@@ -3430,9 +3430,9 @@
       card.setAttribute('type', 'button');
       card.setAttribute('aria-label', label);
       var sub = '';
-      if (tab === 'analysis') sub = '学习复盘';
-      else if (tab === 'data') sub = '时长/成绩';
-      else if (tab === 'exam') sub = '真题模考';
+      if (tab === 'data') sub = '时长/成绩';
+      else if (tab === 'mock') sub = '真题模考';
+      else if (tab === 'mistakes') sub = '薄弱复盘';
       card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span>' +
         '<span class="qe-text"><span class="qe-label">' + label + '</span>' +
         (sub ? '<span class="qe-sub">' + sub + '</span>' : '') + '</span>';
