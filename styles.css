@@ -1969,11 +1969,12 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 
 /* ===== P4c：首页一屏化（v20260822q） ===== */
 .home-one-screen {
-  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-3);
   align-content: start;
 }
+/* 只有当前激活的 tab 才显示为 grid；避免非 active 时 display 覆盖 .tab-panel 的隐藏 */
+.tab-panel.active.home-one-screen { display: grid; }
 /* 跨两列的主块：聚合卡、快捷入口 */
 .home-one-screen .today-aggregate,
 .home-one-screen .home-quick-card { grid-column: 1 / -1; }
@@ -1986,7 +1987,7 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 }
 
 /* 计时页布局 */
-.timer-page { display: block; }
+.tab-panel.active.timer-page { display: block; }
 .timer-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
 .timer-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .timer-summary { display: flex; flex-direction: column; gap: var(--sp-2); }

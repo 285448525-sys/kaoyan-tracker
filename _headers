@@ -1,6 +1,6 @@
 # 防止 Service Worker 与 HTML 被边缘/浏览器长缓存，避免旧版 SW 用 cache-first
 # 把旧外壳顶在用户设备上导致导航/页面全部失效。
-# 静态资源（app.js?20260822z 等）带版本号，保持缓存即可。
+# 静态资源（app.js?20260823a 等）带版本号，保持缓存即可。
 
 /sw.js
   Cache-Control: no-cache

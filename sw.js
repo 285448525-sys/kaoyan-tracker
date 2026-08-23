@@ -1,4 +1,4 @@
-/* 考研学习记录 · Service Worker（v20260822z）
+/* 考研学习记录 · Service Worker（v20260823a）
  * 【根治导航/页面卡旧版】shell(index.html) 永远走网络、绝不缓存，
  *   旧 SW 曾 cache-first 缓存了"所有模块同一内容"的旧 index.html 并顶替新版 → 用户反复看到故障页。
  * 静态资源（app.js?/styles.css?/图标等带 ?v= 版本号）走 cache-first + 后台更新（stale-while-revalidate），
@@ -6,7 +6,7 @@
  * 排除 /api/* 与跨域，保证同步/AI 实时走网络。
  * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步）。
  */
-const SW_VERSION = '20260822z';
+const SW_VERSION = '20260823a';
 const CACHE = 'kaoyan-pwa-' + SW_VERSION;
 const PRECACHE = ['./', './manifest.webmanifest'];
 
