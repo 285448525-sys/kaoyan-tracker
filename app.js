@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260823d';
+  var APP_VERSION = '20260823e';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -605,20 +605,44 @@
   function renderExamList() {
     refs.examList.innerHTML = '';
     var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { icon: 'target', label: '去添加模考', fn: function () { switchTab('mock'); } }); return; }
-    exams.forEach(function (ex) {
-      var item = el('div', 'list-item');
-      item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
-      var del = el('button', 'mini-btn', '删除');
-      del.addEventListener('click', function () {
-        confirmDelete('确定删除本次模考？该次成绩会从趋势图中移除。', function () {
-          Store.removeExam(ex.id); renderExamList(); renderData();
-          showToast('已删除该次模考记录', 'ok');
+    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { icon: 'target', label: '去添加模考', fn: function () { switchTab('mock'); } }); }
+    else {
+      // 最近 6 次总分折线
+      var recent = exams.slice(0, 6).reverse();
+      var svg = document.getElementById('exam-trend');
+      if (svg) {
+        var maxTotal = 150; // 模考满分参考（可按实际科目调整）
+        var pts = recent.map(function (e, i) {
+          var x = recent.length > 1 ? (i / (recent.length - 1)) * 290 + 5 : 150;
+          var y = 75 - (Math.min(e.total, maxTotal) / maxTotal) * 70;
+          return { x: x, y: y, total: e.total };
         });
+        var poly = pts.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+        var dots = pts.map(function (p) { return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.5"></circle>'; }).join('');
+        svg.innerHTML = '<polyline points="' + poly + '"></polyline>' + dots;
+      }
+      exams.forEach(function (ex) {
+        var item = el('div', 'list-item');
+        item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
+        // 单科小条
+        var scores = ex.scores || {};
+        var subjNames = { politics: '政', english: '英', math: '数', cs408: '408' };
+        var scoreEls = [];
+        Object.keys(subjNames).forEach(function (k) {
+          if (scores[k] != null) scoreEls.push('<span>' + subjNames[k] + ' <b>' + scores[k] + '</b></span>');
+        });
+        if (scoreEls.length) item.appendChild(el('div', 'exam-scores', scoreEls.join('')));
+        var del = el('button', 'mini-btn', '删除');
+        del.addEventListener('click', function () {
+          confirmDelete('确定删除本次模考？该次成绩会从趋势图中移除。', function () {
+            Store.removeExam(ex.id); renderExamList(); renderData();
+            showToast('已删除该次模考记录', 'ok');
+          });
+        });
+        item.appendChild(del);
+        refs.examList.appendChild(item);
       });
-      item.appendChild(del);
-      refs.examList.appendChild(item);
-    });
+    }
   }
 
   /* ============ 今日：计划 ============ */
@@ -1142,7 +1166,19 @@
 
     refs.mistakeList.innerHTML = '';
     if (!list.length) { emptyHint(refs.mistakeList, '还没有整理错题，做过的题觉得重要就记下来', { icon: 'bug', label: '记一道错题', fn: function () { switchTab('mistakes'); } }); return; }
-    list.forEach(function (m) {
+    // 按范围分组：通用 / 数学 / 408（带彩色圆点头）
+    var groups = [['general', '通用'], ['math', '数学'], ['cs408', '408']];
+    groups.forEach(function (g) {
+      var items = list.filter(function (m) { return m.scope === g[0]; });
+      if (!items.length) return;
+      var grp = el('div', 'mistake-group');
+      var head = el('div', 'mistake-group-head');
+      var dot = el('span', 'subj-dot', '');
+      dot.setAttribute('data-k', g[0]);
+      head.appendChild(dot);
+      head.appendChild(el('span', 'mistake-group-title', g[1] + '（' + items.length + '）'));
+      grp.appendChild(head);
+      items.forEach(function (m) {
       var isDue = m.scope === 'math'
         ? (!m.nextReview || m.nextReview <= today)
         : (m.scope === 'cs408' ? (!m.reviewed || (m.nextReview && m.nextReview <= today)) : false);
@@ -1184,7 +1220,9 @@
         });
         item.appendChild(rev);
       }
-      refs.mistakeList.appendChild(item);
+      grp.appendChild(item);
+      });
+      refs.mistakeList.appendChild(grp);
     });
   }
 
@@ -2546,7 +2584,9 @@
     if (refs.mistakeContent) refs.mistakeContent.value = '';
     if (refs.mistakeSmartStatus) {
       var scopeName = scope === 'math' ? '数学' : (scope === 'cs408' ? '408' : '通用');
-      refs.mistakeSmartStatus.innerHTML = '🪄 AI 分类：<b>' + escapeHtml(scopeName) + (cat ? ' · ' + escapeHtml(cat) : '') + '</b>' + (type ? ' · ' + escapeHtml(type) : '') + ' ✓ 已归档';
+      var chips = '<span class="smart-chip" data-k="' + escapeHtml(scope) + '">' + escapeHtml(scopeName) + '</span>';
+      if (cat) chips += '<span class="smart-chip" data-k="' + escapeHtml(scope) + '">' + escapeHtml(cat) + '</span>';
+      refs.mistakeSmartStatus.innerHTML = '<div class="smart-result">' + chips + '<span class="smart-text">✓ AI 已归类' + (type ? ' · ' + escapeHtml(type) : '') + '</span></div>';
       refs.mistakeSmartStatus.className = 'ai-status ok';
     }
     showToast('智能整理完成 ✓', 'ok');
@@ -3439,7 +3479,31 @@
       card.addEventListener('click', function () { switchTab(tab); });
       box.appendChild(card);
     });
+    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）
+    [['politics', 'flag', '#f97316', '政治'], ['english', 'book', '#3b82f6', '英语']].forEach(function (s) {
+      var sb = el('button', 'quick-entry subj-head', '');
+      sb.setAttribute('type', 'button');
+      sb.setAttribute('data-go', s[0]);
+      sb.setAttribute('aria-label', s[3]);
+      sb.style.setProperty('--accent', s[2]);
+      sb.innerHTML = '<span class="subj-ic" data-icon="' + s[1] + '"></span>' +
+        '<span class="subj-meta"><b>' + s[3] + '</b>' +
+        '<i id="home-' + s[0] + '-today">今日 0min</i></span>';
+      sb.addEventListener('click', function () { switchTab('timer'); });
+      box.appendChild(sb);
+    });
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
+    renderHomeSubjToday();
+  }
+
+  function renderHomeSubjToday() {
+    ['politics', 'english'].forEach(function (k) {
+      var node = document.getElementById('home-' + k + '-today');
+      if (!node) return;
+      var day = Store.getDay(Store.todayStr()) || { durations: {} };
+      var sec = (day.durations && day.durations[k]) || 0;
+      node.textContent = '今日 ' + fmtMinShort(sec);
+    });
   }
 
   function renderTodayAggregate() {

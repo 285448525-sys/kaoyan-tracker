@@ -56,6 +56,11 @@
   --c-english: #3b82f6;
   --c-math: #8b5cf6;
   --c-major: var(--ok);
+
+  /* ===== 语义软底色 / 文字（深浅两套，深色模式真正可读） ===== */
+  --ok-soft:      #ecfdf3; --ok-ink:      #166534;
+  --danger-soft:  #fef2f2; --danger-ink:  #b91c1c;
+  --warn-soft:    #fff7ed; --warn-ink:    #b45309;
 }
 
 * { box-sizing: border-box; }
@@ -413,7 +418,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .mheat-cell { aspect-ratio: 1 / 1; border-radius: var(--radius-sm); background: #ebedf0; }
 .mheat-cell.out { background: transparent; }
 .mheat-cell.in.lv0 { background: #ebedf0; }
-.mheat-cell.in.lv1 { background: #CFE3F5; }
+.mheat-cell.in.lv1 { background: color-mix(in srgb, var(--primary) 22%, #fff); }
 .mheat-cell.in.lv2 { background: #818cf8; }
 .mheat-cell.in.lv3 { background: var(--primary); }
 .mheat-cell.in.lv4 { background: #312e81; }
@@ -433,9 +438,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .trend-dot { fill: var(--primary); }
 .point-label { fill: var(--ink); font-size: 11px; font-weight: 600; }
 .exam-warning { margin-top: 10px; padding: 10px var(--sp-3); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.5; }
-.exam-warning.ok { background: #ecfdf3; color: #166534; border: 1px solid #a7f3c0; }
-.exam-warning.warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-.exam-warning.danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.exam-warning.ok { background: var(--ok-soft); color: var(--ok-ink); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); }
+.exam-warning.warn { background: var(--warn-soft); color: var(--warn-ink); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); }
+.exam-warning.danger { background: var(--danger-soft); color: var(--danger-ink); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
 
 /* Stats */
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
@@ -595,10 +600,10 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .translator-note { font-size: 12px; color: var(--muted); }
 .translator-query-card { border-left: 4px solid #0ea5e9; }
 .wrongbook-card { border-left: 4px solid #ef4444; }
-.word-card.err { background: #fef2f2; border-color: #fecaca; }
-.word-card.err .w-cn { color: #b91c1c; }
-.vocab-move { background: #E7F3FC; color: var(--primary); border: 1px solid #CFE3F5; }
-.vocab-move:hover { background: #e0e7ff; }
+.word-card.err { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+.word-card.err .w-cn { color: var(--danger-ink); }
+.vocab-move { background: var(--primary-soft); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
+.vocab-move:hover { background: var(--surface-2); }
 
 /* vocab: 背单词 英选译 */
 .practice-en { font-size: 30px; font-weight: 800; text-align: center; color: var(--ink); margin: 6px 0 var(--sp-1); }
@@ -669,18 +674,18 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 @media (max-width: 860px) { .nav-collapse { display: none; } }
 
 /* Bulk import status */
-.import-status { font-size: 13px; color: #059669; align-self: center; flex: 1; min-width: 120px; }
+.import-status { font-size: 13px; color: var(--ok); align-self: center; flex: 1; min-width: 120px; }
 .ai-status { font-weight: 600; transition: color 0.2s ease; }
-.ai-status.ok { color: #059669; }
-.ai-status.pending { color: #6b7280; }
-.ai-status.err { color: #dc2626; }
+.ai-status.ok { color: var(--ok); }
+.ai-status.pending { color: var(--muted); }
+.ai-status.err { color: var(--danger); }
 
 /* Sentence analysis */
 .sentence-result { margin-top: var(--sp-4); }
 .sr-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; color: var(--ink); }
 .sr-stats { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-1); }
 .sr-stat { font-size: 12.5px; font-weight: 600; color: var(--primary); background: rgba(62, 155, 232, 0.08); border-radius: 999px; padding: var(--sp-1) var(--sp-3); }
-.sr-diff { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+.sr-diff { background: var(--warn-soft); color: var(--warn-ink); }
 .sg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-2); }
 .sg-chip { background: #f9fafb; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--sp-2) 10px; font-size: 13px; color: var(--ink); }
 .sg-chip b { color: var(--primary); }
@@ -700,7 +705,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .tw-item { background: #f9fafb; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--sp-2) 10px; font-size: 13px; }
 .tw-item b { display: block; color: var(--primary); font-size: 14px; }
 .syn-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 10px var(--sp-3); margin-bottom: var(--sp-2); }
-.syn-name { font-weight: 700; font-size: 13px; color: #b45309; }
+.syn-name { font-weight: 700; font-size: 13px;  color: var(--warn-ink); }
 .syn-hit { font-size: 13px; margin-top: var(--sp-1); }
 .syn-alt { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .method-text { white-space: pre-wrap; font-size: 13px; line-height: 1.7; color: var(--ink); background: #f9fafb; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--sp-3); margin-top: var(--sp-2); }
@@ -1082,6 +1087,25 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .qe-text { display: flex; flex-direction: column; gap: 2px; align-items: center; }
 .qe-sub { font-size: 11px; color: var(--muted); line-height: 1.15; }
 
+/* 首页快捷区：政治 / 英语 学科头卡（对齐数学/408 学科页头部） */
+.subj-head {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 12px 14px; border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--line); color: var(--ink);
+}
+.subj-head .subj-ic {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, var(--card));
+  color: var(--accent);
+}
+.subj-head[data-go="politics"] { --accent: #f97316; }
+.subj-head[data-go="english"] { --accent: #3b82f6; }
+.subj-head .subj-ic svg { width: 20px; height: 20px; }
+.subj-head .subj-meta { display: flex; flex-direction: column; line-height: 1.25; }
+.subj-head .subj-meta b { font-size: 15px; color: var(--ink); }
+.subj-head .subj-meta i { font-style: normal; font-size: 12px; color: var(--muted); }
+
 /* 今日待办空状态引导 */
 .plan-empty-hint {
   display: flex; align-items: center; gap: var(--sp-2);
@@ -1160,9 +1184,44 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* ============ 408 错题：到期复习徽标 / 待复习标签 ============ */
 .review-badge {
-  display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
-  background: var(--danger); border-radius: var(--radius-sm); padding: 2px var(--sp-2); margin-left: 6px; vertical-align: middle;
+  display: inline-block; font-size: 12px; font-weight: 700;
+  background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger);
+  border-radius: 999px; padding: 2px 10px; margin-left: 6px; vertical-align: middle;
 }
+
+/* 错题列表按范围分组头 + 彩色圆点 */
+.mistake-group { margin-bottom: 10px; }
+.mistake-group-head {
+  display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px;
+  color: var(--ink); margin: 14px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.mistake-group:first-child .mistake-group-head { margin-top: 0; }
+.subj-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.subj-dot[data-k="math"] { background: var(--c-math); }
+.subj-dot[data-k="cs408"] { background: #7FA8C4; }
+.subj-dot[data-k="general"] { background: var(--muted); }
+
+/* AI 整理结果结构化 chip */
+.smart-result { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.smart-chip {
+  font-size: 12px; font-weight: 600; border-radius: 999px;
+  padding: 2px 10px; border: 1px solid transparent;
+}
+.smart-chip[data-k="math"] { background: color-mix(in srgb, var(--c-math) 16%, var(--card)); color: var(--c-math); }
+.smart-chip[data-k="cs408"] { background: color-mix(in srgb, var(--c-english) 16%, var(--card)); color: var(--c-english); }
+.smart-chip[data-k="general"] { background: var(--surface-2); color: var(--muted); }
+.smart-result .smart-text { font-size: 12px; color: var(--muted); }
+
+/* 模考总分折线 */
+.exam-trend { width: 100%; height: 80px; margin: 8px 0; display: block; }
+.exam-trend polyline { fill: none; stroke: var(--primary); stroke-width: 2; }
+.exam-trend circle { fill: var(--primary); }
+.exam-scores { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.exam-scores span {
+  font-size: 11px; color: var(--muted); background: var(--surface-2);
+  border-radius: 6px; padding: 2px 6px;
+}
+.exam-scores span b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .due-tag { font-size: 11px; font-weight: 700; color: #fff; background: #f59e0b; border-radius: var(--radius-sm); padding: 2px var(--sp-2); }
 .mistake-item.due { border-left: 4px solid #f59e0b; }
 .mistake-item.due .mistake-content { color: var(--ink); }
@@ -1202,9 +1261,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .wk-name { font-size: 14px; font-weight: 600; }
 .wk-status { font-size: 11px; font-weight: 700; border-radius: var(--radius-sm); padding: 2px var(--sp-2); color: #fff; }
 .wk-status.wk-weak { background: #dc2626; }
-.wk-status.wk-warn { background: #d97706; }
-.wk-status.wk-ok { background: #059669; }
-.wk-status.wk-tip { background: #6b7280; }
+.wk-status.wk-warn { background: var(--warn); }
+.wk-status.wk-ok { background: var(--ok); }
+.wk-status.wk-tip { background: var(--muted); }
 .wk-total { font-size: 12px; color: var(--muted); margin-left: auto; }
 .wk-bar { height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
 .wk-fill { height: 100%; border-radius: 999px; }
@@ -1212,8 +1271,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .wk-fill.wk-warn { background: #d97706; }
 .wk-fill.wk-ok { background: #059669; }
 .wk-fill.wk-tip { background: #9ca3af; }
-.wk-priority { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 10px var(--sp-3); margin-bottom: var(--sp-2); }
-.wk-pname { font-size: 13px; font-weight: 700; color: #b91c1c; }
+.wk-priority { background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); border-radius: var(--radius-sm); padding: 10px var(--sp-3); margin-bottom: var(--sp-2); }
+.wk-pname { font-size: 13px; font-weight: 700; color: var(--danger-ink); }
 .wk-chapters { display: block; font-size: 12px; color: var(--muted); margin-top: var(--sp-1); line-height: 1.5; }
 .wk-note { font-size: 13px; color: var(--muted); margin-top: 10px; }
 :root[data-theme="dark"] .wk-priority { background: #2a1a1d; border-color: #5c2f33; }
@@ -1329,6 +1388,10 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   --shadow-hover: 0 8px 26px -6px rgba(0,0,0,.42);
   --shadow-modal: 0 18px 44px -14px rgba(0,0,0,.5);
   --section-bg: #16202A;
+  /* 语义软底色 / 文字（对应浅色 tokens，深色下用深底） */
+  --ok-soft:      #0f2a1c; --ok-ink:      #5FB98C;
+  --danger-soft:  #2c2224; --danger-ink:  #CF9AA0;
+  --warn-soft:    #2a2418; --warn-ink:    #D3B27E;
   /* 深色模式：把大面积亮蓝渐变压暗，改用低饱和主色混合 */
   --grad-hero: linear-gradient(135deg,
               color-mix(in srgb, var(--primary-strong) 22%, var(--bg)) 0%,
