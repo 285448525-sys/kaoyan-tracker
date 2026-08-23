@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260823b';
+  var APP_VERSION = '20260823c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -402,48 +402,71 @@
   }
   function stopTick() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
 
+  // 四科计时卡片网格（参考雅思站卡片化设计，配色复用 subjectColorClass，逻辑层不动）
   function renderTimerRows() {
     refs.timerRows.innerHTML = '';
+    refs.timerRows.className = 'timer-grid';
     var subs = Store.getSubjects();
     if (!subs.length) { refs.timerRows.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
     var t = Store.getTimer();
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
     subs.forEach(function (s) {
       var running = t.running && t.subjectKey === s.key;
-      var row = el('div', 'timer-row' + (running ? ' running' : ''));
-      row.appendChild(el('div', 't-name', s.name));
+      var accent = subjectColorClass(s.key, s.name);
+      var icon = (s.key === 'math') ? 'math' : (s.key === 'cs408') ? 'chip' : (s.key === 'politics') ? 'flag' : 'book';
+      var card = el('div', 'subj-card' + (running ? ' running' : ''));
+      card.style.setProperty('--accent', accent);
+      var ic = el('div', 'subj-ic');
+      ic.setAttribute('data-icon', icon);
+      card.appendChild(ic);
+      card.appendChild(el('div', 'subj-name', s.name));
       var acc = (day.durations && day.durations[s.key]) || 0;
-      var time = el('div', 't-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
+      var time = el('div', 'subj-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
       time.id = 't-time-' + s.key;
-      row.appendChild(time);
-      var btn = el('button', 't-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
+      card.appendChild(time);
+      var badge = el('div', 'subj-badge' + (running ? ' on' : ''), running ? '计时中' : '未开始');
+      card.appendChild(badge);
+      var btn = el('button', 'subj-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
       btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
-      row.appendChild(btn);
-      refs.timerRows.appendChild(row);
+      card.appendChild(btn);
+      refs.timerRows.appendChild(card);
     });
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(refs.timerRows);
   }
 
   /* ============ 首页专属板块（P4b 一屏平铺，独立容器避免与计时页冲突） ============ */
-  // 首页计时行：复用 Store 数据，渲染到 #home-timer-rows（与计时页 timer-rows 互不干扰）
+  // 首页计时卡片：复用 Store 数据，渲染到 #home-timer-rows（与计时页 timer-rows 互不干扰），结构同 renderTimerRows
   function renderHomeTimer() {
     var box = document.getElementById('home-timer-rows');
     if (!box) return;
     box.innerHTML = '';
+    box.className = 'timer-grid';
     var subs = Store.getSubjects();
     if (!subs.length) { box.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
     var t = Store.getTimer();
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
     subs.forEach(function (s) {
       var running = t.running && t.subjectKey === s.key;
-      var row = el('div', 'timer-row' + (running ? ' running' : ''));
-      row.appendChild(el('div', 't-name', s.name));
+      var accent = subjectColorClass(s.key, s.name);
+      var icon = (s.key === 'math') ? 'math' : (s.key === 'cs408') ? 'chip' : (s.key === 'politics') ? 'flag' : 'book';
+      var card = el('div', 'subj-card' + (running ? ' running' : ''));
+      card.style.setProperty('--accent', accent);
+      var ic = el('div', 'subj-ic');
+      ic.setAttribute('data-icon', icon);
+      card.appendChild(ic);
+      card.appendChild(el('div', 'subj-name', s.name));
       var acc = (day.durations && day.durations[s.key]) || 0;
-      row.appendChild(el('div', 't-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时')));
-      var btn = el('button', 't-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
+      var time = el('div', 'subj-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
+      time.id = 't-time-' + s.key;
+      card.appendChild(time);
+      var badge = el('div', 'subj-badge' + (running ? ' on' : ''), running ? '计时中' : '未开始');
+      card.appendChild(badge);
+      var btn = el('button', 'subj-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
       btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
-      row.appendChild(btn);
-      box.appendChild(row);
+      card.appendChild(btn);
+      box.appendChild(card);
     });
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
   // 首页番茄钟：镜像计时页逻辑，渲染到 #home-pomo-*（独立 id，不与计时页 pomo-* 冲突）
   function renderHomePomodoro() {

@@ -298,6 +298,50 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* Per-module timer rows */
 .timer-rows { display: grid; gap: 10px; }
+
+/* 四科计时卡片（参考雅思站卡片化设计，mist 蓝体系，不引入 teal） */
+.timer-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+.subj-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.subj-card:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); }
+.subj-card.running {
+  border-color: var(--accent, var(--primary));
+  background: var(--primary-soft);
+}
+.subj-ic {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, white);
+  color: var(--accent);
+}
+.subj-ic svg { width: 22px; height: 22px; }
+.subj-name { font-weight: 700; font-size: 15px; }
+.subj-time {
+  font-variant-numeric: tabular-nums; font-weight: 800; font-size: 22px;
+  color: var(--text); line-height: 1.1;
+}
+.subj-card.running .subj-time { color: var(--accent); }
+.subj-badge {
+  font-size: 12px; padding: 2px 8px; border-radius: 999px;
+  background: var(--primary-soft-2); color: var(--muted);
+}
+.subj-badge.on { background: color-mix(in srgb, var(--accent) 16%, white); color: var(--accent); }
+.subj-btn {
+  margin-top: auto; width: 100%;
+  padding: var(--sp-2) 0; border-radius: var(--radius-sm);
+  border: none; font-weight: 700; font-size: 14px; cursor: pointer;
+}
+.subj-btn.start { background: var(--accent); color: #fff; }
+.subj-btn.stop { background: var(--danger); color: #fff; }
+
 .timer-row {
   display: flex; align-items: center; gap: 10px;
   background: #f9fafb; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px var(--sp-3);
@@ -1256,6 +1300,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] .yr-row { background: #272a3d; border-color: var(--line); }
 :root[data-theme="dark"] .plan-item.done { background: #1c3a2e; border-color: #2f6b53; }
 :root[data-theme="dark"] .timer-row.running { background: var(--surface-2); border-color: var(--primary); }
+:root[data-theme="dark"] .subj-card { background: var(--surface-2); }
+:root[data-theme="dark"] .subj-card.running { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+:root[data-theme="dark"] .subj-ic { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); }
 :root[data-theme="dark"] .chapter-item { background: #272a3d; border-color: var(--line); }
 :root[data-theme="dark"] .chapter-item.current { background: var(--surface-2); }
 :root[data-theme="dark"] .chapter-bar,
@@ -1812,6 +1859,8 @@ input:focus, select:focus, textarea:focus {
   .checkin-btn .ci-label { font-size: 16px; }
   .practice-opt { min-height: 48px; font-size: 16px; line-height: 1.35; word-break: break-word; }
   .timer-row .t-btn { min-height: 44px; padding: 10px var(--sp-4); font-size: 14px; }
+  .timer-grid { grid-template-columns: 1fr; }
+  .subj-btn { min-height: 44px; }
   .timer-row .t-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .field-row { flex-wrap: wrap; }
   .field-row input, .field-row select { flex: 1 1 100%; }
