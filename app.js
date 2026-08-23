@@ -392,12 +392,14 @@
     stopTick();
     timerInterval = setInterval(function () {
       var t = Store.getTimer();
-      if (t.running) {
-        var node = document.getElementById('t-time-' + t.subjectKey);
-        if (node) node.textContent = fmt(currentElapsed());
-        var gt = document.getElementById('gt-time');
-        if (gt) gt.textContent = fmt(currentElapsed());
-      }
+      if (!t.running) return;
+      var txt = fmt(currentElapsed());
+      var node = document.getElementById('t-time-' + t.subjectKey);
+      if (node) node.textContent = txt;
+      var homeNode = document.getElementById('home-t-time-' + t.subjectKey);
+      if (homeNode) homeNode.textContent = txt;
+      var gt = document.getElementById('gt-time');
+      if (gt) gt.textContent = fmt(currentElapsed());
     }, 1000);
   }
   function stopTick() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
@@ -457,7 +459,7 @@
       card.appendChild(el('div', 'subj-name', s.name));
       var acc = (day.durations && day.durations[s.key]) || 0;
       var time = el('div', 'subj-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
-      time.id = 't-time-' + s.key;
+      time.id = 'home-t-time-' + s.key;
       card.appendChild(time);
       var badge = el('div', 'subj-badge' + (running ? ' on' : ''), running ? '计时中' : '未开始');
       card.appendChild(badge);
@@ -3471,7 +3473,8 @@
     if (heroGreet) {
       var h = new Date().getHours();
       var greetWord = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : h < 22 ? '晚上好' : '夜深了';
-      heroGreet.textContent = greetWord + '，之之';
+      var nick = (Store.getConfig().nickname || '').trim();
+      heroGreet.textContent = greetWord + (nick ? '，' + nick : '，学习者');
     }
     var heroStreak = document.getElementById('hero-streak-day');
     if (heroStreak) heroStreak.textContent = Store.consecutiveStreak();
@@ -4992,10 +4995,13 @@
 
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden && Store.getTimer().running) {
+        var txt = fmt(currentElapsed());
         var node = document.getElementById('t-time-' + Store.getTimer().subjectKey);
-        if (node) node.textContent = fmt(currentElapsed());
+        if (  node) node.textContent = txt;
+        var homeNode = document.getElementById('home-t-time-' + Store.getTimer().subjectKey);
+        if (homeNode) homeNode.textContent = txt;
         var gt = document.getElementById('gt-time');
-        if (gt) gt.textContent = fmt(currentElapsed());
+        if (gt) gt.textContent = txt;
       }
     });
 
@@ -5019,26 +5025,29 @@
     function registerSW() {
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
         navigator.serviceWorker.register('sw.js').catch(function () {});   // file:// 下不注册，应用照常在线跑
-        // 发版后新 SW 就绪 → 自动刷新一次，用户无需手动强刷即可拿到最新版
+        // 发版后新 SW 就绪 → 自动刷新一次拿到最新版。
+        // 用「版本号 + localStorage」做守卫：仅当 SW 版本真正变化时才刷新，
+        // 避免 iOS 上每次进入 PWA 新会话都触发 reload 风暴。
+        var SW_RELOAD_KEY = 'kaoyan_sw_reloaded_v';
+        function maybeReload() {
+          try {
+            if (!localStorage.getItem(SW_RELOAD_KEY + APP_VERSION)) {
+              localStorage.setItem(SW_RELOAD_KEY + APP_VERSION, '1');
+              window.location.reload();
+            }
+          } catch (e) {}
+        }
         navigator.serviceWorker.ready.then(function (reg) {
           reg.addEventListener('updatefound', function () {
             var nw = reg.installing;
             if (!nw) return;
             nw.addEventListener('statechange', function () {
-              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                // 仅刷新一次，避免 reload 循环
-                if (!window.__swReloaded) {
-                  window.__swReloaded = true;
-                  window.location.reload();
-                }
-              }
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) maybeReload();
             });
           });
         });
-        // 当前页面被新 SW 接管时也刷新
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (!window.__swReloaded) { window.__swReloaded = true; window.location.reload(); }
-        });
+        // 当前页面被新 SW 接管时也刷新（仅限版本变化）
+        navigator.serviceWorker.addEventListener('controllerchange', function () { maybeReload(); });
       }
     }
     if (document.readyState === 'complete') registerSW();
