@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260823a';
+  var APP_VERSION = '20260823b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -3398,14 +3398,16 @@
     if (examDate) {
       diff = Math.ceil((new Date(examDate) - new Date(Store.todayStr())) / 86400000);
       refs.aggCountdown.textContent = diff > 0 ? diff : (diff === 0 ? '今天' : '已过');
-    } else { refs.aggCountdown.textContent = '未设置'; }
+    } else { refs.aggCountdown.textContent = '—'; }
     // ====== 新增：倒计时深紫卡片填充 ======
     var cdDay = document.getElementById('cd-day');
     var cdPct = document.getElementById('cd-pct');
     var cdFill = document.getElementById('cd-fill');
     var cdTarget = document.getElementById('cd-target');
     var cdQuote = document.getElementById('cd-quote');
-    if (cdDay) cdDay.textContent = (typeof diff === 'number' && diff > 0) ? diff : (diff === '今天' ? '0' : '--');
+    var cdNumber = document.querySelector('.countdown-number');
+    if (cdNumber) cdNumber.classList.toggle('is-empty', !examDate);
+    if (cdDay) cdDay.textContent = (typeof diff === 'number' && diff > 0) ? diff : (diff === '今天' ? '0' : '—');
     if (examDate) {
       try {
         var startHint = Store.getConfig() && Store.getConfig()._startDate ? Store.getConfig()._startDate : null;

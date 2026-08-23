@@ -863,6 +863,9 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .countdown-number { display: flex; align-items: baseline; gap: var(--sp-2); font-variant-numeric: tabular-nums; }
 .countdown-day { font-size: 64px; line-height: 1; font-weight: 900; letter-spacing: -.03em; }
 .countday-unit { font-size: 20px; font-weight: 600; opacity: .8; }
+/* 未设置考研日期时，大数字占位符缩小字号，避免 64px 单字符造成过多空白 */
+.countdown-number.is-empty .countdown-day { font-size: 36px; opacity: .85; }
+.countdown-number.is-empty .countday-unit { font-size: 16px; }
 .countdown-progress-wrap { flex: 1; min-width: 200px; }
 .countdown-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; opacity: .85; margin-bottom: 6px; }
 .countdown-bar { height: 10px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
@@ -996,7 +999,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 /* --- 5b. 快捷入口网格（方案 29 · Block 5） --- */
 .home-quick {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3);
 }
 .quick-entry {
   appearance: none; cursor: pointer; text-align: center;
