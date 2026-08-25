@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260825d';
+  var APP_VERSION = '20260825e';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -677,7 +677,8 @@
     var bar = document.getElementById('global-timer');
     if (!bar) return;
     var subs = Store.getSubjects();
-    var name = key;
+    var hardcoded = TIMER_SUBJECTS.find(function (s) { return s.key === key; });
+    var name = hardcoded ? hardcoded.name : key;
     subs.forEach(function (s) { if (s.key === key) name = s.name; });
     var lbl = document.getElementById('gt-label');
     if (lbl) lbl.textContent = (name || '学习') + ' 计时中';
@@ -3760,14 +3761,15 @@
     refs.tdRows.innerHTML = html;
   }
   // 科目语义色（与 renderAggSubjectProgress 映射一致，但返回 hex 供内联色条/色点使用）
+  // 科目语义色：mist 蓝单色家族 4 档明度刻度（铁律：严禁 orange/violet/green 等非蓝家族色）
   function subjectColorClass(key, name) {
     key = (key || '').toLowerCase(); name = (name || '').toLowerCase();
-    if (key === 'politics' || name.indexOf('政治') >= 0) return '#f97316';
-    if (key === 'english' || name.indexOf('英语') >= 0) return '#3b82f6';
-    if (key === 'math' || name.indexOf('数学') >= 0) return '#8b5cf6';
-    if (key === 'cs408' || name.indexOf('408') >= 0) return '#7FA8C4';
-    if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) return '#10b981';
-    return '#5B9FC9';
+    if (key === 'cs408' || name.indexOf('408') >= 0) return '#1F6FB2'; // 最深
+    if (key === 'english' || name.indexOf('英语') >= 0) return '#3E9BE8'; // 主色(--primary)
+    if (key === 'math' || name.indexOf('数学') >= 0) return '#6FB6EA'; // 浅
+    if (key === 'politics' || name.indexOf('政治') >= 0) return '#A7CEEC'; // 最浅
+    if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) return '#6FB6EA';
+    return '#A7CEEC';
   }
   function fmtMinShort(min) {
     var h = Math.floor(min / 60), m = min % 60;
