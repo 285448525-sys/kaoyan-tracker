@@ -3541,15 +3541,15 @@
       card.addEventListener('click', function () { switchTab(tab); });
       box.appendChild(card);
     });
-    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）
-    [['politics', 'flag', '#f97316', '政治'], ['english', 'book', '#3b82f6', '英语']].forEach(function (s) {
+    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）；配色统一走 mist 蓝 4 档刻度
+    [['politics', 'flag', '政治'], ['english', 'book', '英语']].forEach(function (s) {
       var sb = el('button', 'quick-entry subj-head', '');
       sb.setAttribute('type', 'button');
       sb.setAttribute('data-go', s[0]);
-      sb.setAttribute('aria-label', s[3]);
-      sb.style.setProperty('--accent', s[2]);
+      sb.setAttribute('aria-label', s[2]);
+      sb.style.setProperty('--accent', subjectColorClass(s[0], s[2]));
       sb.innerHTML = '<span class="subj-ic" data-icon="' + s[1] + '"></span>' +
-        '<span class="subj-meta"><b>' + s[3] + '</b>' +
+        '<span class="subj-meta"><b>' + s[2] + '</b>' +
         '<i id="home-' + s[0] + '-today">今日 0min</i></span>';
       sb.addEventListener('click', function () { switchTab('timer'); });
       box.appendChild(sb);
