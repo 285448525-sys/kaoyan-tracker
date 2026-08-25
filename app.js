@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260825b';
+  var APP_VERSION = '20260825c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -499,6 +499,155 @@
     renderSubjectPills(b);
   }
 
+  /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
+  function renderHome() {
+    renderHomeHero();
+    renderHomeMetrics();
+    renderHomeRecords();
+    renderHomeQuick();
+    renderHomeTodo();
+  }
+
+  function renderHomeHero() {
+    var cfg = Store.getConfig();
+    var today = Store.todayStr();
+    var dateEl = document.getElementById('home-date');
+    if (dateEl) dateEl.textContent = fmtTodayWithWeekday(today);
+    // 倒计时天数
+    var examDate = cfg.examDate;
+    var diff = '--';
+    if (examDate) {
+      try { diff = Math.ceil((new Date(examDate) - new Date(today)) / 86400000); } catch (e) { diff = '--'; }
+    }
+    var cdNum = document.getElementById('home-cd-num');
+    if (cdNum) cdNum.textContent = (typeof diff === 'number' && diff > 0) ? String(diff) : (diff === 0 ? '0' : '—');
+    var cdSub = document.getElementById('home-cd-sub');
+    if (cdSub) cdSub.textContent = examDate ? ('距考研 · 目标 ' + examDate) : '距考研';
+    // 备考进度
+    var pct = 0;
+    if (examDate) {
+      try {
+        var startHint = cfg && cfg._startDate ? cfg._startDate : null;
+        var total = startHint ? Math.max(30, Math.round((new Date(examDate) - new Date(startHint)) / 86400000))
+                              : Math.max(30, 180 + (diff > 0 ? diff : 0));
+        var remain = (typeof diff === 'number' && diff > 0) ? diff : 0;
+        var passed = Math.max(0, total - remain);
+        pct = total ? Math.round(passed / total * 100) : 0;
+      } catch (e) { pct = 0; }
+    }
+    var cdLbl = document.getElementById('home-cd-lbl');
+    if (cdLbl) cdLbl.textContent = '备考进度 ' + pct + '%';
+    var cdFill = document.getElementById('home-cd-fill');
+    if (cdFill) cdFill.style.width = Math.min(100, pct) + '%';
+    // 问候语（复用 eyebrow 行）
+    var greet = document.getElementById('home-eyebrow');
+    if (greet) {
+      var h = new Date().getHours();
+      var greetWord = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : h < 22 ? '晚上好' : '夜深了';
+      var nick = (cfg.nickname || '').trim();
+      greet.textContent = greetWord + (nick ? '，' + nick : '，学习者') + ' · 每日打卡';
+    }
+    // CTA 文案：计时中显示当前科目
+    var t = Store.getTimer();
+    var ctaText = document.getElementById('home-cta-text');
+    if (ctaText) {
+      if (t.running && t.subjectKey) {
+        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
+        ctaText.textContent = '继续学习 · ' + (subj ? subj.name : '进行中');
+      } else {
+        ctaText.textContent = '开始计时学习';
+      }
+    }
+    // meta：连续天数 + 今日已学
+    var meta = document.getElementById('home-hero-meta');
+    if (meta) {
+      var dayObj = Store.getDay(today) || { durations: {} };
+      meta.textContent = '连续 ' + Store.consecutiveStreak() + ' 天 · 今日已学 ' + fmtMinShort(Store.totalMinutesForDay(dayObj));
+    }
+  }
+
+  function renderHomeMetrics() {
+    var today = Store.todayStr();
+    var dayObj = Store.getDay(today) || { durations: {} };
+    var totalMin = Store.totalMinutesForDay(dayObj);
+    var focusVal = document.getElementById('m-focus-val');
+    if (focusVal) focusVal.textContent = fmtMinShort(totalMin);
+    var streakVal = document.getElementById('m-streak-val');
+    if (streakVal) streakVal.textContent = String(Store.consecutiveStreak());
+    var plan = Store.getPlan(today) || [];
+    var done = plan.filter(function (i) { return i.done; }).length;
+    var planVal = document.getElementById('m-plan-val');
+    if (planVal) planVal.textContent = done + '/' + plan.length;
+  }
+
+  function renderHomeRecords() {
+    var grid = document.getElementById('home-rec-grid');
+    if (!grid) return;
+    var today = Store.todayStr();
+    var dayObj = Store.getDay(today) || { durations: {} };
+    var vals = TIMER_SUBJECTS.map(function (s) {
+      return (dayObj.durations && dayObj.durations[s.key]) || 0;
+    });
+    var max = Math.max.apply(null, vals.concat([0]));
+    var total = vals.reduce(function (a, b) { return a + b; }, 0);
+    var totalEl = document.getElementById('home-rec-total');
+    if (totalEl) totalEl.textContent = fmtMinShort(total);
+    var empty = document.getElementById('home-rec-empty');
+    grid.innerHTML = '';
+    if (total === 0) {
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    TIMER_SUBJECTS.forEach(function (s, idx) {
+      var v = vals[idx];
+      var color = subjectColorClass(s.key, s.name);
+      var row = el('div', 'home-rec-row');
+      var dot = el('span', 'home-rec-dot');
+      dot.style.background = color;
+      var name = el('span', 'home-rec-name', s.name);
+      var barWrap = el('span', 'home-rec-bar');
+      var bar = el('i', 'home-rec-bar-fill');
+      bar.style.background = color;
+      bar.style.width = (max > 0 ? Math.round(v / max * 100) : 0) + '%';
+      barWrap.appendChild(bar);
+      var val = el('span', 'home-rec-val', fmtMinShort(v));
+      row.appendChild(dot); row.appendChild(name); row.appendChild(barWrap); row.appendChild(val);
+      grid.appendChild(row);
+    });
+  }
+
+  function renderHomeQuick() {
+    var box = document.getElementById('home-quick');
+    if (!box) return;
+    box.innerHTML = '';
+    var entries = [
+      { tab: 'timer', icon: 'timer', label: '计时' },
+      { tab: 'home', icon: 'calendar', label: '计划' },
+      { tab: 'mock', icon: 'mock', label: '模考' },
+      { tab: 'mistakes', icon: 'mistakes', label: '错题' }
+    ];
+    entries.forEach(function (e) {
+      var card = el('button', 'quick-entry', '');
+      card.setAttribute('type', 'button');
+      card.setAttribute('aria-label', e.label);
+      card.innerHTML = '<span class="qe-ic" data-icon="' + e.icon + '"></span>' +
+        '<span class="qe-text"><span class="qe-label">' + escapeHtml(e.label) + '</span></span>';
+      card.addEventListener('click', function () { switchTab(e.tab); });
+      box.appendChild(card);
+    });
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
+  }
+
+  function renderHomeTodo() {
+    renderPlan();
+    var ds = Store.todayStr();
+    var plan = Store.getPlan(ds) || [];
+    var done = plan.filter(function (i) { return i.done; }).length;
+    var sub = document.getElementById('home-todo-sub');
+    if (sub) sub.textContent = done + '/' + plan.length + ' 完成';
+  }
+
   // 今日学习记录（四科小格）
   function renderRecMini() {
     var grid = document.getElementById('rec-mini-grid');
@@ -724,7 +873,7 @@
     return d;
   }
   function renderToday() {
-    renderTodayAggregate();
+    renderHome();
   }
   function buildShareCanvas(ds) {
     var day = Store.getDay(ds) || { durations: {}, completed: '' };
@@ -4194,7 +4343,7 @@
     populatePlanSubjects();
     renderPlan();
     renderToday();
-    renderHomeTimer();   // 首页计时块：首屏即渲染（之前仅在切到首页时渲染，首屏不触发会空白）
+    renderHome();   // 首页重设计（v20260825c）：首屏即渲染
     renderCheckinCard();
     renderMistakeTypes();
     populateMistakeSubjects();
@@ -4229,7 +4378,7 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'home') { renderToday(); renderHomeTimer(); renderDashboardDigest(); }
+    if (target === 'home') { renderHome(); }
     if (target === 'timer') { renderTimerState(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
@@ -4327,8 +4476,8 @@
   function init() {
     // 注入线性 SVG 图标占位（方案 29 · Block 2）：把 [data-icon] 批量替换为图标
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(document);
-    // 快捷入口网格（方案 29 · Block 5）：从侧栏 tab 派生，保持导航一致
-    renderQuickEntries();
+    // 快捷入口网格：首页四入口（计时/计划/模考/错题），由 renderHomeQuick 渲染
+    renderHomeQuick();
 
     // 导航切换最高优先级：无论后续渲染是否报错，先把导航/路由绑定好
     // （避免某个模块渲染异常导致整页导航失效、点不动）
