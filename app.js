@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260825a';
+  var APP_VERSION = '20260825b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -361,6 +361,13 @@
   }
 
   /* ============ 按模块计时 ============ */
+  var TIMER_SUBJECTS = [
+    { key: 'english',  name: '英语二', icon: 'book',  accent: '#3E9BE8' },
+    { key: 'math',     name: '数学二', icon: 'math',  accent: '#6366F1' },
+    { key: 'politics', name: '政治',   icon: 'flag',  accent: '#F59E0B' },
+    { key: 'cs408',    name: '408',    icon: 'chip',  accent: '#10B981' }
+  ];
+  var ORIG_TITLE = document.title; // 计时时临时改写标签页标题，结束后复原
   function currentElapsed() {
     var t = Store.getTimer();
     if (!t.running) return t.accumulated || 0;
@@ -379,135 +386,142 @@
     var nt = Store.getTimer();
     nt.subjectKey = key; nt.running = true; nt.startTs = Date.now(); nt.accumulated = 0;
     Store.setTimer(nt);
-    renderTimerRows(); startTick(); showGlobalTimer(key);
+    startTick(); showGlobalTimer(key); renderTimerState();
   }
   function endTimer() {
     commitTimer();
     Store.setTimer({ subjectKey: null, startTs: 0, accumulated: 0, running: false });
     stopTick();
     hideGlobalTimer();
-    renderTimerRows(); renderData(); renderToday(); renderPlan();
+    renderTimerState();
+    renderData(); renderToday(); renderPlan();
   }
   function startTick() {
     stopTick();
     timerInterval = setInterval(function () {
       var t = Store.getTimer();
       if (!t.running) return;
-      var txt = fmt(currentElapsed());
-      var node = document.getElementById('t-time-' + t.subjectKey);
-      if (node) node.textContent = txt;
-      var homeNode = document.getElementById('home-t-time-' + t.subjectKey);
-      if (homeNode) homeNode.textContent = txt;
+      var live = document.getElementById('live-timer');
+      if (live) live.textContent = fmt(currentElapsed());
+      var info = document.getElementById('timer-active-info');
+      if (info && (!info.dataset.subject || info.dataset.subject !== t.subjectKey)) {
+        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
+        info.textContent = (subj ? subj.name : '学习中') + ' · 计时中';
+        info.dataset.subject = t.subjectKey;
+        info.className = '';
+      }
       var gt = document.getElementById('gt-time');
       if (gt) gt.textContent = fmt(currentElapsed());
+      updateTimerTitle();
     }, 1000);
   }
   function stopTick() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
 
+  // 统一刷新计时器区 + 按钮 + 列表 + 标题
+  function renderTimerState() {
+    var t = Store.getTimer();
+    var live = document.getElementById('live-timer');
+    var info = document.getElementById('timer-active-info');
+    var btnStop = document.getElementById('btn-timer-stop');
+    var btnPause = document.getElementById('btn-timer-pause');
+    if (live) live.textContent = t.running ? fmt(currentElapsed()) : (t.accumulated ? fmt(t.accumulated) : '00:00:00');
+    if (btnStop) btnStop.disabled = !t.subjectKey;
+    if (btnPause) {
+      btnPause.disabled = !t.subjectKey;
+      btnPause.textContent = t.running ? '暂停' : '继续';
+    }
+    if (info) {
+      if (!t.subjectKey) {
+        info.textContent = '当前没有进行中的学习';
+        info.className = 'muted';
+        info.removeAttribute('data-subject');
+      } else {
+        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
+        info.textContent = (subj ? subj.name : '学习中') + (t.running ? ' · 计时中' : ' · 已暂停');
+        info.className = t.running ? '' : 'muted';
+        info.dataset.subject = t.subjectKey;
+      }
+    }
+    renderTimerMods();
+    renderRecMini();
+    renderTimerStreak();
+    updateTimerTitle();
+  }
+
+  function updateTimerTitle() {
+    var t = Store.getTimer();
+    if (t.running && t.subjectKey) {
+      var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
+      document.title = '▶ ' + fmt(currentElapsed()) + ' · ' + (subj ? subj.name : '计时') + ' · 考研学习记录';
+    } else {
+      document.title = ORIG_TITLE;
+    }
+  }
+
+  function renderTimerStreak() {
+    var st = document.getElementById('timer-streak');
+    if (st) setText(st, '连续 ' + Store.consecutiveStreak() + ' 天');
+  }
+
+
   // 四科计时卡片网格（参考雅思站卡片化设计，配色复用 subjectColorClass，逻辑层不动）
-  function renderTimerRows() {
-    // 计时页重构（v20260824a）后科目选择容器由 #timer-rows 改为 #timer-mods，
-    // 旧 #timer-rows 已不存在，这里兼容两种容器，避免 init 崩溃。
-    var box = document.getElementById('timer-rows') || document.getElementById('timer-mods');
+  // 四科 pill（计时页 #timer-mods 与首页 #home-timer-rows 共用）
+  function renderSubjectPills(box) {
     if (!box) return;
     box.innerHTML = '';
-    if (box.id === 'timer-rows') box.className = 'timer-grid';
-    var subs = Store.getSubjects();
-    if (!subs.length) { box.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
     var t = Store.getTimer();
-    var day = Store.getDay(Store.todayStr()) || { durations: {} };
-    subs.forEach(function (s) {
+    var otherRunning = !!(t.running && t.subjectKey);
+    TIMER_SUBJECTS.forEach(function (s) {
       var running = t.running && t.subjectKey === s.key;
-      var accent = subjectColorClass(s.key, s.name);
-      var icon = (s.key === 'math') ? 'math' : (s.key === 'cs408') ? 'chip' : (s.key === 'politics') ? 'flag' : 'book';
-      var card = el('div', 'subj-card' + (running ? ' running' : ''));
-      card.style.setProperty('--accent', accent);
-      var ic = el('div', 'subj-ic');
-      ic.setAttribute('data-icon', icon);
+      var card = el('div', 'mod-card' + (running ? ' running' : ''));
+      card.style.setProperty('--accent', subjectColorClass(s.key, s.name));
+      var ic = el('div', 'mod-ic');
+      ic.setAttribute('data-icon', s.icon);
       card.appendChild(ic);
-      card.appendChild(el('div', 'subj-name', s.name));
-      var acc = (day.durations && day.durations[s.key]) || 0;
-      var time = el('div', 'subj-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
-      time.id = 't-time-' + s.key;
-      card.appendChild(time);
-      var badge = el('div', 'subj-badge' + (running ? ' on' : ''), running ? '计时中' : '未开始');
-      card.appendChild(badge);
-      var btn = el('button', 'subj-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
-      btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
+      card.appendChild(el('div', 'mod-name', s.name));
+      var btn = el('button', 'timer-start', running ? '进行中' : '开始');
+      btn.type = 'button';
+      btn.disabled = !!(otherRunning && !running);
+      btn.addEventListener('click', function () { if (running) return; startTimerFor(s.key); });
       card.appendChild(btn);
       box.appendChild(card);
     });
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
+  function renderTimerMods() { renderSubjectPills(document.getElementById('timer-mods')); }
 
-  /* ============ 首页专属板块（P4b 一屏平铺，独立容器避免与计时页冲突） ============ */
-  // 首页计时卡片：复用 Store 数据，渲染到 #home-timer-rows（与计时页 timer-rows 互不干扰），结构同 renderTimerRows
+
+  /* ============ 首页计时卡片（复用四科 pill） + 今日学习记录 ============ */
+  // 首页计时卡片：复用四科 pill，渲染到 #home-timer-rows
   function renderHomeTimer() {
-    var box = document.getElementById('home-timer-rows');
-    if (!box) return;
-    box.innerHTML = '';
-    box.className = 'timer-grid';
-    var subs = Store.getSubjects();
-    if (!subs.length) { box.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
-    var t = Store.getTimer();
-    var day = Store.getDay(Store.todayStr()) || { durations: {} };
-    subs.forEach(function (s) {
-      var running = t.running && t.subjectKey === s.key;
-      var accent = subjectColorClass(s.key, s.name);
-      var icon = (s.key === 'math') ? 'math' : (s.key === 'cs408') ? 'chip' : (s.key === 'politics') ? 'flag' : 'book';
-      var card = el('div', 'subj-card' + (running ? ' running' : ''));
-      card.style.setProperty('--accent', accent);
-      var ic = el('div', 'subj-ic');
-      ic.setAttribute('data-icon', icon);
-      card.appendChild(ic);
-      card.appendChild(el('div', 'subj-name', s.name));
-      var acc = (day.durations && day.durations[s.key]) || 0;
-      var time = el('div', 'subj-time', running ? fmt(currentElapsed()) : (acc > 0 ? fmtMinShort(acc) : '未计时'));
-      time.id = 'home-t-time-' + s.key;
-      card.appendChild(time);
-      var badge = el('div', 'subj-badge' + (running ? ' on' : ''), running ? '计时中' : '未开始');
-      card.appendChild(badge);
-      var btn = el('button', 'subj-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
-      btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
-      card.appendChild(btn);
-      box.appendChild(card);
-    });
-    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
-  }
-  // 首页番茄钟：镜像计时页逻辑，渲染到 #home-pomo-*（独立 id，不与计时页 pomo-* 冲突）
-  function renderHomePomodoro() {
-    var timeEl = document.getElementById('home-pomo-time');
-    if (!timeEl) return;
-    timeEl.textContent = fmtPomo(pomodoro.remain);
-    var modeEl = document.getElementById('home-pomo-mode');
-    if (modeEl) modeEl.textContent = pomodoro.done ? '✅ 倒计时结束'
-      : (pomodoro.countdownOnly ? '⏲ 倒计时' : (pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中'));
-    var startBtn = document.getElementById('home-btn-pomo-start');
-    if (startBtn) startBtn.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
+    var b = document.getElementById('home-timer-rows');
+    if (b) b.className = 'home-timer-mods';
+    renderSubjectPills(b);
   }
 
-  // 计时页「今日计时汇总」：复用 Store 当日 durations
-  function renderTimerSummary() {
-    var box = document.getElementById('timer-summary');
-    if (!box) return;  // 计时页重构（v20260824a）已移除 #timer-summary，安全跳过
+  // 今日学习记录（四科小格）
+  function renderRecMini() {
+    var grid = document.getElementById('rec-mini-grid');
+    var empty = document.getElementById('rec-empty');
+    var totalEl = document.getElementById('rec-total-mini');
+    var chip = document.getElementById('timer-today-total');
+    if (!grid) return;
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
-    var subs = Store.getSubjects();
-    var rows = subs.map(function (s) {
+    var total = 0;
+    grid.innerHTML = '';
+    TIMER_SUBJECTS.forEach(function (s) {
       var min = (day.durations && day.durations[s.key]) || 0;
-      return { name: s.name, min: min, color: subjectColorClass(s.key, s.name) };
-    }).filter(function (x) { return x.min > 0; })
-      .sort(function (a, b) { return b.min - a.min; });
-    var total = rows.reduce(function (s, x) { return s + x.min; }, 0);
-    if (!rows.length) { box.innerHTML = '<div class="hs-empty">今天还没开始计时，去上方点「开始」吧～</div>'; return; }
-    box.innerHTML = '<div class="ts-total">今日累计 <b>' + fmtMinShort(total) + '</b></div>' +
-      rows.map(function (r) {
-        return '<div class="ts-row">' +
-          '<span class="ts-dot" style="background:' + r.color + '"></span>' +
-          '<span class="ts-name">' + escapeHtml(r.name) + '</span>' +
-          '<span class="ts-time">' + fmtMinShort(r.min) + '</span>' +
-        '</div>';
-      }).join('');
+      total += min;
+      var cell = el('div', 'rec-mini-cell' + (min > 0 ? ' has' : ''));
+      cell.appendChild(el('span', 'nm', s.name));
+      cell.appendChild(el('span', 'v', min > 0 ? fmtMinShort(min) : '--'));
+      grid.appendChild(cell);
+    });
+    if (totalEl) setText(totalEl, fmtMinShort(total));
+    if (chip) setText(chip, '今日 ' + fmtMinShort(total));
+    if (empty) empty.style.display = total > 0 ? 'none' : '';
   }
+
 
   /* ============ 全局计时常驻指示：计时运行时在所有 tab 可见 ============ */
   function showGlobalTimer(key) {
@@ -2976,124 +2990,6 @@
     else if (has && st.indexOf('请先在') === 0) refs.transQueryStatus.textContent = '';
   }
 
-  /* ============ 番茄钟 / 倒计时（自定义时长 + 仅倒计时合并） ============ */
-  var pomodoro = { running: false, mode: 'study', remain: 25 * 60, total: 25 * 60, workMin: 25, breakMin: 5, timer: null, countdownOnly: false, workSec: 0, done: false };
-  var pomoAudioCtx = null;         // 结束提示音上下文（须在用户手势内解锁）
-  var ORIG_TITLE = document.title; // 计时时临时改写标签页标题，结束后复原
-  function fmtPomo(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
-  function renderPomodoro() {
-    if (!refs.pomoTime) return;
-    refs.pomoTime.textContent = fmtPomo(pomodoro.remain);
-    if (pomodoro.done) refs.pomoMode.textContent = '✅ 倒计时结束';
-    else refs.pomoMode.textContent = pomodoro.countdownOnly ? '⏲ 倒计时' : (pomodoro.mode === 'study' ? '🍅 学习中' : '☕ 休息中');
-    refs.btnPomoStart.textContent = pomodoro.running ? '暂停' : (pomodoro.remain < pomodoro.total ? '继续' : '开始');
-    refs.btnPomoReset.disabled = !pomodoro.running && pomodoro.remain === pomodoro.total && !pomodoro.done;
-    var disp = refs.pomoTime ? refs.pomoTime.parentElement : null;
-    if (disp) { disp.classList.toggle('break', !pomodoro.countdownOnly && pomodoro.mode !== 'study'); disp.classList.toggle('done', !!pomodoro.done); }
-    updatePomoTitle();
-  }
-  function notifyPomodoro(msg, type) {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      try { new Notification('考研番茄钟', { body: msg }); } catch (e) {}
-    }
-    showToast(msg, type);
-  }
-  // 计时结束提示音：Web Audio 振荡器合成，无需音频文件、零依赖
-  function playPomoChime(times) {
-    if (!pomoAudioCtx) return;
-    try {
-      var n = times || 1;
-      for (var i = 0; i < n; i++) {
-        var o = pomoAudioCtx.createOscillator(), g = pomoAudioCtx.createGain();
-        o.type = 'sine'; o.frequency.value = 880;
-        o.connect(g); g.connect(pomoAudioCtx.destination);
-        var t = pomoAudioCtx.currentTime + i * 0.25;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-        o.start(t); o.stop(t + 0.24);
-      }
-    } catch (e) {}
-  }
-  // 计时中实时改写标签页标题，切到别的标签也能看到剩余/结束
-  function updatePomoTitle() {
-    if (pomodoro.running) {
-      var em = pomodoro.done ? '⏰' : (pomodoro.countdownOnly ? '⏲' : (pomodoro.mode === 'study' ? '🍅' : '☕'));
-      document.title = em + ' ' + fmtPomo(pomodoro.remain) + ' · 考研学习记录';
-    } else if (pomodoro.done) {
-      document.title = '⏰ 时间到！';
-    } else {
-      document.title = ORIG_TITLE;
-    }
-  }
-  // 移动端触感反馈
-  function pomoVibrate() { if (navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} } }
-  function readPomoTimes() {
-    var w = Number(refs.pomoWork && refs.pomoWork.value) || 25;
-    var b = Number(refs.pomoBreak && refs.pomoBreak.value) || 5;
-    pomodoro.workMin = Math.max(1, Math.min(120, w));
-    pomodoro.breakMin = Math.max(1, Math.min(60, b));
-  }
-  function readPomoCountdownOnly() {
-    pomodoro.countdownOnly = !!(refs.pomoCountdownOnly && refs.pomoCountdownOnly.checked);
-    pomodoro.workSec = (pomodoro.countdownOnly && refs.pomoWorkSec) ? Math.max(0, Math.min(59, Number(refs.pomoWorkSec.value) || 0)) : 0;
-  }
-  function applyCountdownOnlyUI() {
-    var on = !!(refs.pomoCountdownOnly && refs.pomoCountdownOnly.checked);
-    if (refs.pomoBreak) {
-      var lbl = refs.pomoBreak.previousElementSibling;
-      refs.pomoBreak.style.display = on ? 'none' : '';
-      if (lbl && lbl.tagName === 'LABEL') lbl.style.display = on ? 'none' : '';
-    }
-    if (refs.pomoSecLabel) refs.pomoSecLabel.style.display = on ? '' : 'none';
-    if (refs.pomoWorkSec) refs.pomoWorkSec.style.display = on ? '' : 'none';
-  }
-  function tickPomodoro() {
-    pomodoro.remain--;
-    if (pomodoro.remain <= 0) {
-      if (pomodoro.mode === 'study') {
-        if (pomodoro.countdownOnly) {
-          pomodoro.remain = 0; pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); pomodoro.done = true;
-          playPomoChime(2); pomoVibrate();
-          notifyPomodoro('⏲ 倒计时结束！时间到 ⏰', 'ok');
-          renderPomodoro();
-          return;
-        }
-        pomodoro.mode = 'rest'; pomodoro.total = pomodoro.breakMin * 60; pomodoro.remain = pomodoro.breakMin * 60;
-        playPomoChime(1); pomoVibrate();
-        notifyPomodoro('学习结束，休息 ' + pomodoro.breakMin + ' 分钟！喝口水 💧', 'ok');
-      } else {
-        pomodoro.mode = 'study'; pomodoro.total = pomodoro.workMin * 60; pomodoro.remain = pomodoro.workMin * 60;
-        playPomoChime(1); pomoVibrate();
-        notifyPomodoro('休息结束，继续学习 💪', 'ok');
-      }
-    }
-    renderPomodoro();
-  }
-  function startPomodoro() {
-    // 必须在用户手势内创建/恢复 AudioContext，否则浏览器禁止自动播放
-    if (!pomoAudioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { try { pomoAudioCtx = new AC(); } catch (e) {} } }
-    if (pomoAudioCtx && pomoAudioCtx.state === 'suspended') { try { pomoAudioCtx.resume(); } catch (e) {} }
-    if (pomodoro.running) { pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer); renderPomodoro(); return; }
-    readPomoTimes(); readPomoCountdownOnly();
-    if (pomodoro.done || pomodoro.remain === pomodoro.total) {
-      var total = pomodoro.countdownOnly ? (pomodoro.workMin * 60 + pomodoro.workSec) : (pomodoro.mode === 'rest' ? pomodoro.breakMin * 60 : pomodoro.workMin * 60);
-      pomodoro.total = total; pomodoro.remain = total; pomodoro.done = false;
-    }
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') { try { Notification.requestPermission().catch(function () {}); } catch (e) {} }
-    pomodoro.running = true;
-    pomodoro.timer = setInterval(tickPomodoro, 1000);
-    renderPomodoro();
-  }
-  function resetPomodoro() {
-    pomodoro.running = false; if (pomodoro.timer) clearInterval(pomodoro.timer);
-    readPomoTimes(); readPomoCountdownOnly();
-    pomodoro.mode = 'study'; pomodoro.done = false;
-    pomodoro.total = pomodoro.countdownOnly ? (pomodoro.workMin * 60 + pomodoro.workSec) : pomodoro.workMin * 60;
-    pomodoro.remain = pomodoro.total; renderPomodoro();
-  }
-
-
   function setReviewMode(mode) {
     reviewMode = mode;
     if (refs.reviewBox) refs.reviewBox.style.display = mode === 'review' ? '' : 'none';
@@ -4292,7 +4188,7 @@
   function renderAll() {
     // 第一批：用户立即可见的内容（配置、头部、计时器、今日页）
     renderConfig();
-    renderTimerRows();
+    renderTimerMods(); renderRecMini(); renderTimerStreak();
     if (Store.getTimer().running) showGlobalTimer(Store.getTimer().subjectKey);
     renderManual();
     populatePlanSubjects();
@@ -4307,8 +4203,6 @@
     renderVisionConfig();
     renderSyncConfig();
     updateTranslateButton();
-    renderPomodoro();
-    applyCountdownOnlyUI();
     // 第二批：不在当前 tab 或 DOM 密集的内容，延迟到下一帧执行，避免阻塞主线程
     setTimeout(function () {
       renderData();
@@ -4335,8 +4229,8 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
-    if (target === 'home') { renderToday(); renderTimerRows(); renderPomodoro(); renderDashboardDigest(); renderHomeTimer(); }
-    if (target === 'timer') { renderTimerRows(); renderPomodoro(); renderTimerSummary(); }
+    if (target === 'home') { renderToday(); renderHomeTimer(); renderDashboardDigest(); }
+    if (target === 'timer') { renderTimerState(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
@@ -4459,13 +4353,27 @@
     refs.btnSyncConfirm = $('btn-sync-confirm');
     refs.syncStatus = $('sync-status');
 
-    refs.timerRows = $('timer-rows') || $('timer-mods');
+    refs.timerMods = $('timer-mods');
     refs.gtStop = $('gt-stop');
     if (refs.gtStop) refs.gtStop.addEventListener('click', endTimer);
-    refs.pomoTime = $('pomo-time');
-    refs.pomoMode = $('pomo-mode');
-    refs.btnPomoStart = $('btn-pomo-start');
-    refs.btnPomoReset = $('btn-pomo-reset');
+    refs.btnTimerStop = $('btn-timer-stop');
+    refs.btnTimerPause = $('btn-timer-pause');
+    if (refs.btnTimerStop) refs.btnTimerStop.addEventListener('click', endTimer);
+    if (refs.btnTimerPause) refs.btnTimerPause.addEventListener('click', function () {
+      var t = Store.getTimer();
+      if (!t.subjectKey) return;
+      if (t.running) {
+        t.accumulated = (t.accumulated || 0) + (Date.now() - t.startTs);
+        t.running = false; t.startTs = 0;
+        Store.setTimer(t);
+        stopTick();
+      } else {
+        t.running = true; t.startTs = Date.now();
+        Store.setTimer(t);
+        startTick();
+      }
+      renderTimerState();
+    });
     refs.manualDate = $('manual-date');
     refs.manualDurations = $('manual-durations');
     refs.manualCompleted = $('manual-completed');
@@ -4679,11 +4587,6 @@
     refs.yrList = $('yr-list');
 
     // 番茄钟 / 倒计时（合并）
-    refs.pomoWork = $('pomo-work');
-    refs.pomoBreak = $('pomo-break');
-    refs.pomoCountdownOnly = $('pomo-countdown-only');
-    refs.pomoWorkSec = $('pomo-work-sec');
-    refs.pomoSecLabel = $('pomo-sec-label');
 
     // 今日聚合
     refs.aggCountdown = $('agg-countdown');
@@ -4870,8 +4773,6 @@
     refs.btnTranslate.addEventListener('click', onTranslate);
     refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
     // 番茄钟（P4c 已从 UI 移除该模块，元素可能不存在，必须空值守卫，否则 init 崩溃导致首屏不渲染）
-    if (refs.btnPomoStart) refs.btnPomoStart.addEventListener('click', startPomodoro);
-    if (refs.btnPomoReset) refs.btnPomoReset.addEventListener('click', resetPomodoro);
     refs.btnClearWrong.addEventListener('click', function () {
       if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }
       confirmDelete('确定清空查词记录？所有查词将被永久删除，无法恢复。', function () {
@@ -4999,7 +4900,6 @@
     if (refs.btnAddYr) refs.btnAddYr.addEventListener('click', onAdd408Year);
 
     // 仅倒计时开关
-    if (refs.pomoCountdownOnly) refs.pomoCountdownOnly.addEventListener('change', function () { applyCountdownOnlyUI(); readPomoCountdownOnly(); renderPomodoro(); });
     refs.manualDate.value = Store.todayStr();
     refs.examDate2.value = Store.todayStr();
 
@@ -5055,7 +4955,8 @@
     // 计时 UX 测试钩子（仅供 test_timer_ux.js 验证全局药丸与计时行累计，不影响生产行为）
     window.__showGlobalTimer = showGlobalTimer;
     window.__hideGlobalTimer = hideGlobalTimer;
-    window.__renderTimerRows = renderTimerRows;
+    window.__renderTimerMods = renderTimerMods;
+    window.__renderTimerRows = renderTimerMods; // 兼容旧测试钩子
     window.switchTab = switchTab;
     window.showSub = showSub;
     // 主题设置暴露（供 test_theme_setting.js 验证）
