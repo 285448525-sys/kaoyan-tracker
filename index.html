@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260825e" />
+  <link rel="stylesheet" href="styles.css?v=20260825f" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -232,6 +232,7 @@
       </div></div>
 
 
+      <!-- 分类刷题（独立卡） -->
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 分类选择题刷题</h2>
@@ -249,24 +250,34 @@
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-math-practice-start" class="btn btn-primary">开始刷题</button>
         </div>
-        <h3 class="sub-title">我的题库</h3>
+      </div></div>
+
+      <!-- 我的题库（独立卡） -->
+      <div class="section">
+<div class="card">
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 我的题库</h2>
         <div id="math-question-list" class="mistake-list"></div>
-        <div class="question-form">
-          <div class="plan-add">
-            <input type="text" id="mq-cat" placeholder="分类，如 高等数学" />
-            <input type="text" id="mq-q" placeholder="题干" />
+        <div class="entry-form">
+          <h4>添加题目</h4>
+          <div class="entry-row"><label>分类</label><input type="text" id="mq-cat" placeholder="分类，如 高等数学" /></div>
+          <div class="entry-row full"><label>题干</label><input type="text" id="mq-q" placeholder="题干" /></div>
+          <div class="entry-opts">
+            <div class="opt"><label>选项 A</label><input type="text" id="mq-opt0" placeholder="选项 A" /></div>
+            <div class="opt"><label>选项 B</label><input type="text" id="mq-opt1" placeholder="选项 B" /></div>
+            <div class="opt"><label>选项 C</label><input type="text" id="mq-opt2" placeholder="选项 C" /></div>
+            <div class="opt"><label>选项 D</label><input type="text" id="mq-opt3" placeholder="选项 D" /></div>
           </div>
-          <div class="plan-add">
-            <input type="text" id="mq-opt0" placeholder="选项 A" />
-            <input type="text" id="mq-opt1" placeholder="选项 B" />
-            <input type="text" id="mq-opt2" placeholder="选项 C" />
-            <input type="text" id="mq-opt3" placeholder="选项 D" />
+          <div class="entry-row"><label>正确答案</label>
+            <select id="mq-answer">
+              <option value="">请选择</option>
+              <option value="0">0 · A</option>
+              <option value="1">1 · B</option>
+              <option value="2">2 · C</option>
+              <option value="3">3 · D</option>
+            </select>
           </div>
-          <div class="plan-add">
-            <input type="number" id="mq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
-            <input type="text" id="mq-explain" placeholder="解析（可选）" />
-            <button id="btn-add-mq" class="btn btn-ghost">添加题目</button>
-          </div>
+          <div class="entry-row full"><label>解析（可选）</label><input type="text" id="mq-explain" placeholder="解析（可选）" /></div>
+          <div class="entry-actions"><button id="btn-add-mq" class="btn btn-primary">+ 添加到题库</button></div>
         </div>
       </div></div>
 
@@ -295,6 +306,7 @@
       </div></div>
 
 
+      <!-- 分类刷题（独立卡） -->
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 分类刷题</h2>
@@ -313,24 +325,34 @@
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-cs408-practice-start" class="btn btn-primary">开始刷题</button>
         </div>
-        <h3 class="sub-title">我的题库</h3>
+      </div></div>
+
+      <!-- 我的题库（独立卡） -->
+      <div class="section">
+<div class="card">
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 我的题库</h2>
         <div id="cs408-question-list" class="mistake-list"></div>
-        <div class="question-form">
-          <div class="plan-add">
-            <input type="text" id="cq-cat" placeholder="分类，如 数据结构" />
-            <input type="text" id="cq-q" placeholder="题干" />
+        <div class="entry-form">
+          <h4>添加题目</h4>
+          <div class="entry-row"><label>分类</label><input type="text" id="cq-cat" placeholder="分类，如 数据结构" /></div>
+          <div class="entry-row full"><label>题干</label><input type="text" id="cq-q" placeholder="题干" /></div>
+          <div class="entry-opts">
+            <div class="opt"><label>选项 A</label><input type="text" id="cq-opt0" placeholder="选项 A" /></div>
+            <div class="opt"><label>选项 B</label><input type="text" id="cq-opt1" placeholder="选项 B" /></div>
+            <div class="opt"><label>选项 C</label><input type="text" id="cq-opt2" placeholder="选项 C" /></div>
+            <div class="opt"><label>选项 D</label><input type="text" id="cq-opt3" placeholder="选项 D" /></div>
           </div>
-          <div class="plan-add">
-            <input type="text" id="cq-opt0" placeholder="选项 A" />
-            <input type="text" id="cq-opt1" placeholder="选项 B" />
-            <input type="text" id="cq-opt2" placeholder="选项 C" />
-            <input type="text" id="cq-opt3" placeholder="选项 D" />
+          <div class="entry-row"><label>正确答案</label>
+            <select id="cq-answer">
+              <option value="">请选择</option>
+              <option value="0">0 · A</option>
+              <option value="1">1 · B</option>
+              <option value="2">2 · C</option>
+              <option value="3">3 · D</option>
+            </select>
           </div>
-          <div class="plan-add">
-            <input type="number" id="cq-answer" min="0" max="3" placeholder="正确项 0-3" style="max-width:120px" />
-            <input type="text" id="cq-explain" placeholder="解析（可选）" />
-            <button id="btn-add-cq" class="btn btn-ghost">添加题目</button>
-          </div>
+          <div class="entry-row full"><label>解析（可选）</label><input type="text" id="cq-explain" placeholder="解析（可选）" /></div>
+          <div class="entry-actions"><button id="btn-add-cq" class="btn btn-primary">+ 添加到题库</button></div>
         </div>
       </div></div>
 
@@ -338,20 +360,20 @@
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 知识点速查卡</h2>
-        <div class="plan-add">
-          <select id="kp-subject" style="max-width:160px">
-            <option value="数据结构">数据结构</option>
-            <option value="计算机组成原理">计算机组成原理</option>
-            <option value="操作系统">操作系统</option>
-            <option value="计算机网络">计算机网络</option>
-            <option value="其他">其他</option>
-          </select>
-          <input type="text" id="kp-title" placeholder="标题，如：红黑树性质" />
+        <div class="entry-form">
+          <div class="entry-row"><label>分类</label>
+            <select id="kp-subject" style="max-width:220px">
+              <option value="数据结构">数据结构</option>
+              <option value="计算机组成原理">计算机组成原理</option>
+              <option value="操作系统">操作系统</option>
+              <option value="计算机网络">计算机网络</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="entry-row full"><label>标题</label><input type="text" id="kp-title" placeholder="标题，如：红黑树性质" /></div>
+          <div class="entry-row full"><label>内容</label><textarea id="kp-content" rows="2" placeholder="内容（支持多行）"></textarea></div>
+          <div class="entry-actions"><button id="btn-add-kp" class="btn btn-primary full">添加知识点</button></div>
         </div>
-        <div class="field">
-          <textarea id="kp-content" rows="2" placeholder="内容（支持多行）"></textarea>
-        </div>
-        <button id="btn-add-kp" class="btn btn-primary full">添加知识点</button>
         <div class="chip-row" id="kp-filter" style="margin-top:12px"></div>
         <div id="kp-list" class="kp-list"></div>
       </div></div>
@@ -360,12 +382,14 @@
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 408 历年真题年份记录</h2>
-        <div class="plan-add">
-          <input type="number" id="yr-year" placeholder="年份，如 2024" min="2000" max="2099" style="max-width:120px" />
-          <input type="number" id="yr-score" placeholder="得分" min="0" max="150" style="max-width:100px" />
-          <input type="number" id="yr-total" placeholder="总分" min="0" max="150" style="max-width:100px" />
-          <input type="text" id="yr-note" placeholder="备注（可选）" />
-          <button id="btn-add-yr" class="btn btn-ghost">添加</button>
+        <div class="entry-form">
+          <div class="entry-opts">
+            <div class="opt"><label>年份</label><input type="number" id="yr-year" placeholder="2024" min="2000" max="2099" /></div>
+            <div class="opt"><label>得分</label><input type="number" id="yr-score" placeholder="110" min="0" max="150" /></div>
+            <div class="opt"><label>总分</label><input type="number" id="yr-total" placeholder="150" min="0" max="150" /></div>
+            <div class="opt"><label>备注</label><input type="text" id="yr-note" placeholder="可选" /></div>
+          </div>
+          <div class="entry-actions"><button id="btn-add-yr" class="btn btn-primary">+ 添加</button></div>
         </div>
         <div id="yr-list" class="yr-list"></div>
       </div></div>
@@ -1048,14 +1072,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260825e"></script>
-  <script src="iconset.js?v=20260825e"></script>
-  <script src="words.js?v=20260825e"></script>
-  <script src="store.js?v=20260825e"></script>
-  <script src="charts.js?v=20260825e"></script>
-  <script src="share.js?v=20260825e"></script>
-  <script src="md5.js?v=20260825e"></script>
-  <script src="sentences.js?v=20260825e"></script>
-  <script src="app.js?v=20260825e"></script>
+  <script src="qrcode.min.js?v=20260825f"></script>
+  <script src="iconset.js?v=20260825f"></script>
+  <script src="words.js?v=20260825f"></script>
+  <script src="store.js?v=20260825f"></script>
+  <script src="charts.js?v=20260825f"></script>
+  <script src="share.js?v=20260825f"></script>
+  <script src="md5.js?v=20260825f"></script>
+  <script src="sentences.js?v=20260825f"></script>
+  <script src="app.js?v=20260825f"></script>
 </body>
 </html>

@@ -2525,3 +2525,62 @@ details.import-fold .import-body textarea { width: 100%; min-height: 80px; paddi
   .lib-search { width: 100%; }
   .vchips { width: 100%; }
 }
+
+/* ===== 数学 / 408 学科页：带标签录入表单（v20260825f） ===== */
+.entry-form {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.entry-form h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+.entry-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.entry-row > label {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+.entry-row.full { grid-template-columns: 1fr; }
+.entry-row.full > label { text-align: left; margin-bottom: 2px; }
+.entry-row input,
+.entry-row select,
+.entry-row textarea { width: 100%; }
+
+/* 选项 / 真题 多列网格——作用域 .entry-opts，避免与全局 .opt「选填」徽标冲突 */
+.entry-opts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+}
+.entry-opts .opt { display: flex; flex-direction: column; gap: 4px; }
+.entry-opts .opt label { font-size: 12px; color: var(--muted); }
+.entry-opts .opt input,
+.entry-opts .opt select,
+.entry-opts .opt textarea { width: 100%; }
+
+.entry-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); }
+.entry-actions .btn.full { margin-top: 0; }
+
+/* 响应式：选项/年份网格降列，表单 label 转上方 */
+@media (max-width: 768px) {
+  .entry-opts { grid-template-columns: repeat(2, 1fr); }
+  .entry-row { grid-template-columns: 1fr; }
+  .entry-row > label { text-align: left; }
+}
+@media (max-width: 480px) {
+  .entry-opts { grid-template-columns: 1fr; }
+}
