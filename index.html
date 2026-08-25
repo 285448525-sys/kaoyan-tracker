@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260823e" />
+  <link rel="stylesheet" href="styles.css?v=20260824a" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -184,7 +184,7 @@
           </h2>
           <div class="home-timer-grid">
             <div class="ht-rows" id="home-timer-rows"></div>
-            <a class="ht-go" data-goto="timer"><span class="ic-inline" data-icon="timer"></span> 打开计时 / 番茄钟</a>
+            <a class="ht-go" data-goto="timer"><span class="ic-inline" data-icon="timer"></span> 打开计时</a>
           </div>
         </div>
       </div>
@@ -217,47 +217,41 @@
 
           </section>
 
-    <!-- 计时学习（独立 tab：科目计时 + 番茄钟设置 + 计时汇总） -->
+    <!-- 计时学习（独立 tab：四科计时，参考雅思站简洁布局） -->
     <section id="tab-timer" class="tab-panel timer-page">
-      <div class="section">
-        <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="timer"></span> 科目计时</h2>
-          <div id="timer-rows" class="timer-rows"></div>
-          <p class="timer-hint">点「开始」即计时，结束自动累计到今日对应科目。顶部常驻条显示进行中科目。</p>
+      <div class="page-head">
+        <div class="page-head-l">
+          <h1 class="page-title">计时</h1>
+          <p class="page-sub">专注学习 · 按科记录</p>
+        </div>
+        <div class="page-head-r">
+          <span class="phr-chip" id="timer-today-total">今日 0h0m</span>
+          <span class="phr-chip" id="timer-streak">连续 0 天</span>
         </div>
       </div>
 
-      <div class="section">
-        <div class="card pomodoro-card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="tomato"></span> 番茄钟 / 倒计时（可自定义）</h2>
-          <div class="pomo-setup">
-            <div class="field-row" style="margin-bottom:8px">
-              <label>学习(分)</label>
-              <input type="number" id="pomo-work" value="25" min="1" max="120" style="max-width:80px" />
-              <label class="pomo-sec-label" id="pomo-sec-label" style="display:none">秒</label>
-              <input type="number" id="pomo-work-sec" value="0" min="0" max="59" style="max-width:80px; display:none" />
-              <label>休息(分)</label>
-              <input type="number" id="pomo-break" value="5" min="1" max="60" style="max-width:80px" />
-            </div>
-            <div class="field-row" style="margin-bottom:8px">
-              <label class="switch"><input type="checkbox" id="pomo-countdown-only"><span class="slider"></span></label>
-              <span class="hint" style="margin:0">仅倒计时（无休息，计时结束不进入休息）</span>
-            </div>
-          </div>
-          <div class="pomo-display"><span id="pomo-mode" class="pomo-mode"><span class="ic-inline" data-icon="tomato"></span> 学习中</span><span id="pomo-time" class="pomo-time">25:00</span></div>
-          <div class="btn-row" style="margin-top:12px">
-            <button id="btn-pomo-start" class="btn btn-primary">开始</button>
-            <button id="btn-pomo-reset" class="btn btn-ghost">重置</button>
-          </div>
+      <section class="card timer-stage">
+        <div class="live-timer" id="live-timer">00:00:00</div>
+        <div class="timer-active">
+          <div id="timer-active-info" class="muted">当前没有进行中的学习</div>
         </div>
-      </div>
+        <div class="timer-btns">
+          <button class="btn btn-danger" id="btn-timer-stop" disabled>结束并保存</button>
+          <button class="btn" id="btn-timer-pause" disabled>暂停</button>
+        </div>
+      </section>
 
-      <div class="section">
-        <div class="card timer-summary-card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 今日计时汇总</h2>
-          <div id="timer-summary" class="timer-summary"></div>
+      <p class="section-title">选择本次任务</p>
+      <div class="timer-mods" id="timer-mods"></div>
+
+      <section class="card rec-mini">
+        <div class="rec-h">
+          <h3>今日学习记录</h3>
+          <span class="rec-total">总计 <b id="rec-total-mini">0h0m</b></span>
         </div>
-      </div>
+        <div class="rec-mini-grid" id="rec-mini-grid"></div>
+        <p class="rec-empty" id="rec-empty">还没有计时记录。开始一次专注学习吧。</p>
+      </section>
     </section>
 
     <!-- 数学 -->
@@ -1123,14 +1117,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260823e"></script>
-  <script src="iconset.js?v=20260823e"></script>
-  <script src="words.js?v=20260823e"></script>
-  <script src="store.js?v=20260823e"></script>
-  <script src="charts.js?v=20260823e"></script>
-  <script src="share.js?v=20260823e"></script>
-  <script src="md5.js?v=20260823e"></script>
-  <script src="sentences.js?v=20260823e"></script>
-  <script src="app.js?v=20260823e"></script>
+  <script src="qrcode.min.js?v=20260824a"></script>
+  <script src="iconset.js?v=20260824a"></script>
+  <script src="words.js?v=20260824a"></script>
+  <script src="store.js?v=20260824a"></script>
+  <script src="charts.js?v=20260824a"></script>
+  <script src="share.js?v=20260824a"></script>
+  <script src="md5.js?v=20260824a"></script>
+  <script src="sentences.js?v=20260824a"></script>
+  <script src="app.js?v=20260824a"></script>
 </body>
 </html>

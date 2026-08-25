@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260823e';
+  var APP_VERSION = '20260824a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -406,10 +406,14 @@
 
   // 四科计时卡片网格（参考雅思站卡片化设计，配色复用 subjectColorClass，逻辑层不动）
   function renderTimerRows() {
-    refs.timerRows.innerHTML = '';
-    refs.timerRows.className = 'timer-grid';
+    // 计时页重构（v20260824a）后科目选择容器由 #timer-rows 改为 #timer-mods，
+    // 旧 #timer-rows 已不存在，这里兼容两种容器，避免 init 崩溃。
+    var box = document.getElementById('timer-rows') || document.getElementById('timer-mods');
+    if (!box) return;
+    box.innerHTML = '';
+    if (box.id === 'timer-rows') box.className = 'timer-grid';
     var subs = Store.getSubjects();
-    if (!subs.length) { refs.timerRows.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
+    if (!subs.length) { box.appendChild(el('div', 'empty-hint', '请先在「配置」中添加科目')); return; }
     var t = Store.getTimer();
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
     subs.forEach(function (s) {
@@ -431,9 +435,9 @@
       var btn = el('button', 'subj-btn ' + (running ? 'stop' : 'start'), running ? '结束' : '开始');
       btn.addEventListener('click', function () { if (running) endTimer(); else startTimerFor(s.key); });
       card.appendChild(btn);
-      refs.timerRows.appendChild(card);
+      box.appendChild(card);
     });
-    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(refs.timerRows);
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
 
   /* ============ 首页专属板块（P4b 一屏平铺，独立容器避免与计时页冲突） ============ */
@@ -485,7 +489,7 @@
   // 计时页「今日计时汇总」：复用 Store 当日 durations
   function renderTimerSummary() {
     var box = document.getElementById('timer-summary');
-    if (!box) return;
+    if (!box) return;  // 计时页重构（v20260824a）已移除 #timer-summary，安全跳过
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
     var subs = Store.getSubjects();
     var rows = subs.map(function (s) {
@@ -4294,6 +4298,7 @@
     populatePlanSubjects();
     renderPlan();
     renderToday();
+    renderHomeTimer();   // 首页计时块：首屏即渲染（之前仅在切到首页时渲染，首屏不触发会空白）
     renderCheckinCard();
     renderMistakeTypes();
     populateMistakeSubjects();
@@ -4454,7 +4459,7 @@
     refs.btnSyncConfirm = $('btn-sync-confirm');
     refs.syncStatus = $('sync-status');
 
-    refs.timerRows = $('timer-rows');
+    refs.timerRows = $('timer-rows') || $('timer-mods');
     refs.gtStop = $('gt-stop');
     if (refs.gtStop) refs.gtStop.addEventListener('click', endTimer);
     refs.pomoTime = $('pomo-time');
@@ -4864,9 +4869,9 @@
     // 即时翻译 / 查词记录
     refs.btnTranslate.addEventListener('click', onTranslate);
     refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
-    // 番茄钟
-    refs.btnPomoStart.addEventListener('click', startPomodoro);
-    refs.btnPomoReset.addEventListener('click', resetPomodoro);
+    // 番茄钟（P4c 已从 UI 移除该模块，元素可能不存在，必须空值守卫，否则 init 崩溃导致首屏不渲染）
+    if (refs.btnPomoStart) refs.btnPomoStart.addEventListener('click', startPomodoro);
+    if (refs.btnPomoReset) refs.btnPomoReset.addEventListener('click', resetPomodoro);
     refs.btnClearWrong.addEventListener('click', function () {
       if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }
       confirmDelete('确定清空查词记录？所有查词将被永久删除，无法恢复。', function () {

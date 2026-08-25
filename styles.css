@@ -304,60 +304,119 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* Per-module timer rows */
 .timer-rows { display: grid; gap: 10px; }
 
-/* 四科计时卡片（参考雅思站卡片化设计，mist 蓝体系，不引入 teal） */
-.timer-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
-.subj-card {
-  position: relative;
-  display: flex; flex-direction: column; align-items: flex-start;
-  gap: var(--sp-2);
-  padding: var(--sp-4);
-  background: var(--surface);
-  border: 1.5px solid var(--line);
+/* ===== 计时页新布局（参考雅思站，四科紧凑 pill） ===== */
+.timer-page { padding-bottom: var(--sp-4); }
+.timer-page .page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+.timer-page .page-head-l { display: flex; flex-direction: column; gap: 2px; }
+.timer-page .page-title { font-size: 24px; font-weight: 800; margin: 0; color: var(--ink); }
+.timer-page .page-sub { font-size: 13px; color: var(--muted); margin: 0; }
+.timer-page .page-head-r { display: flex; gap: 8px; }
+.phr-chip {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; border-radius: 999px;
+  background: var(--card); border: 1px solid var(--line);
+  font-size: 12px; color: var(--ink); font-weight: 600;
+}
+
+.timer-stage {
+  text-align: center;
+  max-width: 460px;
+  margin: 0 auto var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+}
+.live-timer {
+  font-size: 48px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  line-height: 1; color: var(--ink);
+  margin-bottom: var(--sp-2);
+}
+.timer-active { min-height: 22px; margin-bottom: var(--sp-3); }
+.timer-active .muted { font-size: 13px; color: var(--muted); }
+.timer-btns { display: flex; gap: 10px; justify-content: center; }
+.timer-btns .btn { min-width: 96px; }
+.timer-btns .btn-danger:disabled,
+.timer-btns .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.section-title {
+  font-size: 13px; font-weight: 700; color: var(--ink);
+  margin: 0 0 10px 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.section-title::before {
+  content: ''; width: 3px; height: 14px; border-radius: 2px; background: var(--primary);
+}
+
+.timer-mods {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center; margin-bottom: var(--sp-3);
+}
+.mod-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--card); border: 1.5px solid var(--line);
   border-radius: var(--radius-lg);
   transition: border-color .15s, box-shadow .15s, transform .15s;
+  cursor: default;
 }
-.subj-card:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); }
-.subj-card.running {
-  border-color: var(--accent, var(--primary));
+.mod-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); border-color: var(--primary); }
+.mod-card.running {
+  border-color: var(--primary);
   background: var(--primary-soft);
+  box-shadow: 0 0 0 3px var(--primary-soft-2);
 }
-.subj-ic {
-  width: 40px; height: 40px; border-radius: 12px;
+.mod-card:has(.timer-start:disabled) { opacity: .5; }
+.mod-ic {
+  width: 28px; height: 28px; border-radius: 8px;
   display: grid; place-items: center;
   background: color-mix(in srgb, var(--accent) 14%, white);
   color: var(--accent);
 }
-.subj-ic svg { width: 22px; height: 22px; }
-.subj-name { font-weight: 700; font-size: 15px; }
-.subj-time {
-  font-variant-numeric: tabular-nums; font-weight: 800; font-size: 22px;
-  color: var(--text); line-height: 1.1;
+.mod-ic svg { width: 16px; height: 16px; }
+.mod-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.timer-start {
+  margin-left: 4px;
+  padding: 4px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 700;
+  border: none; cursor: pointer;
+  background: var(--primary); color: #fff;
 }
-.subj-card.running .subj-time { color: var(--accent); }
-.subj-badge {
-  font-size: 12px; padding: 2px 8px; border-radius: 999px;
-  background: var(--primary-soft-2); color: var(--muted);
-}
-.subj-badge.on { background: color-mix(in srgb, var(--accent) 16%, white); color: var(--accent); }
-.subj-btn {
-  margin-top: auto; width: 100%;
-  padding: var(--sp-2) 0; border-radius: var(--radius-sm);
-  border: none; font-weight: 700; font-size: 14px; cursor: pointer;
-}
-.subj-btn.start { background: var(--accent); color: #fff; }
-.subj-btn.stop { background: var(--danger); color: #fff; }
+.timer-start:disabled { background: var(--line); color: var(--muted); }
 
-.timer-row {
-  display: flex; align-items: center; gap: 10px;
-  background: #f9fafb; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px var(--sp-3);
+.rec-mini {
+  padding: var(--sp-3) var(--sp-4);
 }
-.timer-row.running { border-color: var(--primary); background: #E7F3FC; }
-.timer-row .t-name { flex: 1; font-weight: 600; font-size: 14px; }
-.timer-row .t-time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--primary); min-width: 72px; text-align: right; }
-.timer-row .t-btn { padding: var(--sp-2) 14px; border-radius: var(--radius-sm); border: none; font-weight: 600; cursor: pointer; font-size: 13px; }
-.t-btn.start { background: var(--primary); color: #fff; }
-.t-btn.stop { background: var(--danger); color: #fff; }
-.t-btn.disabled { background: #e5e7eb; color: #9ca3af; }
+.rec-h {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+.rec-h h3 { font-size: 14px; font-weight: 700; margin: 0; color: var(--ink); }
+.rec-total { font-size: 13px; color: var(--muted); }
+.rec-total b { color: var(--ink); }
+.rec-mini-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+.rec-mini-cell {
+  text-align: center; padding: 10px 6px;
+  background: var(--surface-2); border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.rec-mini-cell .nm { font-size: 12px; font-weight: 700; color: var(--ink); display: block; margin-bottom: 3px; }
+.rec-mini-cell .v { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rec-mini-cell.has .v { color: var(--primary); font-weight: 700; }
+.rec-empty { text-align: center; color: var(--muted); font-size: 13px; margin: var(--sp-2) 0 0; }
+
+.timer-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+
+@media (max-width: 768px) {
+  .timer-page .page-head { flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+  .live-timer { font-size: 40px; }
+  .timer-mods { gap: 8px; }
+  .mod-card { padding: 9px 12px; }
+  .rec-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* Plan */
 .plan-list { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; }
@@ -784,26 +843,6 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .goal-row { padding-left: var(--sp-2); }
 .goal-row.subject-line-miss .goal-name { color: var(--danger); }
 .goal-row.subject-line-miss { box-shadow: inset 3px 0 0 var(--danger); border-radius: var(--radius-sm); }
-
-/* ============ 模块G：番茄钟 ============ */
-.pomo-display { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px; }
-.pomo-mode { font-size: 14px; color: var(--muted); }
-.pomo-time { font-size: 48px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1; }
-
-/* ============ 番茄钟 / 自定义倒计时：时长配置 ============ */
-.pomodoro-card { border-left: 4px solid #ef4444; }
-.pomo-setup { margin-bottom: var(--sp-1); }
-.pomo-setup .field-row label { width: auto; flex: none; font-size: 13px; }
-.pomo-setup .field-row input[type=number] { flex: none; }
-.pomo-display.break .pomo-time { color: var(--ok); }
-.pomo-display.done .pomo-time { color: var(--ok); }
-.pomo-display.done .pomo-time { animation: pomo-done-pulse .8s ease-in-out 4; }
-.pomodoro-card:has(.pomo-display.done) { animation: pomo-card-flash 1s ease-in-out 2; }
-@keyframes pomo-done-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-@keyframes pomo-card-flash { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 0 3px var(--ok), 0 0 18px rgba(16,185,129,.45); } }
-@media (prefers-reduced-motion: reduce) {
-  .pomo-display.done .pomo-time, .pomodoro-card:has(.pomo-display.done) { animation: none; }
-}
 
 /* ============ 今日聚合卡片（模块 #1 美化重构 · 依据 UI配色规范 v1）============ */
 /* --- 0. 本模块新增令牌（并入 :root，配色规范 v1 N1） --- */
