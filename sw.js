@@ -6,7 +6,7 @@
  * 排除 /api/* 与跨域，保证同步/AI 实时走网络。
  * 每次发版必须递增 SW_VERSION（与 APP_VERSION 同步）。
  */
-const SW_VERSION = '20260825c';
+const SW_VERSION = '20260825d';
 const CACHE = 'kaoyan-pwa-' + SW_VERSION;
 const PRECACHE = ['./', './manifest.webmanifest'];
 

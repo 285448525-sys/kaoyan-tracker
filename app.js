@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260825c';
+  var APP_VERSION = '20260825d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2427,6 +2427,8 @@
 
 
   /* ============ 词汇模块：生词记录 / 背单词 / 生词复习 ============ */
+  var libFilter = 'all';      // 我的词库筛选：all | vocab | wrong | cat:xxx
+  var pendingWord = null;     // 查词并释义后暂存待存入生词本的单词
   function readVocabExtra() {
     return {
       phonetic: (refs.wordPhonetic && refs.wordPhonetic.value || '').trim(),
@@ -2443,77 +2445,126 @@
     if (refs.wordNote) refs.wordNote.value = '';
     if (refs.wordCategory) refs.wordCategory.value = '其他';
   }
-  function filterVocab(list) {
-    var f = (refs.vocabFilter && refs.vocabFilter.value) || 'all';
-    var q = (refs.vocabSearch && refs.vocabSearch.value || '').trim().toLowerCase();
-    return list.filter(function (v) {
-      if (f === 'due') { if (!(v.next <= Store.todayStr())) return false; }
-      else if (f !== 'all') { if ((v.category || '其他') !== f) return false; }
-      if (q) {
-        var hay = [v.word, v.cn, v.phonetic, v.pos, v.example, v.note].join(' ').toLowerCase();
-        if (hay.indexOf(q) < 0) return false;
-      }
-      return true;
-    });
-  }
   function renderWords() {
-    var raw = Store.getVocab();
-    var list = filterVocab(raw);
-    refs.vocabCount.textContent = raw.length;
+    var vocab = Store.getVocab();
+    var wrong = Store.getWrongWords();
+    var items = [];
+    if (libFilter === 'vocab' || libFilter === 'all' || libFilter.indexOf('cat:') === 0) {
+      vocab.forEach(function (v) { items.push({ kind: 'vocab', data: v }); });
+    }
+    if (libFilter === 'wrong' || libFilter === 'all') {
+      wrong.forEach(function (w) { items.push({ kind: 'wrong', data: w }); });
+    }
+    if (libFilter.indexOf('cat:') === 0) {
+      var cat = libFilter.slice(4);
+      items = items.filter(function (it) { return it.kind === 'vocab' && (it.data.category || '其他') === cat; });
+    }
+    var q = (refs.vocabSearch && refs.vocabSearch.value || '').trim().toLowerCase();
+    if (q) {
+      items = items.filter(function (it) {
+        var d = it.data;
+        var hay = [d.word, d.cn, d.phonetic, d.pos, d.example, d.note, d.created, d.src].join(' ').toLowerCase();
+        return hay.indexOf(q) >= 0;
+      });
+    }
+    refs.vocabCount.textContent = items.length;
     refs.vocabList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.vocabList, '没有符合条件的生词，先加几个生词吧', { icon: 'book', label: '去记生词', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
-    list.forEach(function (v) {
-      var item = el('div', 'mistake-item');
-      var top = el('div', 'mistake-top');
-      top.appendChild(el('span', 'mistake-badge', 'L' + (v.box || 1)));
-      if (v.category && v.category !== '其他') top.appendChild(el('span', 'vocab-cat-pill', v.category));
-      var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.removeVocab(v.id); renderWords(); showToast('已删除'); });
-      top.appendChild(del);
-      item.appendChild(top);
-      var wline = v.word + (v.phonetic ? '  ' + v.phonetic : '') + (v.pos ? '  ' + v.pos : '');
-      item.appendChild(el('div', 'mistake-content', wline));
-      if (v.cn) item.appendChild(el('div', 'mistake-content vocab-cn', v.cn));
-      if (v.example) item.appendChild(el('div', 'vocab-ex', v.example));
-      if (v.note) item.appendChild(el('div', 'vocab-note', v.note));
-      var due = (v.next <= Store.todayStr());
-      item.appendChild(el('div', 'mistake-meta', '加入 ' + v.added + (due ? ' · 待复习' : ' · 下次 ' + v.next)));
-      refs.vocabList.appendChild(item);
+    if (!items.length) { emptyHint(refs.vocabList, '没有符合条件的词，去上方查一个吧', { icon: 'book', label: '去查词', fn: function () { switchTab('vocab'); showSub('vocab', 'words'); if (refs.wordInput) refs.wordInput.focus(); } }); return; }
+    items.forEach(function (it) {
+      if (it.kind === 'vocab') appendVocabItem(it.data);
+      else appendWrongItem(it.data);
     });
   }
-  function onRecordWord() {
+  function appendVocabItem(v) {
+    var item = el('div', 'mistake-item');
+    var top = el('div', 'mistake-top');
+    top.appendChild(el('span', 'mistake-badge', 'L' + (v.box || 1)));
+    if (v.category && v.category !== '其他') top.appendChild(el('span', 'vocab-cat-pill', v.category));
+    var del = el('button', 'plan-del', '删除');
+    del.addEventListener('click', function () { Store.removeVocab(v.id); renderWords(); showToast('已删除'); });
+    top.appendChild(del);
+    item.appendChild(top);
+    var wline = v.word + (v.phonetic ? '  ' + v.phonetic : '') + (v.pos ? '  ' + v.pos : '');
+    item.appendChild(el('div', 'mistake-content', wline));
+    if (v.cn) item.appendChild(el('div', 'mistake-content vocab-cn', v.cn));
+    if (v.example) item.appendChild(el('div', 'vocab-ex', v.example));
+    if (v.note) item.appendChild(el('div', 'vocab-note', v.note));
+    var due = (v.next <= Store.todayStr());
+    item.appendChild(el('div', 'mistake-meta', '加入 ' + v.added + (due ? ' · 待复习' : ' · 下次 ' + v.next)));
+    refs.vocabList.appendChild(item);
+  }
+  function appendWrongItem(w) {
+    var item = el('div', 'mistake-item');
+    var top = el('div', 'mistake-top');
+    var toVocab = el('button', 'plan-del vocab-move', '移入生词本');
+    toVocab.addEventListener('click', function () { Store.addVocab(w.word, w.cn); renderWords(); showToast('已移入生词本 ✅'); });
+    var aiBtn = el('button', 'plan-del ai-explain-btn');
+    aiBtn.innerHTML = (window.Icon ? Icon.svg('robot') : '') + ' AI 讲解';
+    aiBtn.addEventListener('click', function () { explainWrongWord(w, aiBtn); });
+    var del = el('button', 'plan-del', '删除');
+    del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWords(); showToast('已从查词记录删除'); });
+    top.appendChild(aiBtn); top.appendChild(toVocab); top.appendChild(del);
+    item.appendChild(top);
+    item.appendChild(el('div', 'mistake-content', w.word + (w.cn ? '　' + w.cn : '')));
+    item.appendChild(el('div', 'mistake-meta', '归档于 ' + w.created + (w.src === 'translate' ? ' · 翻译查询' : '')));
+    refs.vocabList.appendChild(item);
+  }
+  function onLookupWord() {
     var raw = refs.wordInput.value.trim();
     if (!raw) { alert('请输入单词'); return; }
     var d = DICT_MAP[raw.toLowerCase()];
     if (d) {
-      Store.addVocab(d.w, d.c, readVocabExtra());
-      showWordCard(d.w, d.c, true);
+      pendingWord = { w: d.w, cn: d.c };
+      showWordCard(d.w, d.c, false);
       refs.wordManual.style.display = 'none';
-      refs.wordInput.value = '';
-      clearVocabExtra();
-      renderWords();
-      showToast('已记录：' + d.w + ' ✅');
-    } else {
-      refs.wordManual.style.display = 'block';
-      refs.wordManualCn.value = '';
-      refs.wordResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(raw) + '</div><div class="w-cn">本地词典未收录，请补充释义</div></div>';
-      showToast('本地词典未收录，请手动补充释义');
+      showToast('已查到释义，点「存入生词本」收藏');
+      return;
     }
+    // 词典未收录 → 走百度翻译（用户自带 key），结果自动归档到查词记录
+    refs.btnRecordWord.disabled = true;
+    translateWord(raw, function (res) {
+      refs.btnRecordWord.disabled = false;
+      if (res.error) {
+        pendingWord = null;
+        refs.wordManual.style.display = 'block';
+        refs.wordManualCn.value = '';
+        refs.wordResult.innerHTML = '<div class="word-card err"><div class="w-cn">' + escapeHtml(res.msg || '翻译失败') + '</div></div>';
+        showToast('未查到，请手动补充释义');
+        return;
+      }
+      pendingWord = { w: res.src || raw, cn: res.dst };
+      Store.addWrongWord(res.src || raw, res.dst, 'translate');
+      refs.wordManual.style.display = 'none';
+      refs.wordResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(res.src || raw) + '</div><div class="w-cn">' + escapeHtml(res.dst) + ' · 已归档查词记录</div></div>';
+      renderWords();
+      showToast('已查到释义，点「存入生词本」收藏');
+    });
   }
   function showWordCard(w, cn, saved) {
     refs.wordResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(w) + '</div><div class="w-cn">' + escapeHtml(cn || '（无释义）') + (saved ? ' · 已存入生词本' : '') + '</div></div>';
   }
-  function onSaveManualWord() {
+  function onSaveVocab() {
     var raw = refs.wordInput.value.trim();
-    var cn = refs.wordManualCn.value.trim();
     if (!raw) { alert('请先输入单词'); return; }
-    Store.addVocab(raw, cn, readVocabExtra());
+    var cn, extra = readVocabExtra();
+    if (pendingWord && pendingWord.w.toLowerCase() === raw.toLowerCase()) {
+      cn = pendingWord.cn;
+    } else if (refs.wordManual.style.display !== 'none') {
+      cn = (refs.wordManualCn.value || '').trim();
+      if (!cn) { alert('请填写释义'); return; }
+    } else {
+      var d = DICT_MAP[raw.toLowerCase()];
+      if (d) cn = d.c;
+      else { alert('请先点「查词并释义」'); return; }
+    }
+    Store.addVocab(raw, cn, extra);
     showWordCard(raw, cn, true);
     refs.wordManual.style.display = 'none';
     refs.wordInput.value = '';
     clearVocabExtra();
+    pendingWord = null;
     renderWords();
-    showToast('已记录：' + raw + ' ✅');
+    showToast('已存入生词本 ✅');
   }
 
   /* ============ 翻译（浏览器直连百度翻译开放平台，用户自带 key） ============ */
@@ -2980,47 +3031,8 @@
     };
     document.body.appendChild(script);
   }
-  function onTranslate() {
-    var word = refs.transInput.value.trim();
-    if (!word) { alert('请输入要翻译的单词'); return; }
-    refs.btnTranslate.disabled = true;
-    refs.transQueryStatus.textContent = '查询中…';
-    refs.transResult.innerHTML = '';
-    translateWord(word, function (res) {
-      refs.btnTranslate.disabled = false;
-      if (res.error) {
-        refs.transQueryStatus.textContent = '✗ ' + (res.msg || '翻译失败') + (res.code ? '（' + res.code + '）' : '');
-        refs.transResult.innerHTML = '<div class="word-card err"><div class="w-cn">' + escapeHtml(res.msg || '翻译失败') + '</div></div>';
-        return;
-      }
-      Store.addWrongWord(res.src || word, res.dst, 'translate');
-      refs.transQueryStatus.textContent = '✓ 已翻译并自动归档到查词记录';
-      refs.transResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(res.src || word) + '</div><div class="w-cn">' + escapeHtml(res.dst) + ' · 已存入查词记录</div></div>';
-      renderWrongBook();
-    });
-  }
-  function renderWrongBook() {
-    var list = Store.getWrongWords();
-    refs.wrongCount.textContent = list.length;
-    refs.wrongList.innerHTML = '';
-    if (!list.length) { emptyHint(refs.wrongList, '查词记录还是空的，翻译时勾选「归档」就会留在这里', { icon: 'book', label: '去翻译查询', fn: function () { switchTab('vocab'); showSub('vocab','words'); } }); return; }
-    list.forEach(function (w) {
-      var item = el('div', 'mistake-item');
-      var top = el('div', 'mistake-top');
-      var toVocab = el('button', 'plan-del vocab-move', '移入生词本');
-      toVocab.addEventListener('click', function () { Store.addVocab(w.word, w.cn); renderWords(); showToast('已移入生词本 ✅'); });
-      var aiBtn = el('button', 'plan-del ai-explain-btn');
-      aiBtn.innerHTML = (window.Icon ? Icon.svg('robot') : '') + ' AI 讲解';
-      aiBtn.addEventListener('click', function () { explainWrongWord(w, aiBtn); });
-      var del = el('button', 'plan-del', '删除');
-      del.addEventListener('click', function () { Store.removeWrongWord(w.id); renderWrongBook(); showToast('已从查词记录删除'); });
-      top.appendChild(aiBtn); top.appendChild(toVocab); top.appendChild(del);
-      item.appendChild(top);
-      item.appendChild(el('div', 'mistake-content', w.word + (w.cn ? '　' + w.cn : '')));
-      item.appendChild(el('div', 'mistake-meta', '归档于 ' + w.created + (w.src === 'translate' ? ' · 翻译查询' : '')));
-      refs.wrongList.appendChild(item);
-    });
-  }
+  // 查词记词已合并「即时翻译」：词典未收录时 onLookupWord 复用 translateWord 作为兜底，结果自动归档查词记录
+  function renderWrongBook() { renderWords(); }
 
   // 查词记录 AI 讲解（展开/收起式，AI 输出用 textContent 防 XSS）
   function explainWrongWord(w, btn) {
@@ -4383,7 +4395,7 @@
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
-    if (target === 'vocab') { showSub('vocab', 'words'); renderWrongBook(); renderWords(); }
+    if (target === 'vocab') { showSub('vocab', 'words'); renderWords(); }
     if (target === 'mock') { renderExamCard(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
@@ -4406,7 +4418,7 @@
   }
   function renderSubOnDemand(container, sub) {
     if (container === 'vocab') {
-      if (sub === 'words') { renderWrongBook(); renderWords(); }
+      if (sub === 'words') { renderWords(); }
       else if (sub === 'review') { setReviewMode(reviewMode); }
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
@@ -4633,7 +4645,6 @@
     refs.wordCategory = $('word-category');
     refs.vocabCount = $('vocab-count');
     refs.vocabList = $('vocab-list');
-    refs.vocabFilter = $('vocab-filter');
     refs.vocabSearch = $('vocab-search');
     refs.practiceBox = $('practice-box');
     refs.btnPracticeRestart = $('btn-practice-restart');
@@ -4780,14 +4791,8 @@
     refs.btnSaveAi = $('btn-save-ai');
     refs.btnTestAi = $('btn-test-ai');
     refs.aiStatus = $('ai-status');
-    // 即时翻译 / 查词记录
-    refs.transInput = $('trans-input');
-    refs.btnTranslate = $('btn-translate');
-    refs.btnTranslateClear = $('btn-translate-clear');
-    refs.transQueryStatus = $('trans-query-status');
-    refs.transResult = $('trans-result');
-    refs.wrongCount = $('wrong-count');
-    refs.wrongList = $('wrong-list');
+    // 我的词库（合并生词本 + 查词记录）筛选 chip
+    refs.vocabChips = $('vocab-chips');
     refs.wrongAiSummary = $('wrong-ai-summary');
     refs.btnClearWrong = $('btn-clear-wrong');
 
@@ -4901,12 +4906,19 @@
     });
     if (refs.btnSolve) refs.btnSolve.addEventListener('click', onAiSolve);
 
-    // 词汇：生词记录
-    refs.btnRecordWord.addEventListener('click', onRecordWord);
-    refs.btnClearWord.addEventListener('click', function () { refs.wordInput.value = ''; refs.wordResult.innerHTML = ''; refs.wordManual.style.display = 'none'; });
-    refs.btnSaveManualWord.addEventListener('click', onSaveManualWord);
-    if (refs.vocabFilter) refs.vocabFilter.addEventListener('change', renderWords);
+    // 词汇：查词记词（合并生词记录 + 即时翻译）
+    refs.btnRecordWord.addEventListener('click', onLookupWord);
+    refs.btnClearWord.addEventListener('click', function () { refs.wordInput.value = ''; refs.wordResult.innerHTML = ''; refs.wordManual.style.display = 'none'; pendingWord = null; });
+    refs.btnSaveVocab = $('btn-save-vocab');
+    if (refs.btnSaveVocab) refs.btnSaveVocab.addEventListener('click', onSaveVocab);
     if (refs.vocabSearch) refs.vocabSearch.addEventListener('input', renderWords);
+    if (refs.vocabChips) refs.vocabChips.addEventListener('click', function (e) {
+      var b = e.target.closest('.vchip'); if (!b) return;
+      refs.vocabChips.querySelectorAll('.vchip').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      libFilter = b.getAttribute('data-filter');
+      renderWords();
+    });
 
     // 翻译密钥
     refs.btnSaveTranslator.addEventListener('click', onSaveTranslator);
@@ -4918,14 +4930,12 @@
     if (refs.btnTestVision) refs.btnTestVision.addEventListener('click', onTestVisionConfig);
     if (refs.visionProvider) refs.visionProvider.addEventListener('change', onVisionProviderChange);
     if (refs.linkOpenVision) refs.linkOpenVision.addEventListener('click', function (e) { e.preventDefault(); switchTab('settings'); showSub('settings', 'base'); openVisionConfig(); });
-    // 即时翻译 / 查词记录
-    refs.btnTranslate.addEventListener('click', onTranslate);
-    refs.btnTranslateClear.addEventListener('click', function () { refs.transInput.value = ''; refs.transResult.innerHTML = ''; refs.transQueryStatus.textContent = ''; });
+    // 即时翻译已合并进查词记词（onLookupWord 兜底翻译）
     // 番茄钟（P4c 已从 UI 移除该模块，元素可能不存在，必须空值守卫，否则 init 崩溃导致首屏不渲染）
     refs.btnClearWrong.addEventListener('click', function () {
       if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }
       confirmDelete('确定清空查词记录？所有查词将被永久删除，无法恢复。', function () {
-        Store.clearWrongWords(); renderWrongBook();
+        Store.clearWrongWords(); renderWords();
         showToast('已清空查词记录', 'ok');
       });
     });

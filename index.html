@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260825c" />
+  <link rel="stylesheet" href="styles.css?v=20260825d" />
 </head>
 <body>
   <aside class="side-nav" id="sideNav">
@@ -492,103 +492,79 @@
     <section id="tab-vocab" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="review">复习自测</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
       <div id="sub-words" class="sub-panel active">
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 生词记录</h2>
-        <div class="field-row">
-          <label>单词</label>
-          <input type="text" id="word-input" placeholder="输入英文单词，如 abandon" autocomplete="off" />
-        </div>
-        <details class="vocab-extra">
-          <summary class="card-sub">选填：音标 / 词性 / 例句 / 备注 / 分类</summary>
-          <div class="field-row"><label>音标</label><input type="text" id="word-phonetic" placeholder="如 /ˈæbəkæt/" autocomplete="off" /></div>
-          <div class="field-row"><label>词性</label><input type="text" id="word-pos" placeholder="如 n. / v. / adj." autocomplete="off" /></div>
-          <div class="field-row"><label>例句</label><input type="text" id="word-example" placeholder="放进语境的一句话" autocomplete="off" /></div>
-          <div class="field-row"><label>备注</label><input type="text" id="word-note" placeholder="记忆提示 / 来源" autocomplete="off" /></div>
-          <div class="field-row"><label>分类</label>
-            <select id="word-category">
-              <option value="其他">其他</option>
-              <option value="数据结构">数据结构</option>
-              <option value="计算机组成">计算机组成</option>
-              <option value="操作系统">操作系统</option>
-              <option value="计算机网络">计算机网络</option>
-            </select>
-          </div>
-        </details>
-        <div class="btn-row">
-          <button id="btn-record-word" class="btn btn-primary">记录</button>
-          <button id="btn-clear-word" class="btn btn-ghost">清空输入</button>
-        </div>
-        <div id="word-result" class="word-result"></div>
-        <div id="word-manual" class="word-manual" style="display:none">
-          <div class="field-row"><label>释义</label><input type="text" id="word-manual-cn" placeholder="词典未收录，请填写中文释义" /></div>
-          <button id="btn-save-manual-word" class="btn btn-primary">保存到生词本</button>
-        </div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card translator-query-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="globe"></span> 即时翻译（百度翻译接口）</h2>
-        <div class="field-row">
-          <label>单词</label>
-          <input type="text" id="trans-input" placeholder="输入英文单词，如 algorithm" autocomplete="off" />
-        </div>
-        <div class="btn-row">
-          <button id="btn-translate" class="btn btn-primary">翻译并归档</button>
-          <button id="btn-translate-clear" class="btn btn-ghost">清空</button>
-          <span id="trans-query-status" class="import-status"></span>
-        </div>
-        <div id="trans-result" class="word-result"></div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="import"></span> 批量导入生词</h2>
-        <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon	放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
-        <div class="btn-row" style="margin-top:10px">
-          <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
-          <label class="btn btn-ghost" for="import-file">上传 .txt</label>
-          <input type="file" id="import-file" accept=".txt,text/plain" hidden />
-          <span id="import-status" class="import-status"></span>
-        </div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title">我的生词本 <span id="vocab-count" class="count-pill">0</span></h2>
-        <div class="vocab-filter-row">
-          <select id="vocab-filter">
-            <option value="all">全部</option>
-            <option value="due">待复习</option>
-            <option value="数据结构">数据结构</option>
-            <option value="计算机组成">计算机组成</option>
-            <option value="操作系统">操作系统</option>
-            <option value="计算机网络">计算机网络</option>
-            <option value="其他">其他</option>
-          </select>
-          <input type="text" id="vocab-search" placeholder="搜单词/释义/音标/例句/备注" autocomplete="off" />
-        </div>
-        <div id="vocab-list" class="mistake-list"></div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card wrongbook-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="bookRed"></span> 查词记录（翻译查词自动归档） <span id="wrong-count" class="count-pill">0</span></h2>
-        <div class="btn-row" style="margin-bottom:10px">
-          <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
-          <button id="btn-ai-summarize-wrong" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
-        </div>
-        <div id="wrong-ai-summary" class="ai-summary-box"></div>
-        <div id="wrong-list" class="mistake-list"></div>
-      </div></div>
-
-
+<div class="section">
+<div class="card vocab-lookup-card">
+  <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 查词记词</h2>
+  <div class="look-row">
+    <input type="text" id="word-input" placeholder="输入英文单词，如 algorithm" autocomplete="off" />
+    <button id="btn-record-word" class="btn btn-primary">查词并释义</button>
   </div>
-      <div id="sub-review" class="sub-panel">
+  <div id="word-result" class="word-result"></div>
+  <div id="word-manual" class="word-manual" style="display:none">
+    <div class="field-row"><label>释义</label><input type="text" id="word-manual-cn" placeholder="词典未收录，请填写中文释义" /></div>
+  </div>
+  <details class="vocab-extra">
+    <summary class="card-sub">选填：音标 / 词性 / 例句 / 备注 / 分类</summary>
+    <div class="field-row"><label>音标</label><input type="text" id="word-phonetic" placeholder="如 /ˈæbəkæt/" autocomplete="off" /></div>
+    <div class="field-row"><label>词性</label><input type="text" id="word-pos" placeholder="如 n. / v. / adj." autocomplete="off" /></div>
+    <div class="field-row"><label>例句</label><input type="text" id="word-example" placeholder="放进语境的一句话" autocomplete="off" /></div>
+    <div class="field-row"><label>备注</label><input type="text" id="word-note" placeholder="记忆提示 / 来源" autocomplete="off" /></div>
+    <div class="field-row"><label>分类</label>
+      <select id="word-category">
+        <option value="其他">其他</option>
+        <option value="数据结构">数据结构</option>
+        <option value="计算机组成">计算机组成</option>
+        <option value="操作系统">操作系统</option>
+        <option value="计算机网络">计算机网络</option>
+      </select>
+    </div>
+  </details>
+  <div class="btn-row">
+    <button id="btn-save-vocab" class="btn btn-primary">存入生词本</button>
+    <button id="btn-clear-word" class="btn btn-ghost">清空输入</button>
+  </div>
+</div></div>
+
+<div class="section">
+<div class="card">
+  <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 我的词库 <span id="vocab-count" class="count-pill">0</span></h2>
+  <div class="lib-head">
+    <div class="vchips" id="vocab-chips">
+      <button type="button" class="vchip active" data-filter="all">全部</button>
+      <button type="button" class="vchip" data-filter="vocab">生词本</button>
+      <button type="button" class="vchip" data-filter="wrong">查词记录</button>
+      <button type="button" class="vchip" data-filter="cat:数据结构">数据结构</button>
+      <button type="button" class="vchip" data-filter="cat:计算机组成">计算机组成</button>
+      <button type="button" class="vchip" data-filter="cat:操作系统">操作系统</button>
+      <button type="button" class="vchip" data-filter="cat:计算机网络">计算机网络</button>
+      <button type="button" class="vchip" data-filter="cat:其他">其他</button>
+    </div>
+    <input type="text" id="vocab-search" class="lib-search" placeholder="搜单词/释义/音标/例句/备注" autocomplete="off" />
+  </div>
+  <div id="vocab-list" class="mistake-list"></div>
+  <div class="btn-row" style="margin-top:10px">
+    <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
+    <button id="btn-ai-summarize-wrong" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
+  </div>
+  <div id="wrong-ai-summary" class="ai-summary-box"></div>
+</div></div>
+
+<details class="card import-fold">
+  <summary class="card-title"><span class="ic-inline" data-icon="import"></span> 批量导入生词</summary>
+  <div class="import-body">
+    <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon&#9;放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
+      <label class="btn btn-ghost" for="import-file">上传 .txt</label>
+      <input type="file" id="import-file" accept=".txt,text/plain" hidden />
+      <span id="import-status" class="import-status"></span>
+    </div>
+  </div>
+</details>
+
+      </div>
+
+<div id="sub-review" class="sub-panel">
       <div class="section">
 <div class="card">
         <div class="card-head">
@@ -1072,14 +1048,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260825c"></script>
-  <script src="iconset.js?v=20260825c"></script>
-  <script src="words.js?v=20260825c"></script>
-  <script src="store.js?v=20260825c"></script>
-  <script src="charts.js?v=20260825c"></script>
-  <script src="share.js?v=20260825c"></script>
-  <script src="md5.js?v=20260825c"></script>
-  <script src="sentences.js?v=20260825c"></script>
-  <script src="app.js?v=20260825c"></script>
+  <script src="qrcode.min.js?v=20260825d"></script>
+  <script src="iconset.js?v=20260825d"></script>
+  <script src="words.js?v=20260825d"></script>
+  <script src="store.js?v=20260825d"></script>
+  <script src="charts.js?v=20260825d"></script>
+  <script src="share.js?v=20260825d"></script>
+  <script src="md5.js?v=20260825d"></script>
+  <script src="sentences.js?v=20260825d"></script>
+  <script src="app.js?v=20260825d"></script>
 </body>
 </html>

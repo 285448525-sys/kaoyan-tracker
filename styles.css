@@ -117,7 +117,7 @@ body {
    .onboarding-card / .countdown-card 有专属渐变，已排除。 */
 .stat-card, .sub-card, .ai-card, .kp-card, .checkin-card,
 .today-score-card, .cloud-sync-card, .translator-card, .weakness-card,
-.word-card, .wrongbook-card,
+.word-card,
 .flashcard-card, .syn-card, .reminder, .sub-tab-btn {
   background: var(--card);
   border: 1px solid var(--line);
@@ -657,8 +657,6 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* 翻译密钥（用户自带 key，仅存本机）与查词记录 */
 .translator-card { border-left: 4px solid #f59e0b; }
 .translator-note { font-size: 12px; color: var(--muted); }
-.translator-query-card { border-left: 4px solid #0ea5e9; }
-.wrongbook-card { border-left: 4px solid #ef4444; }
 .word-card.err { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
 .word-card.err .w-cn { color: var(--danger-ink); }
 .vocab-move { background: var(--primary-soft); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
@@ -2495,4 +2493,35 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 }
 @media (max-width: 480px) {
   .home-redesign .home-quick { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============ 词汇页重设计（v20260825d）：查词记词 / 我的词库 / 批量导入折叠 ============ */
+.vocab-lookup-card .look-row { display: flex; gap: 10px; align-items: stretch; }
+.vocab-lookup-card .look-row input { flex: 1; padding: 13px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 15px; font-family: inherit; }
+.vocab-lookup-card .look-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.vocab-lookup-card .look-row .btn { flex: 0 0 auto; padding-left: 20px; padding-right: 20px; }
+
+/* 我的词库：筛选 chip + 搜索 */
+.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.vchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.vchip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit; transition: background .15s, color .15s, border-color .15s; }
+.vchip:hover { border-color: var(--primary); color: var(--primary); }
+.vchip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.lib-search { flex: 1 1 160px; min-width: 140px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; }
+.lib-search:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+/* 批量导入折叠 */
+details.import-fold { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); margin-bottom: var(--sp-4); }
+details.import-fold > summary { cursor: pointer; padding: var(--sp-4); list-style: none; display: flex; align-items: center; margin: 0; }
+details.import-fold > summary::-webkit-details-marker { display: none; }
+details.import-fold[open] > summary { border-bottom: 1px solid var(--line); }
+details.import-fold .import-body { padding: var(--sp-4); }
+details.import-fold .import-body textarea { width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; resize: vertical; }
+
+@media (max-width: 640px) {
+  .vocab-lookup-card .look-row { flex-direction: column; }
+  .vocab-lookup-card .look-row .btn { width: 100%; }
+  .lib-head { flex-direction: column; align-items: stretch; }
+  .lib-search { width: 100%; }
+  .vchips { width: 100%; }
 }
