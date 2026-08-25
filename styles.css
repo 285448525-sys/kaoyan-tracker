@@ -2196,23 +2196,65 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
    深色模式由 [data-theme="dark"] 控制，不受 data-scheme 影响。
    ============================================================ */
 
-/* ===== P4c：首页一屏化（v20260822q） ===== */
+/* ===== P4c：首页一屏化（v20260825a） ===== */
+/* 默认（含移动端）：单列自然流 */
 .home-one-screen {
-  grid-template-columns: 1fr 1fr;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--sp-3);
   align-content: start;
 }
 /* 只有当前激活的 tab 才显示为 grid；避免非 active 时 display 覆盖 .tab-panel 的隐藏 */
 .tab-panel.active.home-one-screen { display: grid; }
-/* 跨两列的主块：聚合卡、快捷入口 */
-.home-one-screen .today-aggregate,
-.home-one-screen .home-quick-card { grid-column: 1 / -1; }
-/* 计时 / 待办 并排两列 */
-.home-one-screen .home-timer-card,
-.home-one-screen .plan-card { grid-column: auto; }
-/* 桌面 1280×800 不滚：限制首页整体高度 + 溢出内部滚（兜底） */
+
+/* 桌面：2×2 真仪表盘布局，不再用 overflow:hidden 截断内容 */
 @media (min-width: 901px) {
-  .home-one-screen { max-height: calc(100vh - 120px); overflow: hidden; }
+  .home-one-screen {
+    grid-template-columns: 1.35fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: var(--sp-3);
+    align-items: stretch;
+    min-height: 0;
+  }
+  .home-one-screen .today-aggregate { grid-column: 1; grid-row: 1; }
+  .home-one-screen .home-quick-card { grid-column: 2; grid-row: 1; }
+  .home-one-screen .home-timer-card { grid-column: 1; grid-row: 2; }
+  .home-one-screen .plan-card { grid-column: 2; grid-row: 2; }
+
+  /* 聚合卡再紧凑，确保塞进首屏 */
+  .home-one-screen .today-aggregate { padding: var(--sp-4); }
+  .home-one-screen .today-head { padding-bottom: var(--sp-3); }
+  .home-one-screen .today-countdown-card { margin: var(--sp-1) 0 var(--sp-3); }
+  .home-one-screen .countdown-day { font-size: 46px; }
+  .home-one-screen .countdown-body { gap: var(--sp-2); }
+  .home-one-screen .today-stats { margin-top: 0; }
+  .home-one-screen .agg-subject-progress { margin-top: var(--sp-3); }
+
+  /* 快捷入口 4 列紧凑 */
+  .home-one-screen .home-quick { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .home-one-screen .quick-entry { padding: 10px var(--sp-2); gap: 6px; }
+  .home-one-screen .qe-ic { width: 34px; height: 34px; }
+  .home-one-screen .qe-ic.ic svg { width: 17px; height: 17px; }
+  .home-one-screen .qe-label { font-size: 11px; }
+  .home-one-screen .qe-sub { font-size: 10px; }
+
+  /* 计时卡紧凑：科目卡片小两列网格 */
+  .home-one-screen .home-timer-card .home-timer-grid { grid-template-columns: 1fr; gap: var(--sp-2); }
+  .home-one-screen .home-timer-card .ht-rows {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2);
+  }
+  .home-one-screen .home-timer-card .subj-card { padding: var(--sp-3); gap: 4px; }
+  .home-one-screen .home-timer-card .subj-ic { width: 28px; height: 28px; }
+  .home-one-screen .home-timer-card .subj-name { font-size: 12px; }
+  .home-one-screen .home-timer-card .subj-time { font-size: 16px; }
+  .home-one-screen .home-timer-card .subj-badge { display: none; }
+  .home-one-screen .home-timer-card .subj-btn { padding: 4px 10px; font-size: 12px; min-height: auto; }
+
+  /* 计划卡紧凑 */
+  .home-one-screen .plan-card { padding: var(--sp-3); }
+  .home-one-screen .plan-card .card-title { margin-bottom: var(--sp-2); }
+  .home-one-screen .plan-card .plan-empty-hint { margin-bottom: var(--sp-2); font-size: 12px; }
+  .home-one-screen .plan-card .plan-list { max-height: 110px; overflow-y: auto; }
 }
 
 /* 计时页布局 */
@@ -2239,7 +2281,12 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .plan-add { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); align-items: center; }
 .plan-add input[type="text"] { flex: 1; min-width: 160px; }
 
-/* 移动端：首页单列不溢出 */
+/* 移动端：首页单列不溢出，并重置桌面 2×2 的 grid-area */
 @media (max-width: 768px) {
-  .home-one-screen { grid-template-columns: 1fr; }
+  .home-one-screen { grid-template-columns: 1fr; grid-template-rows: auto; }
+  .home-one-screen .today-aggregate,
+  .home-one-screen .home-quick-card,
+  .home-one-screen .home-timer-card,
+  .home-one-screen .plan-card { grid-column: auto; grid-row: auto; }
+  .home-one-screen .home-timer-card .ht-rows { display: flex; flex-direction: column; }
 }
