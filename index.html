@@ -46,9 +46,34 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260825f" />
+  <link rel="stylesheet" href="styles.css?v=20260826a" />
+  <style>
+  .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:#F5F9FC;
+    transition:opacity .4s ease}
+  .loader-c.is-hidden{opacity:0;pointer-events:none}
+  .loader-c__dots{display:flex;gap:14px;margin-bottom:26px}
+  .loader-c__dots i{width:14px;height:14px;border-radius:50%;
+    animation:lc-breathe 1.4s ease-in-out infinite}
+  .loader-c__dots i:nth-child(1){background:#A7CEEC}
+  .loader-c__dots i:nth-child(2){background:#6FB6EA;animation-delay:.2s}
+  .loader-c__dots i:nth-child(3){background:#3E9BE8;animation-delay:.4s}
+  .loader-c__dots i:nth-child(4){background:#1F6FB2;animation-delay:.6s}
+  @keyframes lc-breathe{0%,100%{transform:scale(.6);opacity:.5}50%{transform:scale(1);opacity:1}}
+  .loader-c__brand{font-size:20px;font-weight:800;letter-spacing:3px;
+    background:linear-gradient(100deg,#1F6FB2 30%,#A7CEEC 50%,#1F6FB2 70%);
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:lc-shine 2.2s linear infinite}
+  @keyframes lc-shine{to{background-position:200% center}}
+  .loader-c__tip{font-size:12px;color:#6B7C8C;margin-top:12px;letter-spacing:1px}
+  </style>
 </head>
 <body>
+  <div id="app-loading" class="loader-c" role="status" aria-label="加载中">
+    <div class="loader-c__dots"><i></i><i></i><i></i><i></i></div>
+    <div class="loader-c__brand">考研学习记录</div>
+    <div class="loader-c__tip">正在准备你的学习数据…</div>
+  </div>
   <aside class="side-nav" id="sideNav">
     <div class="brand">
       <span class="brand-logo">考</span>
@@ -1072,14 +1097,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260825f"></script>
-  <script src="iconset.js?v=20260825f"></script>
-  <script src="words.js?v=20260825f"></script>
-  <script src="store.js?v=20260825f"></script>
-  <script src="charts.js?v=20260825f"></script>
-  <script src="share.js?v=20260825f"></script>
-  <script src="md5.js?v=20260825f"></script>
-  <script src="sentences.js?v=20260825f"></script>
-  <script src="app.js?v=20260825f"></script>
+  <script src="qrcode.min.js?v=20260826a"></script>
+  <script src="iconset.js?v=20260826a"></script>
+  <script src="words.js?v=20260826a"></script>
+  <script src="store.js?v=20260826a"></script>
+  <script src="charts.js?v=20260826a"></script>
+  <script src="share.js?v=20260826a"></script>
+  <script src="md5.js?v=20260826a"></script>
+  <script src="sentences.js?v=20260826a"></script>
+  <script src="app.js?v=20260826a"></script>
 </body>
 </html>

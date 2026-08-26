@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260825f';
+  var APP_VERSION = '20260826a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -4487,6 +4487,20 @@
 
   }
 
+  // 首屏加载动画（方案 C：呼吸点 + 流光品牌字）：init 完成后淡出；云同步可复用
+  function hideAppLoading() {
+    var el = document.getElementById('app-loading');
+    if (!el || el.dataset.done) return;
+    el.dataset.done = '1';
+    el.classList.add('is-hidden');
+    setTimeout(function () { el.style.display = 'none'; }, 450);
+  }
+  window.__showLoader = function () {
+    var el = document.getElementById('app-loading');
+    if (el) { el.style.display = 'flex'; el.classList.remove('is-hidden'); delete el.dataset.done; }
+  };
+  window.__hideLoader = hideAppLoading;
+
   function init() {
     // 注入线性 SVG 图标占位（方案 29 · Block 2）：把 [data-icon] 批量替换为图标
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(document);
@@ -5212,8 +5226,16 @@
     }
     if (document.readyState === 'complete') registerSW();
     else window.addEventListener('load', registerSW);
+
+    // 首屏加载动画：init 渲染完成，淡出（dataset.done 守卫，重复调用安全）
+    hideAppLoading();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  function boot() {
+    try { init(); }
+    catch (e) { console.error('init error:', e); }
+    finally { hideAppLoading(); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
