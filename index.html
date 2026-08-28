@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260826a" />
+  <link rel="stylesheet" href="styles.css?v=20260829a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -426,102 +426,117 @@
     <section id="tab-mistakes" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="mistakes">错题</button><button class="sub-tab-btn" data-sub="sentences">长难句</button></div>
       <div id="sub-mistakes" class="sub-panel active">
-      <div class="section">
-      <div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题 / 感悟整理</h2>
-        <p class="card-hint">把题目 / 感悟直接粘贴到下面，三步搞定：① <span class="ic-inline" data-icon="wand"></span> <b>智能整理</b>（AI 自动归类到 通用 / 数学 / 408）；② <b>直接存为感悟</b>；③ <b>手动归档</b>（自定义范围与分类）。</p>
-        <div class="field">
-          <label>内容（粘贴题目 / 感悟）</label>
-          <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
+      <div class="mb-guide">
+        <div class="mb-guide-left">
+          <span class="mb-guide-ic" data-icon="mistakes"></span>
+          <span>整理你的错题，按记忆曲线复习</span>
         </div>
-        <div class="btn-row" style="margin-top:10px">
-          <button id="btn-smart-organize" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="wand"></span> 智能整理</button>
-          <button id="btn-save-direct" class="btn btn-ghost" type="button">直接存为感悟</button>
-          <button id="btn-manual-organize" class="btn btn-ghost" type="button">手动归档 ▾</button>
+        <span id="mistake-due-badge" class="mb-due-badge" style="display:none"></span>
+      </div>
+
+      <div class="mb-divider">录入区</div>
+      <div class="mb-grid">
+        <div class="card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题 / 感悟整理</h2>
+          <p class="card-sub">把题目 / 感悟直接粘贴到下面，三步搞定：智能整理 / 存为感悟 / 手动归档。</p>
+          <div class="field">
+            <label>内容（粘贴题目 / 感悟）</label>
+            <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
+          </div>
+          <div class="btn-row" style="margin-top:10px">
+            <button id="btn-smart-organize" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="wand"></span> 智能整理</button>
+            <button id="btn-save-direct" class="btn btn-ghost" type="button">直接存为感悟</button>
+            <button id="btn-manual-organize" class="btn btn-ghost" type="button">手动归档 ▾</button>
+          </div>
+          <div id="mistake-smart-status" class="ai-status" style="margin-top:8px"></div>
+          <details id="mistake-manual-details" class="vocab-extra" style="margin-top:12px">
+            <summary class="card-sub">手动归档（选范围 / 分类 / 备注后点保存）</summary>
+            <div class="field-row" style="margin-top:10px">
+              <label>范围</label>
+              <select id="mistake-scope">
+                <option value="general">通用（感悟 / 通用错题）</option>
+                <option value="math">数学</option>
+                <option value="cs408">408</option>
+              </select>
+            </div>
+            <div id="mistake-scope-general">
+              <div class="chip-row" id="mistake-types"></div>
+              <div class="field-row">
+                <label>科目</label>
+                <select id="mistake-subject"><option value="">不指定</option></select>
+              </div>
+            </div>
+            <div id="mistake-scope-math" hidden>
+              <div class="field-row">
+                <label>分类</label>
+                <select id="mistake-math-cat"></select>
+              </div>
+            </div>
+            <div id="mistake-scope-cs408" hidden>
+              <div class="field-row">
+                <label>分类</label>
+                <select id="mistake-cs408-cat"></select>
+              </div>
+            </div>
+            <div class="field" style="margin-top:8px">
+              <label>备注（可选）</label>
+              <input type="text" id="mistake-note" placeholder="如：对应知识点 / 错误原因" />
+            </div>
+            <button id="btn-add-mistake" class="btn btn-primary full" style="margin-top:10px">保存（手动归档）</button>
+          </details>
         </div>
-        <div id="mistake-smart-status" class="ai-status" style="margin-top:8px"></div>
-        <details id="mistake-manual-details" class="vocab-extra" style="margin-top:12px">
-          <summary class="card-sub">手动归档（选范围 / 分类 / 备注后点保存）</summary>
-          <div class="field-row" style="margin-top:10px">
+
+        <div class="card" id="ai-solve-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="camera"></span> 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
+          <details class="vocab-extra" style="margin:0 0 12px">
+            <summary class="card-sub">查看视觉模型设置说明</summary>
+            <p class="card-sub" style="margin-top:8px">拍照前请先在 <a href="javascript:void(0)" id="link-open-vision">「设置 → 连接与密钥 → AI 能力 → 视觉模型」</a> 填好支持看图的模型（豆包 / 通义千问VL / GPT-4o）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
+          </details>
+          <div class="ai-solve-row">
+            <button id="btn-capture-cam" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="camera"></span> 拍照</button>
+            <button id="btn-capture-lib" class="btn btn-ghost" type="button"><span class="ic-inline" data-icon="image"></span> 相册</button>
+            <input id="ai-file-cam" type="file" accept="image/*" capture="environment" hidden />
+            <input id="ai-file-lib" type="file" accept="image/*" hidden />
+            <button id="btn-solve" class="btn btn-ghost" type="button" hidden>求解</button>
+          </div>
+          <div id="ai-preview" class="ai-preview" hidden></div>
+          <div id="ai-answer" class="ai-answer" hidden></div>
+          <h3 class="card-title sm">AI 解答记录</h3>
+          <div id="ai-solved-list" class="ai-solved-list"></div>
+        </div>
+      </div>
+
+      <div class="mb-divider">复习区</div>
+      <div class="mb-grid">
+        <div class="card">
+          <h2 class="card-title">我的整理</h2>
+          <div class="chip-row" id="mistake-filter"></div>
+          <div id="mistake-list" class="mistake-list"></div>
+        </div>
+
+        <div class="card flashcard-card">
+          <h2 class="card-title"><span class="ic-inline" data-icon="card"></span> 错题速查卡</h2>
+          <p class="card-sub">把到期错题当速查卡自测：看题 → 显示答案 → 标记答对 / 答错。</p>
+          <details class="vocab-extra" style="margin:0 0 12px">
+            <summary class="card-sub">查看记忆曲线复习说明</summary>
+            <p class="card-sub" style="margin-top:8px">数学答对升一箱（间隔拉长），408 标记已回顾；答错回到最短间隔，到期自动提醒。</p>
+          </details>
+          <div class="field-row">
             <label>范围</label>
-            <select id="mistake-scope">
-              <option value="general">通用（感悟 / 通用错题）</option>
+            <select id="mistake-flash-scope">
+              <option value="all">全部到期</option>
               <option value="math">数学</option>
               <option value="cs408">408</option>
             </select>
           </div>
-          <div id="mistake-scope-general">
-            <div class="chip-row" id="mistake-types"></div>
-            <div class="field-row">
-              <label>科目</label>
-              <select id="mistake-subject"><option value="">不指定</option></select>
-            </div>
+          <div class="btn-row">
+            <button id="btn-mistake-flash-start" class="btn btn-primary"><span class="ic-inline" data-icon="refresh"></span> 抽取待复习</button>
           </div>
-          <div id="mistake-scope-math" hidden>
-            <div class="field-row">
-              <label>分类</label>
-              <select id="mistake-math-cat"></select>
-            </div>
-          </div>
-          <div id="mistake-scope-cs408" hidden>
-            <div class="field-row">
-              <label>分类</label>
-              <select id="mistake-cs408-cat"></select>
-            </div>
-          </div>
-          <div class="field" style="margin-top:8px">
-            <label>备注（可选）</label>
-            <input type="text" id="mistake-note" placeholder="如：对应知识点 / 错误原因" />
-          </div>
-          <button id="btn-add-mistake" class="btn btn-primary full" style="margin-top:10px">保存（手动归档）</button>
-        </details>
-      </div></div>
-
-      <div class="section">
-<div class="card" id="ai-solve-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="camera"></span> 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
-        <p class="card-hint">拍照前请先在 <a href="javascript:void(0)" id="link-open-vision">「设置 → 连接与密钥 → AI 能力 → 视觉模型」</a> 填好支持看图的模型（豆包 / 通义千问VL / GPT-4o）。图片仅用于本次识别，存本地、不上传除大模型外的任何地方。</p>
-        <div class="ai-solve-row">
-          <button id="btn-capture-cam" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="camera"></span> 拍照</button>
-          <button id="btn-capture-lib" class="btn btn-ghost" type="button"><span class="ic-inline" data-icon="image"></span> 相册</button>
-          <input id="ai-file-cam" type="file" accept="image/*" capture="environment" hidden />
-          <input id="ai-file-lib" type="file" accept="image/*" hidden />
-          <button id="btn-solve" class="btn btn-ghost" type="button" hidden>求解</button>
+          <div id="mistake-flashcard-box" class="flashcard-wrap"></div>
         </div>
-        <div id="ai-preview" class="ai-preview" hidden></div>
-        <div id="ai-answer" class="ai-answer" hidden></div>
-        <h3 class="card-title sm">AI 解答记录</h3>
-        <div id="ai-solved-list" class="ai-solved-list"></div>
-      </div></div>
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title">我的整理 <span id="mistake-due-badge" class="review-badge" style="display:none"></span></h2>
-        <div class="chip-row" id="mistake-filter"></div>
-        <div id="mistake-list" class="mistake-list"></div>
-      </div></div>
-
-      <div class="section">
-<div class="card flashcard-card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="card"></span> 错题速查卡（记忆曲线复习）</h2>
-        <p class="card-hint">把到期错题当速查卡自测：先看题目 → 显示答案 → 标记答对 / 答错。数学答对升一箱（间隔拉长），408 标记已回顾；答错回到最短间隔，到期自动提醒。</p>
-        <div class="field-row">
-          <label>范围</label>
-          <select id="mistake-flash-scope">
-            <option value="all">全部到期</option>
-            <option value="math">数学</option>
-            <option value="cs408">408</option>
-          </select>
-        </div>
-        <div class="btn-row">
-          <button id="btn-mistake-flash-start" class="btn btn-primary"><span class="ic-inline" data-icon="refresh"></span> 抽取待复习</button>
-        </div>
-        <div id="mistake-flashcard-box" class="flashcard-wrap"></div>
-      </div></div>
-
+      </div>
     </div>
-
-      <div id="sub-sentences" class="sub-panel">
+<div id="sub-sentences" class="sub-panel">
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="puzzle"></span> 长难句分析</h2>
@@ -1097,14 +1112,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260826a"></script>
-  <script src="iconset.js?v=20260826a"></script>
-  <script src="words.js?v=20260826a"></script>
-  <script src="store.js?v=20260826a"></script>
-  <script src="charts.js?v=20260826a"></script>
-  <script src="share.js?v=20260826a"></script>
-  <script src="md5.js?v=20260826a"></script>
-  <script src="sentences.js?v=20260826a"></script>
-  <script src="app.js?v=20260826a"></script>
+  <script src="qrcode.min.js?v=20260829a"></script>
+  <script src="iconset.js?v=20260829a"></script>
+  <script src="words.js?v=20260829a"></script>
+  <script src="store.js?v=20260829a"></script>
+  <script src="charts.js?v=20260829a"></script>
+  <script src="share.js?v=20260829a"></script>
+  <script src="md5.js?v=20260829a"></script>
+  <script src="sentences.js?v=20260829a"></script>
+  <script src="app.js?v=20260829a"></script>
 </body>
 </html>

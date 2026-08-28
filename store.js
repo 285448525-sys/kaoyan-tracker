@@ -494,8 +494,39 @@
   function recordMathStat(cat, correct) { if (!state.mathStats) state.mathStats = {}; if (!state.mathStats[cat]) state.mathStats[cat] = { total: 0, correct: 0 }; state.mathStats[cat].total++; if (correct) state.mathStats[cat].correct++; save(); }
 
   /* ---------- 生词本（考研阅读词汇） ---------- */
+  // v1.2 字段迁移：旧 box 推导 level（box 1-5 → level 0-4），补齐缺失字段。幂等。
+  function normalizeVocabV12(v) {
+    if (!v || typeof v !== 'object') return v;
+    if (typeof v.level === 'number' && v.level >= 0 && typeof v.next === 'string' && v.next) {
+      if (v.errTotal == null) v.errTotal = 0;
+      if (v.errStreak == null) v.errStreak = 0;
+      if (v.hardWord == null) v.hardWord = false;
+      if (v.okStreak == null) v.okStreak = 0;
+      if (v.keyWord == null) v.keyWord = false;
+      if (v.cleared == null) v.cleared = !!v.last;
+      if (v.shortCount == null) v.shortCount = 0;
+      if (v.lastShortTouch == null) v.lastShortTouch = null;
+      if (v.cleanRounds == null) v.cleanRounds = 0;
+      return v;
+    }
+    var lvl = (typeof v.box === 'number' && v.box >= 1) ? Math.min(7, v.box - 1) : 0;
+    v.level = lvl;
+    v.errTotal = 0; v.errStreak = 0;
+    v.hardWord = false; v.okStreak = 0;
+    v.keyWord = false;
+    v.cleared = !!v.last;
+    v.shortCount = 0; v.lastShortTouch = null; v.cleanRounds = 0;
+    return v;
+  }
+  function migrateVocab() {
+    var arr = state.vocab || [];
+    if (!arr.length) return;
+    var changed = false;
+    arr.forEach(function (v) { var before = JSON.stringify(v); normalizeVocabV12(v); if (JSON.stringify(v) !== before) changed = true; });
+    if (changed) save();
+  }
   function getVocab() {
-    return (state.vocab || []).slice().sort(function (a, b) { return a.added < b.added ? 1 : (a.added > b.added ? -1 : 0); });
+    return (state.vocab || []).slice().map(normalizeVocabV12).sort(function (a, b) { return a.added < b.added ? 1 : (a.added > b.added ? -1 : 0); });
   }
   function findVocab(word) {
     if (!word) return null;
@@ -521,7 +552,10 @@
       phonetic: extra.phonetic || '', pos: extra.pos || '',
       example: extra.example || '', note: extra.note || '',
       category: extra.category || '其他',
-      box: 1, next: todayStr(), added: todayStr(), wrong: 0, last: ''
+      box: 1, next: todayStr(), added: todayStr(), wrong: 0, last: '',
+      // v1.2 字段（移植自雅思站背词算法：level 0-7 + 间隔天数 + 标签 + 短线计数）
+      level: 0, errTotal: 0, errStreak: 0, hardWord: false, okStreak: 0,
+      keyWord: false, cleared: false, shortCount: 0, lastShortTouch: null, cleanRounds: 0
     };
     state.vocab.push(v); save(); return v;
   }
@@ -533,7 +567,7 @@
   }
   function getDueVocab(today) {
     today = today || todayStr();
-    return (state.vocab || []).filter(function (v) { return v.next <= today; });
+    return (state.vocab || []).filter(function (v) { return normalizeVocabV12(v).next <= today; });
   }
 
   /* ---------- 翻译密钥（用户自行申请填写，仅存本机浏览器，不内置任何 key） ---------- */
@@ -911,7 +945,7 @@
     getTheme: getTheme, setTheme: setTheme,
     getColorScheme: getColorScheme, setColorScheme: setColorScheme,
     exportJSON: exportJSON, importJSON: importJSON,
-    getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab,
+    getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab, migrateVocab: migrateVocab,
     getTranslator: getTranslator, setTranslator: setTranslator,
     getAiConfig: getAiConfig, setAiConfig: setAiConfig,
     getVisionConfig: getVisionConfig, setVisionConfig: setVisionConfig,

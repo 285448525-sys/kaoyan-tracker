@@ -1259,21 +1259,21 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   border-radius: 6px; padding: 2px 6px;
 }
 .exam-scores span b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.due-tag { font-size: 11px; font-weight: 700; color: #fff; background: #f59e0b; border-radius: var(--radius-sm); padding: 2px var(--sp-2); }
-.mistake-item.due { border-left: 4px solid #f59e0b; }
+.due-tag { font-size: 11px; font-weight: 700; color: #fff; background: var(--primary); border-radius: var(--radius-sm); padding: 2px var(--sp-2); }
+.mistake-item.due { border-left: 4px solid var(--primary); }
 .mistake-item.due .mistake-content { color: var(--ink); }
 .mistake-review { align-self: flex-start; margin-top: var(--sp-2); }
 
 /* ============ 数学错题速查卡（Leitner 记忆曲线复习） ============ */
 .mistake-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .box-badge { font-size: 11px; font-weight: 700; color: var(--primary); background: #E7F3FC; border: 1px solid #CFE3F5; border-radius: var(--radius-sm); padding: 2px var(--sp-2); }
-.flashcard-card { border-left: 4px solid var(--ok); }
+.flashcard-card { border-left: 4px solid var(--primary); }
 .flashcard-wrap { margin-top: 6px; }
 .flash-overview { margin-bottom: 10px; }
 .flash-count { font-size: 13px; color: var(--muted); font-weight: 600; }
-.flashcard { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #a7f3d0; border-radius: var(--radius); padding: var(--sp-4); }
+.flashcard { background: linear-gradient(135deg, var(--primary-soft), #DCEFFB); border: 1px solid #CFE3F5; border-radius: var(--radius); padding: var(--sp-4); }
 .flash-progress { font-size: 12px; color: var(--muted); margin-bottom: var(--sp-2); }
-.flash-cat { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--ok); border-radius: var(--radius-sm); padding: 2px var(--sp-2); margin-bottom: 10px; }
+.flash-cat { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--primary); border-radius: var(--radius-sm); padding: 2px var(--sp-2); margin-bottom: 10px; }
 .flash-label { font-size: 12px; color: var(--muted); margin-bottom: var(--sp-1); }
 .flash-front { margin-bottom: var(--sp-3); }
 .flash-q { font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
@@ -1285,8 +1285,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .btn-ok:hover { background: color-mix(in srgb, var(--ok) 85%, #000); }
 .btn-bad { background: var(--danger); color: #fff; border-color: var(--danger); }
 .btn-bad:hover { background: color-mix(in srgb, var(--danger) 85%, #000); }
-:root[data-theme="dark"] .flashcard { background: linear-gradient(135deg, #11321f, #0f2a1c); border-color: #14532d; }
-:root[data-theme="dark"] .flash-back { background: #0f2a1c; border-color: #14532d; }
+:root[data-theme="dark"] .flashcard { background: linear-gradient(135deg, #16263a, #122033); border-color: #24405e; }
+:root[data-theme="dark"] .flash-back { background: #122033; border-color: #24405e; }
 :root[data-theme="dark"] .box-badge { background: #1e2a4d; border-color: #334155; color: var(--primary-bright); }
 
 /* ============ A3：薄弱点分析报告 ============ */
@@ -2103,13 +2103,13 @@ body { overscroll-behavior-y: none; }
 /* ===== 三套错题本合并：范围联动显隐 + 列表 scope 徽标 ===== */
 #mistake-scope-math[hidden], #mistake-scope-cs408[hidden] { display: none; }
 .mistake-scope { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--primary-08, #E7F3FC); color: var(--primary); margin-right: 6px; }
-.mistake-scope.math { background: #e0f2fe; color: #0369a1; }
-.mistake-scope.cs408 { background: #dcfce7; color: #15803d; }
+.mistake-scope.math { background: var(--primary-soft); color: var(--primary-deep); }
+.mistake-scope.cs408 { background: var(--primary-soft); color: var(--primary-deep); }
 
 /* 错题复习主动提醒卡 */
 .mistake-review-body { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
 .mistake-review-body .mr-line { font-size: 14px; color: var(--ink); }
-.mistake-review-body .mr-line.ok { color: #16a34a; }
+.mistake-review-body .mr-line.ok { color: var(--primary); }
 
 /* --- 8. 平板 / 小笔记本区间（861–1080px）：4 列卡收拢为 2 列，横屏不再过挤 --- */
 @media (min-width: 861px) and (max-width: 1080px) {
@@ -2583,4 +2583,62 @@ details.import-fold .import-body textarea { width: 100%; min-height: 80px; paddi
 }
 @media (max-width: 480px) {
   .entry-opts { grid-template-columns: 1fr; }
+}
+
+/* ===== 错题本重构（v20260827a）：引导行 + 录入区/复习区分区 + 双列 grid + 配色收口 ===== */
+.mb-guide {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 14px 18px; margin-bottom: var(--sp-6); box-shadow: var(--shadow);
+}
+.mb-guide-left { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink); }
+.mb-guide-ic { width: 34px; height: 34px; border-radius: 10px; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; flex: none; }
+.mb-guide-ic svg { width: 18px; height: 18px; stroke: var(--primary-deep); }
+.mb-due-badge {
+  font-size: 13px; font-weight: 700; color: var(--primary-deep);
+  background: var(--primary-soft); border: 1px solid #CFE3F5;
+  border-radius: 999px; padding: 5px 12px; flex: none; white-space: nowrap;
+}
+
+.mb-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: var(--sp-6) 0 var(--sp-4);
+  font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em;
+}
+.mb-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.mb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-items: start; }
+.mb-grid > .card { margin-bottom: 0; }
+
+/* 我的整理：加大呼吸感（列表 gap 与卡片 padding） */
+.sub-panel .mistake-list { gap: var(--sp-3); }
+.sub-panel .mistake-item { padding: var(--sp-4); }
+
+/* 响应式：平板/手机单列；手机按钮全宽、引导行换行 */
+@media (max-width: 959px) {
+  .mb-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .mb-guide { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .mb-grid .btn-row .btn,
+  .mb-grid .ai-solve-row .btn { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ===== 词汇 SRS 引擎 UI（20260829a，移植自雅思背词 v1.2/v4.1，mist 蓝） ===== */
+.review-lv { font-size: 13px; font-weight: 600; color: var(--muted); margin: 2px 0 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.review-word { font-size: 30px; font-weight: 800; color: var(--ink); margin: 4px 0 10px; text-align: center; }
+.vocab-mark-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.vmark-btn { font-size: 12px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--card); color: var(--ink-2); cursor: pointer; transition: background .15s, border-color .15s; }
+.vmark-btn:hover { border-color: var(--primary); }
+.vmark-btn.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-strong); font-weight: 600; }
+.vmark-forgot { color: var(--danger); border-color: var(--danger-soft); }
+.vmark-forgot:hover { border-color: var(--danger); }
+.hard-pill { background: rgba(62, 155, 232, 0.14); color: var(--primary-strong); border: 1px solid rgba(62, 155, 232, 0.28); }
+.key-pill { background: var(--primary-soft); color: var(--primary-strong); border: 1px solid rgba(62, 155, 232, 0.28); }
+.streak-bar { font-size: 12px; color: var(--muted); margin: 8px 0; display: flex; align-items: center; gap: 6px; }
+.streak-bar .sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
+.streak-bar .sdot.on { background: var(--primary); }
+.streak-tip { color: var(--muted); }
+@media (max-width: 480px) {
+  .vocab-mark-row .vmark-btn { flex: 1 1 calc(50% - 6px); text-align: center; }
 }

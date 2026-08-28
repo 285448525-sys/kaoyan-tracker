@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260826a';
+  var APP_VERSION = '20260829a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2430,6 +2430,7 @@
   /* ============ 词汇模块：生词记录 / 背单词 / 生词复习 ============ */
   var libFilter = 'all';      // 我的词库筛选：all | vocab | wrong | cat:xxx
   var pendingWord = null;     // 查词并释义后暂存待存入生词本的单词
+  var vocabMigratedOnce = false; // 一次性迁移旧 box→level 字段
   function readVocabExtra() {
     return {
       phonetic: (refs.wordPhonetic && refs.wordPhonetic.value || '').trim(),
@@ -2446,7 +2447,123 @@
     if (refs.wordNote) refs.wordNote.value = '';
     if (refs.wordCategory) refs.wordCategory.value = '其他';
   }
+
+  /* ============ 词汇 SRS 引擎（移植自雅思站背词 v1.2 / v4.1 算法） ============ */
+  // 熟练度 0-7 级标准间隔（天）：索引 = 等级
+  var VOCAB_LEVEL_INTERVAL = [1, 2, 4, 7, 15, 30, 60, 90];
+  var SHORT_PASS = 3;                 // 短线：分散连续对 3 次才过关（雅思 v4.1）
+  var GAP = [0, 2, 5];                // 答对后插回队列的间隔词数（k=1→隔2、k=2→隔5、k=3=过关）
+  var GAP_HARD = [0, 1, 3];           // 难词加密：k=1→隔1、k=2→隔3
+  var CLEAN_TO_EXIT = 3;              // 难词退出门槛：连续 3 轮短线过关才取消难词
+  function vocabAddDays(dateStr, n) {
+    var d = new Date(dateStr + 'T00:00:00'); d.setDate(d.getDate() + n);
+    return Store.dateStr(d);
+  }
+  function vocabDaysBetween(a, b) {
+    var da = new Date(a + 'T00:00:00'), db = new Date(b + 'T00:00:00');
+    return Math.round((db - da) / 86400000);
+  }
+  // 防御性补齐 v1.2 字段（getVocab/getDueVocab 已归一化，这里兜底）
+  function ensureVocabV12(v) {
+    if (!v || typeof v !== 'object') return v;
+    if (typeof v.level !== 'number') v.level = (typeof v.box === 'number' && v.box >= 1) ? Math.min(7, v.box - 1) : 0;
+    if (v.errTotal == null) v.errTotal = 0;
+    if (v.errStreak == null) v.errStreak = 0;
+    if (v.hardWord == null) v.hardWord = false;
+    if (v.okStreak == null) v.okStreak = 0;
+    if (v.keyWord == null) v.keyWord = false;
+    if (v.cleared == null) v.cleared = !!v.last;
+    if (v.shortCount == null) v.shortCount = 0;
+    if (v.lastShortTouch == null) v.lastShortTouch = null;
+    if (v.cleanRounds == null) v.cleanRounds = 0;
+    return v;
+  }
+  // 把变更的 v1.2 字段写回 Store
+  function persistVocab(v) {
+    if (!v || !v.id) return;
+    Store.updateVocab(v.id, {
+      level: v.level, next: v.next, errTotal: v.errTotal, errStreak: v.errStreak,
+      hardWord: v.hardWord, okStreak: v.okStreak, keyWord: v.keyWord, cleared: v.cleared,
+      shortCount: v.shortCount, lastShortTouch: v.lastShortTouch, cleanRounds: v.cleanRounds
+    });
+  }
+  // 逾期降级：复习前应用，避免重复降级（移植自雅思 applyOverdue）
+  function applyVocabOverdue(v) {
+    var today = Store.todayStr();
+    if (!v.next || v.next >= today) return;
+    var overdueDays = vocabDaysBetween(v.next, today);
+    var std = VOCAB_LEVEL_INTERVAL[Math.min(7, v.level || 0)] || 1;
+    if (v.hardWord) std = Math.ceil(std * 0.5);
+    if (v.keyWord) std = Math.ceil(std * 0.7);
+    var forget = overdueDays / std;
+    var lvl = v.level || 0;
+    if (forget < 0.5) lvl = Math.max(0, lvl - 1);
+    else if (forget <= 1) lvl = Math.max(0, lvl - 2);
+    else { if (lvl <= 2) lvl = 0; else lvl = Math.max(0, Math.ceil(lvl * 0.4)); }
+    v.level = lvl; v.next = today;
+  }
+  // 长线升级（先按当前等级算间隔再升级；level0 新词首次复习=1天）
+  function promoteVocabLongTerm(v, today) {
+    var interval = VOCAB_LEVEL_INTERVAL[Math.min(7, v.level || 0)];
+    if (v.hardWord) interval = Math.ceil(interval * 0.5);
+    if (v.keyWord) interval = Math.ceil(interval * 0.7);
+    v.next = vocabAddDays(today, Math.max(1, interval));
+    v.level = Math.min(7, (v.level || 0) + 1);
+    v.cleared = true; v.shortCount = 0; v.lastShortTouch = null;
+    if (v.hardWord) {
+      v.cleanRounds = (v.cleanRounds || 0) + 1;
+      if (v.cleanRounds >= CLEAN_TO_EXIT) { v.hardWord = false; v.cleanRounds = 0; }
+    }
+  }
+  // 长线降级（答错/不认识；完全不认识加重惩罚）
+  function demoteVocabLongTerm(v, today, isCompletelyUnknown) {
+    var drop = (v.level || 0) >= 5 ? 1 : 2;
+    v.level = Math.max(0, (v.level || 0) - drop);
+    v.next = vocabAddDays(today, 1);
+    v.errTotal = (v.errTotal || 0) + 1;
+    if (isCompletelyUnknown) { v.errTotal = (v.errTotal || 0) + 1; v.level = Math.max(0, v.level - 1); }
+    if (v.errTotal >= 2) v.hardWord = true;
+    v.cleanRounds = 0; v.shortCount = 0; v.lastShortTouch = null;
+  }
+  function vocabGapFor(v, k) {
+    var g = (v && v.hardWord) ? GAP_HARD : GAP;
+    var val = (k != null && g[k] != null) ? g[k] : 2;
+    return Math.max(1, val);
+  }
+  // 动态干扰项：同/相邻 level 优先（移植自雅思 genDistractors，适配 word/cn）
+  function genVocabDistractors(correct, allWords) {
+    var cWord = String(correct.word || '').toLowerCase();
+    var cCn = String(correct.cn || '');
+    var pool = shuffle((allWords || []).filter(function (w) {
+      var e = String(w.word || '').toLowerCase();
+      if (e === '' || e === cWord) return false;
+      if (cCn && String(w.cn || '') === cCn) return false;
+      return true;
+    }));
+    var similar = pool.filter(function (w) { return Math.abs((w.level || 0) - (correct.level || 0)) <= 1; });
+    var uniq = [], seenCn = {};
+    var pushIfNew = function (x) { var cn = String(x.cn || ''); if (cn && !seenCn[cn]) { seenCn[cn] = 1; uniq.push(x); } };
+    for (var i = 0; i < similar.length && uniq.length < 2; i++) pushIfNew(similar[i]);
+    for (var j = 0; j < pool.length && uniq.length < 2; j++) pushIfNew(pool[j]);
+    var k = 0;
+    while (uniq.length < 3 && k < pool.length) { pushIfNew(pool[k]); k++; }
+    return shuffle([correct].concat(uniq.slice(0, 3)));
+  }
+  // 词库快标（key/hard/master/forgot），移植自雅思 markWord
+  function markVocab(word, action) {
+    var w = Store.findVocab(word);
+    if (!w) return;
+    ensureVocabV12(w);
+    var t = Store.todayStr();
+    if (action === 'key') w.keyWord = !w.keyWord;
+    else if (action === 'hard') w.hardWord = !w.hardWord;
+    else if (action === 'master') { w.level = 7; w.next = vocabAddDays(t, 90); w.last = t; w.cleared = true; } // 非破坏：标已掌握→90天后再复习（雅思为删除，考研保留）
+    else if (action === 'forgot') demoteVocabLongTerm(w, t, true);
+    persistVocab(w);
+    renderWords();
+  }
   function renderWords() {
+    if (!vocabMigratedOnce) { Store.migrateVocab(); vocabMigratedOnce = true; }
     var vocab = Store.getVocab();
     var wrong = Store.getWrongWords();
     var items = [];
@@ -2477,9 +2594,12 @@
     });
   }
   function appendVocabItem(v) {
+    ensureVocabV12(v);
     var item = el('div', 'mistake-item');
     var top = el('div', 'mistake-top');
-    top.appendChild(el('span', 'mistake-badge', 'L' + (v.box || 1)));
+    top.appendChild(el('span', 'mistake-badge', 'Lv ' + (v.level || 0)));
+    if (v.hardWord) top.appendChild(el('span', 'vocab-cat-pill hard-pill', '难'));
+    if (v.keyWord) top.appendChild(el('span', 'vocab-cat-pill key-pill', '重'));
     if (v.category && v.category !== '其他') top.appendChild(el('span', 'vocab-cat-pill', v.category));
     var del = el('button', 'plan-del', '删除');
     del.addEventListener('click', function () { Store.removeVocab(v.id); renderWords(); showToast('已删除'); });
@@ -2491,7 +2611,23 @@
     if (v.example) item.appendChild(el('div', 'vocab-ex', v.example));
     if (v.note) item.appendChild(el('div', 'vocab-note', v.note));
     var due = (v.next <= Store.todayStr());
-    item.appendChild(el('div', 'mistake-meta', '加入 ' + v.added + (due ? ' · 待复习' : ' · 下次 ' + v.next)));
+    var meta = '加入 ' + v.added + (due ? ' · 待复习' : ' · 下次 ' + v.next);
+    if (v.errTotal) meta += ' · 错 ' + v.errTotal;
+    item.appendChild(el('div', 'mistake-meta', meta));
+    // 快标按钮行（移植自雅思 markWord：重点/难词/已掌握/不认识）
+    var markRow = el('div', 'vocab-mark-row');
+    var bKey = el('button', 'vmark-btn' + (v.keyWord ? ' active' : ''), '重点');
+    bKey.addEventListener('click', function () { markVocab(v.word, 'key'); });
+    var bHard = el('button', 'vmark-btn' + (v.hardWord ? ' active' : ''), '难词');
+    bHard.addEventListener('click', function () { markVocab(v.word, 'hard'); });
+    var bMaster = el('button', 'vmark-btn', '已掌握');
+    bMaster.addEventListener('click', function () {
+      if (window.confirm('标记「' + v.word + '」已掌握？它将排到 90 天后再复习（保留在生词本）。')) markVocab(v.word, 'master');
+    });
+    var bForgot = el('button', 'vmark-btn vmark-forgot', '不认识');
+    bForgot.addEventListener('click', function () { markVocab(v.word, 'forgot'); });
+    markRow.appendChild(bKey); markRow.appendChild(bHard); markRow.appendChild(bMaster); markRow.appendChild(bForgot);
+    item.appendChild(markRow);
     refs.vocabList.appendChild(item);
   }
   function appendWrongItem(w) {
@@ -3170,6 +3306,7 @@
     return DICT.slice().filter(function (d) { return d.w && d.c; }).map(function (d) { return { w: d.w, c: d.c, category: '' }; });
   }
   function startPractice() {
+    Store.migrateVocab();
     var ps = Store.getPracticeSettings();
     var pool = buildPracticePool(ps.scope);
     if (!pool.length) {
@@ -3191,25 +3328,31 @@
     }
     var cur = s.items[s.index];
     var en2cn = s.mode !== 'cn2en';
-    var others = s.pool.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
-    shuffle(others);
-    // 干扰项：优先从词池取，不足 3 个时用本地词库补充
-    var fillers = DICT.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
+    var today = Store.todayStr();
+    var lvOf = (function () { var x = Store.findVocab(cur.w); return x ? (x.level || 0) : 0; })();
+    // 干扰项：优先同/相邻 level（移植自雅思 genVocabDistractors），更准；词库不足时兜底原逻辑
+    var poolAll = Store.getVocab();
+    var correctObj = { word: cur.w, cn: cur.c, level: lvOf };
+    var distractors = (poolAll.length >= 4) ? genVocabDistractors(correctObj, poolAll) : null;
     var opts = [];
-    if (en2cn) {
-      opts.push(cur.c);
-      for (var i = 0; i < others.length && opts.length < 4; i++) if (opts.indexOf(others[i].c) < 0) opts.push(others[i].c);
-      for (var j = 0; j < fillers.length && opts.length < 4; j++) if (opts.indexOf(fillers[j].c) < 0) opts.push(fillers[j].c);
+    if (distractors && distractors.length >= 2) {
+      opts = distractors.map(function (d) { return en2cn ? d.cn : d.word; });
     } else {
-      opts.push(cur.w);
-      for (var k = 0; k < others.length && opts.length < 4; k++) if (opts.indexOf(others[k].w) < 0) opts.push(others[k].w);
-      for (var m = 0; m < fillers.length && opts.length < 4; m++) if (opts.indexOf(fillers[m].w) < 0) opts.push(fillers[m].w);
+      var others = s.pool.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
+      shuffle(others);
+      var fillers = DICT.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
+      opts.push(en2cn ? cur.c : cur.w);
+      var src = en2cn ? others.map(function (d) { return d.c; }) : others.map(function (d) { return d.w; });
+      var fill = en2cn ? fillers.map(function (d) { return d.c; }) : fillers.map(function (d) { return d.w; });
+      for (var i = 0; i < src.length && opts.length < 4; i++) if (opts.indexOf(src[i]) < 0) opts.push(src[i]);
+      for (var j = 0; j < fill.length && opts.length < 4; j++) if (opts.indexOf(fill[j]) < 0) opts.push(fill[j]);
     }
     shuffle(opts);
     var stem = en2cn ? cur.w : cur.c;
     var answer = en2cn ? cur.c : cur.w;
     var catPill = (cur.category && cur.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(cur.category) + '</span>' : '';
-    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>' + catPill;
+    var lvTxt = '<span class="vocab-cat-pill key-pill" style="margin-left:8px">Lv ' + lvOf + '</span>';
+    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>' + catPill + lvTxt;
     html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个 · ' + (en2cn ? '英选译' : '中选英') + '</div>';
     html += '<div class="practice-options">';
     opts.forEach(function (o) {
@@ -3229,8 +3372,13 @@
           b.disabled = true;
           if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
         });
-        if (correct) { btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669'; }
-        else { btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + answer; fb.style.color = '#dc2626'; }
+        if (correct) {
+          btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669';
+          var vv = Store.findVocab(cur.w);
+          if (vv) { ensureVocabV12(vv); promoteVocabLongTerm(vv, today); persistVocab(vv); }  // 答对→长线升级
+        } else {
+          btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + answer; fb.style.color = '#dc2626';
+        }
         addNextButton();
       });
     });
@@ -3238,6 +3386,8 @@
       if (s.answered) return;
       s.answered = true;
       if (s.autoSave) Store.addVocab(cur.w, cur.c);
+      var vv = Store.findVocab(cur.w);
+      if (vv) { ensureVocabV12(vv); demoteVocabLongTerm(vv, today, true); persistVocab(vv); }  // 不认识→降级+明天复习
       refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (b) {
         b.disabled = true;
         if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
@@ -3261,43 +3411,78 @@
   }
 
   function startReview() {
+    Store.migrateVocab();
     var due = Store.getDueVocab(Store.todayStr());
     if (!due.length) {
-      reviewQueue = { items: [], index: 0, total: 0 };
+      reviewQueue = { items: [], index: 0, total: 0, passed: 0 };
       refs.reviewHint.textContent = '今天没有待复习的生词～去背单词或记录生词吧';
       refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">暂无待复习词</div></div>';
       return;
     }
     var items = due.slice();
     shuffle(items);
-    reviewQueue = { items: items, index: 0, total: items.length };
-    refs.reviewHint.textContent = '今日待复习 ' + items.length + ' 个生词（按记忆曲线推送）';
+    reviewQueue = { items: items, index: 0, total: items.length, passed: 0 };
+    refs.reviewHint.textContent = '今日待复习 ' + items.length + ' 个生词（等级制记忆曲线推送）';
     renderReview();
   }
   function renderReview() {
     if (!reviewQueue) { refs.reviewBox.innerHTML = '<div class="empty-hint">进入本页开始复习</div>'; return; }
     var q = reviewQueue;
     if (q.index >= q.items.length) {
-      refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">今日复习完成 🎉</div><div class="muted" style="margin-top:8px">共复习 ' + q.total + ' 个生词</div></div>';
+      refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">今日复习完成 🎉</div><div class="muted" style="margin-top:8px">共复习 ' + q.total + ' 个生词，过关 ' + (q.passed || 0) + ' 个</div></div>';
       return;
     }
     var v = q.items[q.index];
+    ensureVocabV12(v);
+    applyVocabOverdue(v);          // 复习前应用逾期降级（消费后落库，避免重复降级）
+    persistVocab(v);
+    var today = Store.todayStr();
+    var lvl = v.level || 0;
+    var dueTxt = (v.next <= today) ? '待复习' : ('下次 ' + v.next);
+    var tags = [];
+    if (v.hardWord) tags.push('<span class="vocab-cat-pill hard-pill">难</span>');
+    if (v.keyWord) tags.push('<span class="vocab-cat-pill key-pill">重</span>');
     var catPill = (v.category && v.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(v.category) + '</span>' : '';
-    var html = '<div class="review-en">' + escapeHtml(v.word) + '</div>' + catPill;
+    var sc = v.shortCount || 0;
+    var streakHtml = '';
+    if (sc > 0 && sc < SHORT_PASS) {
+      streakHtml = '<div class="streak-bar">已对 <b>' + sc + '</b>/' + SHORT_PASS + ' ' +
+        [0, 1, 2].map(function (i) { return '<span class="sdot' + (i < sc ? ' on' : '') + '"></span>'; }).join('') +
+        ' <span class="streak-tip">（还差 ' + (SHORT_PASS - sc) + ' 次记牢，隔几个词后回考）</span></div>';
+    }
+    var html = '<div class="review-lv">Lv ' + lvl + ' · ' + dueTxt + '</div>' + catPill + tags.join('');
+    html += '<div class="review-word">' + escapeHtml(v.word) + '</div>';
     html += '<div class="review-cn" id="review-cn" style="visibility:hidden">' + escapeHtml(v.cn || '（无释义）') + '</div>';
+    html += streakHtml;
     html += '<div class="practice-actions"><button class="btn btn-ghost" id="review-show">显示释义</button></div>';
     html += '<div class="review-actions" style="margin-top:12px"><button class="btn btn-primary" id="review-know">✅ 认识</button><button class="btn btn-danger" id="review-unknow">❌ 不认识</button></div>';
     refs.reviewBox.innerHTML = html;
-    $('review-show').addEventListener('click', function () { $('review-cn').style.visibility = 'visible'; this.style.display = 'none'; });
+    $('review-show').addEventListener('click', function () { var c = $('review-cn'); if (c) { c.style.visibility = 'visible'; this.style.display = 'none'; } });
     $('review-know').addEventListener('click', function () {
-      var nb = Math.min((v.box || 1) + 1, 5);
-      Store.updateVocab(v.id, { box: nb, next: nextReviewDate(nb), last: Store.todayStr() });
-      q.index++; renderReview();
+      v.shortCount = (v.shortCount || 0) + 1;          // 短线成功 +1
+      v.lastShortTouch = new Date().toISOString();
+      if (v.shortCount >= SHORT_PASS) {
+        promoteVocabLongTerm(v, today);               // 3 次全对→长线升级，移出队列
+        persistVocab(v);
+        q.items.splice(q.index, 1);
+        q.passed = (q.passed || 0) + 1;
+        renderReview();
+      } else {
+        var gap = vocabGapFor(v, v.shortCount);        // 难词走加密 GAP
+        q.items.splice(q.index, 1);
+        var pos = Math.min(q.items.length, q.index + gap);
+        if (pos >= q.items.length) q.items.push(v); else q.items.splice(pos, 0, v);
+        persistVocab(v);
+        renderReview();
+      }
     });
     $('review-unknow').addEventListener('click', function () {
-      Store.updateVocab(v.id, { box: 1, next: nextReviewDate(1), last: Store.todayStr(), wrong: (v.wrong || 0) + 1 });
-      q.items.push(v);
-      q.index++; renderReview();
+      demoteVocabLongTerm(v, today, true);            // 完全不认识→加重惩罚+明天复习
+      persistVocab(v);
+      q.items.splice(q.index, 1);
+      var pos = Math.min(q.items.length, q.index + 1);
+      if (pos >= q.items.length) q.items.push(v); else q.items.splice(pos, 0, v);
+      renderReview();
     });
   }
 
