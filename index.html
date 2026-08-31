@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260829a" />
+  <link rel="stylesheet" href="styles.css?v=20260831a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -112,70 +112,59 @@
 
   <main class="app-main">
 
-    <!-- 首页（Home）：Hero + 三指标卡 + 四快捷入口 + 双栏（四科记录 / 今日待办） -->
+    <!-- 首页（Home · Apple 风 v20260831）：状态栏 + 顶栏 + Hero 卡 + 功能入口 + 今日待办 -->
     <section id="tab-home" class="tab-panel active home-redesign">
 
-      <!-- Hero 横幅 -->
-      <div class="home-hero" id="home-hero">
-        <div class="home-hero-l">
-          <div class="home-eyebrow" id="home-eyebrow">考研学习记录 · 每日打卡</div>
-          <div class="home-date" id="home-date">--</div>
-          <div class="home-countdown">
-            <span class="home-cd-num" id="home-cd-num">--</span>
-            <span class="home-cd-unit">天</span>
-          </div>
-          <div class="home-cd-sub" id="home-cd-sub">距考研</div>
-          <div class="home-cd-prog">
-            <span class="home-cd-lbl" id="home-cd-lbl">备考进度 0%</span>
-            <span class="home-cd-bar"><i id="home-cd-fill"></i></span>
-          </div>
-        </div>
-        <div class="home-hero-r">
-          <button class="home-cta" id="home-cta" data-goto="timer" type="button"><span class="home-cta-play"></span> <span id="home-cta-text">开始计时学习</span></button>
-          <div class="home-hero-meta" id="home-hero-meta">连续 0 天 · 今日已学 0m</div>
-        </div>
+      <!-- 移动端状态栏（装饰） -->
+      <div class="app-statusbar" aria-hidden="true">
+        <span class="sb-time">9:41</span>
+        <span class="sb-right"><span class="sb-battery"></span></span>
       </div>
 
-      <!-- 关键指标行 -->
-      <div class="home-metrics" id="home-metrics">
-        <div class="home-metric" id="m-focus" data-goto="timer">
-          <div class="m-ic"><span data-icon="timer"></span></div>
-          <div class="m-val" id="m-focus-val">0m</div>
-          <div class="m-lbl">今日专注时长</div>
+      <!-- 顶栏 -->
+      <header class="home-header">
+        <div class="hh-greet">
+          <div class="hh-eyebrow" id="home-greet-eyebrow">下午好</div>
+          <div class="hh-name" id="home-greet-name">润芝</div>
         </div>
-        <div class="home-metric" id="m-streak" data-goto="settings">
-          <div class="m-ic"><span data-icon="fire"></span></div>
-          <div class="m-val" id="m-streak-val">0</div>
-          <div class="m-lbl">连续打卡</div>
+        <button class="hh-countdown" data-goto="settings" type="button" aria-label="考研倒计时">
+          <span class="tab-ic" data-icon="clock"></span>
+          <span class="hh-cd-text" id="home-cd-text">距考研 29 天</span>
+        </button>
+      </header>
+
+      <!-- Hero 主色卡 -->
+      <div class="home-hero-card" id="home-hero-card">
+        <div class="hhc-row">
+          <span class="hhc-label">今日专注</span>
+          <span class="hhc-goal">目标 6h</span>
         </div>
-        <div class="home-metric" id="m-plan" data-goto="home">
-          <div class="m-ic"><span data-icon="check"></span></div>
-          <div class="m-val" id="m-plan-val">0/0</div>
-          <div class="m-lbl">计划完成</div>
+        <div class="hhc-main">
+          <div class="hhc-left">
+            <div class="hhc-num" id="home-focus-num">0m</div>
+            <div class="hhc-sub" id="home-focus-sub">开始你的第一次专注</div>
+          </div>
+          <div class="hhc-ring" id="home-focus-ring"></div>
         </div>
+        <button class="home-cta" id="home-cta" data-goto="timer" type="button">
+          <span class="home-cta-play"></span>
+          <span id="home-cta-text">开始计时</span>
+        </button>
       </div>
 
-      <!-- 快捷入口 -->
-      <p class="section-title">快捷入口</p>
+      <!-- 功能入口 2×2 -->
+      <p class="section-title">功能入口</p>
       <div class="home-quick" id="home-quick"></div>
 
-      <!-- 双栏：四科记录 + 今日待办 -->
-      <div class="home-cols">
-        <div class="card home-records">
-          <div class="card-head">
-            <h3>今日学习记录</h3>
-            <span class="sub">总计 <b id="home-rec-total">0m</b></span>
-          </div>
-          <div class="home-rec-grid" id="home-rec-grid"></div>
-          <p class="home-rec-empty" id="home-rec-empty">今天还没有计时记录，点击上方「计时」开始学习。</p>
+      <!-- 今日待办 -->
+      <div class="home-todo-section">
+        <div class="section-title-row">
+          <span class="section-title">今日待办</span>
+          <span class="todo-count" id="home-todo-sub">0/0 完成</span>
         </div>
-        <div class="card home-todo">
-          <div class="card-head">
-            <h3>今日待办</h3>
-            <span class="sub" id="home-todo-sub">0/0 完成</span>
-          </div>
+        <div class="card home-todo-card">
           <div id="plan-empty-hint" class="plan-empty-hint">
-            <span class="ic-inline" data-icon="sparkle"></span>
+            <span class="ic-inline" data-icon="sparkles"></span>
             今天还没有计划，点下面按钮让 AI 帮你拆任务。
           </div>
           <div class="btn-row">
@@ -1104,22 +1093,22 @@
   <!-- 移动端底部 Tab Bar -->
   <nav class="bottom-tabbar" id="bottomTabbar" aria-label="底部导航">
     <button class="btb-btn active" data-tab="home"><span class="tab-ic" data-icon="home"></span><span>首页</span></button>
-    <button class="btb-btn" data-tab="math"><span class="tab-ic" data-icon="math"></span><span>数学</span></button>
-    <button class="btb-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span>408</span></button>
     <button class="btb-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span>词汇</span></button>
-    <button class="btb-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span>错题</span></button>
+    <button class="btb-btn" data-tab="timer"><span class="tab-ic" data-icon="timer"></span><span>计时</span></button>
+    <button class="btb-btn" data-tab="data"><span class="tab-ic" data-icon="data"></span><span>数据</span></button>
+    <button class="btb-btn" data-tab="settings"><span class="tab-ic" data-icon="settings"></span><span>我的</span></button>
   </nav>
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260829a"></script>
-  <script src="iconset.js?v=20260829a"></script>
-  <script src="words.js?v=20260829a"></script>
-  <script src="store.js?v=20260829a"></script>
-  <script src="charts.js?v=20260829a"></script>
-  <script src="share.js?v=20260829a"></script>
-  <script src="md5.js?v=20260829a"></script>
-  <script src="sentences.js?v=20260829a"></script>
-  <script src="app.js?v=20260829a"></script>
+  <script src="qrcode.min.js?v=20260831a"></script>
+  <script src="iconset.js?v=20260831a"></script>
+  <script src="words.js?v=20260831a"></script>
+  <script src="store.js?v=20260831a"></script>
+  <script src="charts.js?v=20260831a"></script>
+  <script src="share.js?v=20260831a"></script>
+  <script src="md5.js?v=20260831a"></script>
+  <script src="sentences.js?v=20260831a"></script>
+  <script src="app.js?v=20260831a"></script>
 </body>
 </html>

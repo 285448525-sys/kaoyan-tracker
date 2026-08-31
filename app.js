@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260829a';
+  var APP_VERSION = '20260831a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -502,8 +502,6 @@
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
-    renderHomeMetrics();
-    renderHomeRecords();
     renderHomeQuick();
     renderHomeTodo();
   }
@@ -511,128 +509,67 @@
   function renderHomeHero() {
     var cfg = Store.getConfig();
     var today = Store.todayStr();
-    var dateEl = document.getElementById('home-date');
-    if (dateEl) dateEl.textContent = fmtTodayWithWeekday(today);
-    // 倒计时天数
+    var dayObj = Store.getDay(today) || { durations: {} };
+    var totalMin = Store.totalMinutesForDay(dayObj);
+    // 问候语
+    var h = new Date().getHours();
+    var greetWord = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : h < 22 ? '晚上好' : '夜深了';
+    var nick = (cfg.nickname || '').trim();
+    var eyebrow = document.getElementById('home-greet-eyebrow');
+    if (eyebrow) eyebrow.textContent = greetWord;
+    var nameEl = document.getElementById('home-greet-name');
+    if (nameEl) nameEl.textContent = nick || '同学';
+    // 倒计时（顶栏胶囊）
     var examDate = cfg.examDate;
     var diff = '--';
     if (examDate) {
       try { diff = Math.ceil((new Date(examDate) - new Date(today)) / 86400000); } catch (e) { diff = '--'; }
     }
-    var cdNum = document.getElementById('home-cd-num');
-    if (cdNum) cdNum.textContent = (typeof diff === 'number' && diff > 0) ? String(diff) : (diff === 0 ? '0' : '—');
-    var cdSub = document.getElementById('home-cd-sub');
-    if (cdSub) cdSub.textContent = examDate ? ('距考研 · 目标 ' + examDate) : '距考研';
-    // 备考进度
-    var pct = 0;
-    if (examDate) {
-      try {
-        var startHint = cfg && cfg._startDate ? cfg._startDate : null;
-        var total = startHint ? Math.max(30, Math.round((new Date(examDate) - new Date(startHint)) / 86400000))
-                              : Math.max(30, 180 + (diff > 0 ? diff : 0));
-        var remain = (typeof diff === 'number' && diff > 0) ? diff : 0;
-        var passed = Math.max(0, total - remain);
-        pct = total ? Math.round(passed / total * 100) : 0;
-      } catch (e) { pct = 0; }
+    var cdText = document.getElementById('home-cd-text');
+    if (cdText) cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天') : (diff === 0 ? '距考研 · 今天' : '距考研 --');
+    // 今日专注 + 进度环（软目标 6h）
+    var focusNum = document.getElementById('home-focus-num');
+    if (focusNum) focusNum.textContent = fmtMinShort(totalMin);
+    var goalMin = 360;
+    var pct = Math.min(100, Math.round(totalMin / goalMin * 100));
+    var sub = document.getElementById('home-focus-sub');
+    if (sub) sub.textContent = (totalMin >= goalMin) ? '已达成今日专注目标' : ('完成今日目标还差 ' + fmtMinShort(goalMin - totalMin));
+    var ring = document.getElementById('home-focus-ring');
+    if (ring) {
+      var C = 2 * Math.PI * 26;
+      ring.innerHTML = '<svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">' +
+        '<circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="6"/>' +
+        '<circle cx="32" cy="32" r="26" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" ' +
+        'stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - pct / 100)).toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
+        '<text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">' + pct + '%</text></svg>';
     }
-    var cdLbl = document.getElementById('home-cd-lbl');
-    if (cdLbl) cdLbl.textContent = '备考进度 ' + pct + '%';
-    var cdFill = document.getElementById('home-cd-fill');
-    if (cdFill) cdFill.style.width = Math.min(100, pct) + '%';
-    // 问候语（复用 eyebrow 行）
-    var greet = document.getElementById('home-eyebrow');
-    if (greet) {
-      var h = new Date().getHours();
-      var greetWord = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : h < 22 ? '晚上好' : '夜深了';
-      var nick = (cfg.nickname || '').trim();
-      greet.textContent = greetWord + (nick ? '，' + nick : '，学习者') + ' · 每日打卡';
-    }
-    // CTA 文案：计时中显示当前科目
+    // CTA 文案：计时中显示「继续学习」
     var t = Store.getTimer();
     var ctaText = document.getElementById('home-cta-text');
-    if (ctaText) {
-      if (t.running && t.subjectKey) {
-        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
-        ctaText.textContent = '继续学习 · ' + (subj ? subj.name : '进行中');
-      } else {
-        ctaText.textContent = '开始计时学习';
-      }
-    }
-    // meta：连续天数 + 今日已学
-    var meta = document.getElementById('home-hero-meta');
-    if (meta) {
-      var dayObj = Store.getDay(today) || { durations: {} };
-      meta.textContent = '连续 ' + Store.consecutiveStreak() + ' 天 · 今日已学 ' + fmtMinShort(Store.totalMinutesForDay(dayObj));
-    }
-  }
-
-  function renderHomeMetrics() {
-    var today = Store.todayStr();
-    var dayObj = Store.getDay(today) || { durations: {} };
-    var totalMin = Store.totalMinutesForDay(dayObj);
-    var focusVal = document.getElementById('m-focus-val');
-    if (focusVal) focusVal.textContent = fmtMinShort(totalMin);
-    var streakVal = document.getElementById('m-streak-val');
-    if (streakVal) streakVal.textContent = String(Store.consecutiveStreak());
-    var plan = Store.getPlan(today) || [];
-    var done = plan.filter(function (i) { return i.done; }).length;
-    var planVal = document.getElementById('m-plan-val');
-    if (planVal) planVal.textContent = done + '/' + plan.length;
-  }
-
-  function renderHomeRecords() {
-    var grid = document.getElementById('home-rec-grid');
-    if (!grid) return;
-    var today = Store.todayStr();
-    var dayObj = Store.getDay(today) || { durations: {} };
-    var vals = TIMER_SUBJECTS.map(function (s) {
-      return (dayObj.durations && dayObj.durations[s.key]) || 0;
-    });
-    var max = Math.max.apply(null, vals.concat([0]));
-    var total = vals.reduce(function (a, b) { return a + b; }, 0);
-    var totalEl = document.getElementById('home-rec-total');
-    if (totalEl) totalEl.textContent = fmtMinShort(total);
-    var empty = document.getElementById('home-rec-empty');
-    grid.innerHTML = '';
-    if (total === 0) {
-      if (empty) empty.style.display = 'block';
-      return;
-    }
-    if (empty) empty.style.display = 'none';
-    TIMER_SUBJECTS.forEach(function (s, idx) {
-      var v = vals[idx];
-      var color = subjectColorClass(s.key, s.name);
-      var row = el('div', 'home-rec-row');
-      var dot = el('span', 'home-rec-dot');
-      dot.style.background = color;
-      var name = el('span', 'home-rec-name', s.name);
-      var barWrap = el('span', 'home-rec-bar');
-      var bar = el('i', 'home-rec-bar-fill');
-      bar.style.background = color;
-      bar.style.width = (max > 0 ? Math.round(v / max * 100) : 0) + '%';
-      barWrap.appendChild(bar);
-      var val = el('span', 'home-rec-val', fmtMinShort(v));
-      row.appendChild(dot); row.appendChild(name); row.appendChild(barWrap); row.appendChild(val);
-      grid.appendChild(row);
-    });
+    if (ctaText) ctaText.textContent = (t.running && t.subjectKey) ? '继续学习' : '开始计时';
   }
 
   function renderHomeQuick() {
     var box = document.getElementById('home-quick');
     if (!box) return;
     box.innerHTML = '';
+    var today = Store.todayStr();
+    var vocabCount = (Store.getVocab() || []).length;
+    var mistakeCount = (Store.getMistakes() || []).length;
+    var plan = Store.getPlan(today) || [];
     var entries = [
-      { tab: 'timer', icon: 'timer', label: '计时' },
-      { tab: 'home', icon: 'calendar', label: '计划' },
-      { tab: 'mock', icon: 'mock', label: '模考' },
-      { tab: 'mistakes', icon: 'mistakes', label: '错题' }
+      { tab: 'vocab', icon: 'vocab', label: '背词', sub: vocabCount ? ('共 ' + vocabCount + ' 词') : '复习生词' },
+      { tab: 'timer', icon: 'timer', label: '计时', sub: '专注训练' },
+      { tab: 'mistakes', icon: 'mistakes', label: '错题本', sub: mistakeCount ? (mistakeCount + ' 道待复盘') : '整理错题' },
+      { tab: 'home', icon: 'check', label: '计划', sub: plan.length ? ('今日 ' + plan.length + ' 项') : '制定计划' }
     ];
     entries.forEach(function (e) {
-      var card = el('button', 'quick-entry', '');
+      var card = el('button', 'quick-entry mod-card', '');
       card.setAttribute('type', 'button');
       card.setAttribute('aria-label', e.label);
       card.innerHTML = '<span class="qe-ic" data-icon="' + e.icon + '"></span>' +
-        '<span class="qe-text"><span class="qe-label">' + escapeHtml(e.label) + '</span></span>';
+        '<span class="qe-text"><span class="qe-label">' + escapeHtml(e.label) + '</span>' +
+        '<span class="qe-sub">' + escapeHtml(e.sub) + '</span></span>';
       card.addEventListener('click', function () { switchTab(e.tab); });
       box.appendChild(card);
     });
