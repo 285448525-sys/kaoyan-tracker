@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903f" />
+  <link rel="stylesheet" href="styles.css?v=20260903h" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -119,14 +119,8 @@
 
   <main class="app-main">
 
-    <!-- 首页（Home · Apple 风 v20260831）：状态栏 + 顶栏 + Hero 卡 + 功能入口 + 今日待办 -->
+    <!-- 首页（Home · 简化 v20260903h）：顶栏 + Hero 轻卡 + 今日待办 -->
     <section id="tab-home" class="tab-panel active home-redesign">
-
-      <!-- 移动端状态栏（装饰） -->
-      <div class="app-statusbar" aria-hidden="true">
-        <span class="sb-time">9:41</span>
-        <span class="sb-right"><span class="sb-battery"></span></span>
-      </div>
 
       <!-- 顶栏 -->
       <header class="home-header">
@@ -138,9 +132,14 @@
           <span class="tab-ic" data-icon="clock"></span>
           <span class="hh-cd-text" id="home-cd-text">距考研 29 天</span>
         </button>
+        <button class="hh-streak" id="home-streak" data-goto="data" type="button" aria-label="连续学习天数">
+          <span class="hh-streak-flame">🔥</span>
+          <span class="hh-streak-num num" id="home-streak-num">0</span>
+          <span>天</span>
+        </button>
       </header>
 
-      <!-- Hero 主色卡 -->
+      <!-- Hero 轻卡 -->
       <div class="home-hero-card" id="home-hero-card">
         <div class="hhc-row">
           <span class="hhc-label">今日专注</span>
@@ -151,17 +150,16 @@
             <div class="hhc-num" id="home-focus-num">0m</div>
             <div class="hhc-sub" id="home-focus-sub">开始你的第一次专注</div>
           </div>
-          <div class="hhc-ring" id="home-focus-ring"></div>
         </div>
+        <div class="hhc-bar" id="home-focus-bar-wrap"><i id="home-focus-bar"></i></div>
         <button class="home-cta" id="home-cta" data-goto="timer" type="button">
           <span class="home-cta-play"></span>
           <span id="home-cta-text">开始计时</span>
         </button>
       </div>
 
-      <!-- 功能入口 2×2 -->
-      <p class="section-title">功能入口</p>
-      <div class="home-quick" id="home-quick"></div>
+      <!-- 今日概览（借鉴 K12 学习台「今日要处理」：把分散待办聚合到首页一眼可见） -->
+      <div class="card home-overview" id="home-overview"></div>
 
       <!-- 今日待办 -->
       <div class="home-todo-section">
@@ -172,21 +170,15 @@
         <div class="card home-todo-card">
           <div id="plan-empty-hint" class="plan-empty-hint">
             <span class="ic-inline" data-icon="sparkles"></span>
-            今天还没有计划，点下面按钮让 AI 帮你拆任务。
-          </div>
-          <div class="btn-row">
-            <button id="btn-auto-plan" class="btn btn-primary">自动生成今日待办</button>
+            今天还没有计划，点下面让 AI 帮你拆任务。
           </div>
           <div id="plan-list" class="plan-list"></div>
-          <details class="plan-add-fold">
-            <summary class="plan-add-summary">＋ 添加自定义计划项</summary>
-            <div class="plan-add">
-              <select id="plan-subject" style="max-width:140px"><option value="">不指定科目</option></select>
-              <input type="text" id="plan-text" placeholder="添加自定义计划项，如：复盘英语阅读错题" />
-              <input type="number" id="plan-min" placeholder="分钟" min="0" style="max-width:90px" />
-              <button id="btn-add-plan" class="btn btn-ghost">添加</button>
-            </div>
-          </details>
+          <div class="todo-add-row">
+            <input type="text" id="plan-text" class="todo-add-input" placeholder="添加计划项，如：复盘英语阅读错题" />
+            <select id="plan-subject" class="todo-subject"><option value="">科目</option></select>
+            <button id="btn-add-plan" class="btn btn-ghost todo-add-btn">＋ 添加</button>
+            <button id="btn-auto-plan" class="btn btn-ghost todo-ai-btn">AI 帮我拆</button>
+          </div>
         </div>
       </div>
 
@@ -706,6 +698,22 @@
       </div></div>
 
 
+      <!-- 学习战报（借鉴 K12 学习台分享海报：周/月聚合 + 一键生成海报） -->
+      <div class="section">
+<div class="card battle-card">
+        <div class="battle-head">
+          <h2 class="card-title"><span class="ic-inline" data-icon="medal"></span> 学习战报</h2>
+          <div class="seg" id="battle-range" role="group" aria-label="统计区间">
+            <button class="seg-btn active" data-range="week" type="button">本周</button>
+            <button class="seg-btn" data-range="month" type="button">近 30 天</button>
+          </div>
+        </div>
+        <div id="battle-stats" class="battle-stats"></div>
+        <button id="btn-battle-poster" class="btn btn-primary battle-poster-btn" type="button"><span class="ic-inline" data-icon="share"></span> 生成战报海报</button>
+        <canvas id="posterCanvas" class="poster-canvas" hidden></canvas>
+      </div></div>
+
+
       <details class="analysis-fold">
         <summary class="fold-summary"><span class="ic-inline" data-icon="chart"></span> 更多分析（成就 · 目标 · 雷达图 · 薄弱点）</summary>
         <div class="section">
@@ -842,7 +850,14 @@
     </section>
 
     <!-- 设置 -->
-    <section id="tab-settings" class="tab-panel">
+    <section id="tab-settings" class="tab-panel settings-drawer">
+      <div class="drawer-mask" id="settings-mask"></div>
+      <div class="drawer-panel" id="settings-panel">
+        <div class="drawer-head">
+          <span class="drawer-title">设置</span>
+          <button class="drawer-close" id="settings-close" type="button" aria-label="关闭设置">✕</button>
+        </div>
+        <div class="drawer-body">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="help">帮助</button></div>
       <div id="sub-base" class="sub-panel active">
       <!-- ① 基础设置（首屏唯一主卡） -->
@@ -923,7 +938,10 @@
           <button id="btn-export-md" class="btn btn-ghost">导出 Markdown 报告</button>
           <label class="btn btn-ghost" for="file-import">导入 JSON 备份</label>
           <input type="file" id="file-import" accept="application/json" hidden />
-          <button id="btn-reset-all" class="btn btn-danger">清空全部</button>
+          <button id="btn-reset-all" class="btn btn-danger hold-btn" type="button">
+            <span class="hold-prog"></span>
+            <span class="hold-label" data-label="长按清空全部数据">长按清空全部数据</span>
+          </button>
         </div>
       </div></div>
 
@@ -1066,6 +1084,8 @@
       </div></div>
 
 </div>
+        </div><!-- /drawer-body -->
+      </div><!-- /drawer-panel -->
     </section>
 
   </main>
@@ -1093,14 +1113,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903f"></script>
-  <script src="iconset.js?v=20260903f"></script>
-  <script src="words.js?v=20260903f"></script>
-  <script src="store.js?v=20260903f"></script>
-  <script src="charts.js?v=20260903f"></script>
-  <script src="share.js?v=20260903f"></script>
-  <script src="md5.js?v=20260903f"></script>
-  <script src="sentences.js?v=20260903f"></script>
-  <script src="app.js?v=20260903f"></script>
+  <script src="qrcode.min.js?v=20260903h"></script>
+  <script src="iconset.js?v=20260903h"></script>
+  <script src="words.js?v=20260903h"></script>
+  <script src="store.js?v=20260903h"></script>
+  <script src="charts.js?v=20260903h"></script>
+  <script src="share.js?v=20260903h"></script>
+  <script src="md5.js?v=20260903h"></script>
+  <script src="sentences.js?v=20260903h"></script>
+  <script src="app.js?v=20260903h"></script>
 </body>
 </html>

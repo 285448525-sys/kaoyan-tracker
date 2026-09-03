@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903f';
+  var APP_VERSION = '20260903h';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -502,8 +502,72 @@
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
-    renderHomeQuick();
+    renderHomeStreak();
+    renderHomeOverview();
     renderHomeTodo();
+  }
+
+  /* 顶栏🔥连续学习天数胶囊（借鉴 K12 学习台 .streak） */
+  function renderHomeStreak() {
+    var numEl = document.getElementById('home-streak-num');
+    if (!numEl) return;
+    var s = Store.consecutiveStreak();
+    numEl.textContent = s;
+    var pill = document.getElementById('home-streak');
+    if (pill) pill.classList.toggle('is-zero', s <= 0);
+  }
+
+  /* 今日待处理聚合卡（借鉴 K12 学习台「今日要处理」：把分散待办聚合到首页一眼可见） */
+  function renderHomeOverview() {
+    var box = document.getElementById('home-overview');
+    if (!box) return;
+    var ds = Store.todayStr();
+    var vocabDue = Store.getDueVocab(ds).length;
+    var mathDue = Store.getMathDueMistakes(ds).length;
+    var csDue = Store.get408DueMistakes(ds).length;
+    var plan = Store.getPlan(ds) || [];
+    var planDone = plan.filter(function (i) { return i.done; }).length;
+    var planTotal = plan.length;
+
+    if (vocabDue === 0 && mathDue === 0 && csDue === 0 && planTotal === 0) {
+      box.innerHTML = '<div class="ov-empty"><span class="ov-empty-emoji">🌿</span><span>今日清清爽爽，去背几个词或定个计划吧</span></div>';
+      return;
+    }
+
+    var items = [
+      { tab: 'vocab', icon: 'vocab', label: '待复习生词', count: vocabDue, unit: '个' },
+      { tab: 'mistakes', icon: 'mistakes', label: '数学待复盘', count: mathDue, unit: '道', scope: 'math' },
+      { tab: 'mistakes', icon: 'chip', label: '408 待复盘', count: csDue, unit: '道', scope: 'cs408' },
+      { tab: 'home', icon: 'check', label: '今日计划', isPlan: true, done: planDone, total: planTotal }
+    ];
+
+    var html = '<div class="ov-head"><span class="ov-title">今日待处理</span></div>';
+    items.forEach(function (it) {
+      if (!it.isPlan && it.count === 0) return; // 已完成的不显形，避免干扰
+      if (it.isPlan && it.total === 0) return;
+      var urgent = !it.isPlan && it.count > 0;
+      var cls = 'ov-row' + (urgent ? ' urgent' : '') + (it.isPlan ? ' is-plan' : '');
+      var right;
+      if (it.isPlan) {
+        var pct = it.total ? Math.round(it.done / it.total * 100) : 0;
+        right = '<span class="ov-plan"><span class="ov-plan-bar"><i style="width:' + pct + '%"></i></span>' +
+          '<span class="ov-plan-num">' + it.done + '/' + it.total + '</span></span>';
+      } else {
+        right = '<span class="ov-count ' + (urgent ? 'on' : 'off') + '">' + it.count + '<i>' + it.unit + '</i></span>';
+      }
+      html += '<button type="button" class="' + cls + '" data-goto="' + it.tab + '">' +
+        '<span class="ov-ic" data-icon="' + it.icon + '"></span>' +
+        '<span class="ov-label">' + escapeHtml(it.label) + '</span>' +
+        right +
+        '</button>';
+    });
+    box.innerHTML = html;
+    // 容器级委托（innerHTML 重建，onclick 只挂一个）
+    box.onclick = function (e) {
+      var b = e.target.closest('[data-goto]');
+      if (b) switchTab(b.getAttribute('data-goto'));
+    };
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
 
   function renderHomeHero() {
@@ -534,15 +598,8 @@
     var pct = Math.min(100, Math.round(totalMin / goalMin * 100));
     var sub = document.getElementById('home-focus-sub');
     if (sub) sub.textContent = (totalMin >= goalMin) ? '已达成今日专注目标' : ('完成今日目标还差 ' + fmtMinShort(goalMin - totalMin));
-    var ring = document.getElementById('home-focus-ring');
-    if (ring) {
-      var C = 2 * Math.PI * 26;
-      ring.innerHTML = '<svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">' +
-        '<circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="6"/>' +
-        '<circle cx="32" cy="32" r="26" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" ' +
-        'stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - pct / 100)).toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
-        '<text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">' + pct + '%</text></svg>';
-    }
+    var bar = document.getElementById('home-focus-bar');
+    if (bar) bar.style.width = pct + '%';
     // CTA 文案：计时中显示「继续学习」
     var t = Store.getTimer();
     var ctaText = document.getElementById('home-cta-text');
@@ -690,6 +747,7 @@
         var wasDone = it.done;
         Store.toggleDailyPlanItem(ds, it.id);
         if (!wasDone) {
+          showStamp(item);
           var updatedPlan = Store.getPlan(ds) || [];
           var allDone = updatedPlan.length > 0 && updatedPlan.every(function (p) { return p.done; });
           if (allDone) { showToast('🎉 今日计划全部完成！太棒了！', 'ok'); fireConfetti(); }
@@ -707,7 +765,7 @@
       var txt = document.createElement('span');
       txt.textContent = it.text;
       txtWrap.appendChild(txt);
-      var min = el('div', 'plan-min', (it.minutes || 0) + ' 分钟');
+      var min = el('div', 'plan-min', it.minutes ? (it.minutes + ' 分钟') : '');
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeDailyPlanItem(ds, it.id); renderPlan(); renderToday(); });
       item.appendChild(chk); item.appendChild(txtWrap); item.appendChild(min); item.appendChild(del);
@@ -916,10 +974,116 @@
     // 里程碑检测（首次达成触发庆祝）
     checkMilestones();
     renderWeaknessReport();
+    renderBattleReport();
     // S3：非数学/408 用户不展示薄弱点卡（无刷题数据）
     var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
     var hasCs408 = Store.getSubjects().some(function (s) { return s.key === 'cs408'; });
     if (refs.weaknessCard) refs.weaknessCard.classList.toggle('nav-hidden', !(hasMath || hasCs408));
+  }
+
+  /* ============ 学习战报（借鉴 K12 学习台分享海报）：周/月聚合统计 ============ */
+  var battleRange = 'week';
+  function battleRangeDays() { return battleRange === 'month' ? 30 : 7; }
+  function battleRangeLabel() { return battleRange === 'month' ? '近 30 天' : '本周'; }
+  function eachDayInRange(n, cb) {
+    var today = new Date();
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(today); d.setDate(today.getDate() - i);
+      var ds = d.toISOString().slice(0, 10);
+      cb(ds, d);
+    }
+  }
+  function renderBattleReport() {
+    var box = refs.battleStats;
+    if (!box) return;
+    var n = battleRangeDays();
+    var days = Store.getDays() || {};
+    var vocab = Store.getVocab() || [];
+    var mistakes = Store.getMistakes() || [];
+    var totalFocus = 0, activeDays = 0, vocabCount = 0, mistakeCount = 0, planTotal = 0, planDone = 0;
+    eachDayInRange(n, function (ds) {
+      var day = days[ds];
+      var min = day ? Store.totalMinutesForDay(day) : 0;
+      if (min > 0) { totalFocus += min; activeDays++; }
+      vocabCount += vocab.filter(function (v) { return v.last && v.last >= ds; }).length;
+      mistakeCount += mistakes.filter(function (m) { return m.date === ds; }).length;
+      var plan = Store.getPlan(ds) || [];
+      planTotal += plan.length;
+      planDone += plan.filter(function (p) { return p.done; }).length;
+    });
+    var streak = Store.consecutiveStreak();
+    var planRate = planTotal ? Math.round(planDone / planTotal * 100) : 0;
+    var items = [
+      { label: '专注总时长', value: fmtMinShort(totalFocus), sub: '' },
+      { label: '学习天数', value: activeDays, sub: '/' + n + ' 天' },
+      { label: '复习生词', value: vocabCount, sub: '个' },
+      { label: '整理错题', value: mistakeCount, sub: '道' },
+      { label: '计划完成率', value: planRate, sub: '%' },
+      { label: '连续打卡', value: streak, sub: '天' }
+    ];
+    box.innerHTML = '';
+    items.forEach(function (it) {
+      var tile = el('div', 'battle-tile');
+      tile.innerHTML = '<div class="bt-val">' + escapeHtml(String(it.value)) + '<i>' + escapeHtml(it.sub) + '</i></div>' +
+        '<div class="bt-label">' + escapeHtml(it.label) + '</div>';
+      box.appendChild(tile);
+    });
+  }
+  /* 生成战报海报（canvas 绘制，mist 蓝主题） */
+  function buildReportCanvas() {
+    var n = battleRangeDays();
+    var cfg = Store.getConfig();
+    var label = battleRangeLabel();
+    var canvas = refs.posterCanvas;
+    if (!canvas) return null;
+    var W = 1080, H = 1440;
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    // 背景
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#3E9BE8'); g.addColorStop(1, '#1F6FB2');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // 卡片
+    function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+    ctx.fillStyle = '#FFFFFF'; rr(70, 110, W - 140, H - 220, 36); ctx.fill();
+    // 标题
+    ctx.fillStyle = '#1F6FB2'; ctx.textAlign = 'left'; ctx.font = '700 56px sans-serif';
+    ctx.fillText('📊 学习战报', 120, 200);
+    ctx.fillStyle = '#5B7C99'; ctx.font = '400 30px sans-serif';
+    ctx.fillText(label + ' · ' + (cfg.nickname || '考研同学'), 122, 248);
+    // 取与卡片一致的统计
+    var days = Store.getDays() || {}; var vocab = Store.getVocab() || []; var mistakes = Store.getMistakes() || [];
+    var totalFocus = 0, activeDays = 0, vocabCount = 0, mistakeCount = 0, planTotal = 0, planDone = 0;
+    eachDayInRange(n, function (ds) {
+      var day = days[ds]; var min = day ? Store.totalMinutesForDay(day) : 0;
+      if (min > 0) { totalFocus += min; activeDays++; }
+      vocabCount += vocab.filter(function (v) { return v.last && v.last >= ds; }).length;
+      mistakeCount += mistakes.filter(function (m) { return m.date === ds; }).length;
+      var plan = Store.getPlan(ds) || []; planTotal += plan.length; planDone += plan.filter(function (p) { return p.done; }).length;
+    });
+    var streak = Store.consecutiveStreak();
+    var planRate = planTotal ? Math.round(planDone / planTotal * 100) : 0;
+    var stats = [
+      { v: fmtMinShort(totalFocus), l: '专注总时长' },
+      { v: activeDays + '/' + n, l: '学习天数' },
+      { v: vocabCount + '', l: '复习生词' },
+      { v: mistakeCount + '', l: '整理错题' },
+      { v: planRate + '%', l: '计划完成率' },
+      { v: streak + '', l: '连续打卡' }
+    ];
+    var gx = 120, gy = 320, gw = (W - 240 - 40) / 3, gh = 200, gap = 20;
+    stats.forEach(function (s, i) {
+      var cx = gx + (i % 3) * (gw + gap), cy = gy + Math.floor(i / 3) * (gh + gap);
+      ctx.fillStyle = '#E7F3FC'; rr(cx, cy, gw, gh, 22); ctx.fill();
+      ctx.fillStyle = '#1F6FB2'; ctx.textAlign = 'center'; ctx.font = '700 52px sans-serif';
+      ctx.fillText(s.v, cx + gw / 2, cy + 110);
+      ctx.fillStyle = '#5B7C99'; ctx.font = '400 26px sans-serif';
+      ctx.fillText(s.l, cx + gw / 2, cy + 158);
+    });
+    // 页脚
+    ctx.fillStyle = '#9DB8CE'; ctx.textAlign = 'center'; ctx.font = '400 26px sans-serif';
+    ctx.fillText('考研学习记录 · ' + (window.location.origin || ''), W / 2, H - 90);
+    return canvas;
   }
   /* ============ A3：基于刷题正确率的薄弱点分析报告 ============ */
   var WEAK_THRESHOLD = 0.6;   // 正确率 < 60% 视为薄弱
@@ -1416,9 +1580,14 @@
   }
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
+  var settingsReturnTab = 'home';
   function switchTab(target) {
     var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
+    if (real === 'settings') {
+      var cur = document.querySelector('.tab-panel.active');
+      settingsReturnTab = (cur && cur.id && cur.id.replace('tab-', '')) || 'home';
+    }
     showTab(real);
     if (real === 'data') { showSub('data', (target === 'record' || target === 'plan' || target === 'summary') ? 'review' : 'overview'); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
@@ -1833,7 +2002,12 @@
     items.forEach(function (it) {
       var row = el('div', 'plan-item' + (it.done ? ' done' : ''));
       var chk = el('div', 'plan-check', it.done ? '✓' : '');
-      chk.addEventListener('click', function () { Store.togglePlanItem(it.id); renderPlanItems(); });
+      chk.addEventListener('click', function () {
+        var wasDone = it.done;
+        Store.togglePlanItem(it.id);
+        if (!wasDone) showStamp(row);
+        renderPlanItems();
+      });
       var txtWrap = el('div', 'plan-txt-wrap');
       txtWrap.appendChild(el('div', 'plan-text', it.text || ''));
       if (it.note) txtWrap.appendChild(el('div', 'plan-note', '说明：' + it.note));
@@ -3201,7 +3375,13 @@
     var answer = en2cn ? cur.c : cur.w;
     var catPill = (cur.category && cur.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(cur.category) + '</span>' : '';
     var lvTxt = '<span class="vocab-cat-pill key-pill" style="margin-left:8px">Lv ' + lvOf + '</span>';
-    var html = '<div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>' + catPill + lvTxt;
+    var html = '<div class="practice-head">' + catPill + lvTxt + '</div>';
+    // 3D 翻转卡（借鉴 K12 学习台 .word-card：点词翻面看释义；判定后自动翻面）
+    html += '<div class="word-card" id="practice-wordcard" role="button" tabindex="0" aria-label="点击翻面看' + (en2cn ? '释义' : '单词') + '">';
+    html += '<div class="word-card-inner">';
+    html += '<div class="word-card-front"><div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div><div class="word-card-hint">点击翻面看' + (en2cn ? '释义' : '单词') + '</div></div>';
+    html += '<div class="word-card-back"><div class="practice-en' + (en2cn ? ' practice-cn' : '') + '">' + escapeHtml(answer) + '</div><div class="word-card-hint">点击翻回</div></div>';
+    html += '</div></div>';
     html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个 · ' + (en2cn ? '英选译' : '中选英') + '</div>';
     html += '<div class="practice-options">';
     opts.forEach(function (o) {
@@ -3212,6 +3392,11 @@
     html += '<div class="practice-actions"><button class="btn btn-dontknow" id="practice-dontknow">不认识</button></div>';
     refs.practiceBox.innerHTML = html;
     var fb = $('practice-feedback');
+    var wordCard = $('practice-wordcard');
+    if (wordCard) {
+      wordCard.addEventListener('click', function () { wordCard.classList.toggle('flipped'); });
+      wordCard.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); wordCard.classList.toggle('flipped'); } });
+    }
     refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (s.answered) return;
@@ -3221,6 +3406,7 @@
           b.disabled = true;
           if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
         });
+        if (wordCard) wordCard.classList.add('flipped');
         if (correct) {
           btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669';
           var vv = Store.findVocab(cur.w);
@@ -3237,6 +3423,7 @@
       if (s.autoSave) Store.addVocab(cur.w, cur.c);
       var vv = Store.findVocab(cur.w);
       if (vv) { ensureVocabV12(vv); demoteVocabLongTerm(vv, today, true); persistVocab(vv); }  // 不认识→降级+明天复习
+      if (wordCard) wordCard.classList.add('flipped');
       refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (b) {
         b.disabled = true;
         if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
@@ -4432,6 +4619,56 @@
     var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
     btbBtns.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
   }
+
+  /* 关闭设置抽屉：回到进入抽屉前的 tab（借鉴 K12 学习台抽屉返回逻辑） */
+  function closeSettingsDrawer() { switchTab(settingsReturnTab || 'home'); }
+
+  /* 长按确认按钮（借鉴 K12 学习台 .hold-btn）：按住时进度条增长，达 100% 才执行 onConfirm；提前松开关取消 */
+  function bindHoldButton(btn, onConfirm, opts) {
+    if (!btn) return;
+    var dur = (opts && opts.duration) || 800;
+    var prog = btn.querySelector('.hold-prog');
+    var label = btn.querySelector('.hold-label') || btn;
+    var original = label.getAttribute('data-label') || label.textContent;
+    var raf = null, start = 0, done = false, fired = false;
+    function tick(ts) {
+      if (!start) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      if (prog) prog.style.width = (p * 100) + '%';
+      if (p >= 1) { done = true; if (!fired) { fired = true; onConfirm(); } return; }
+      raf = requestAnimationFrame(tick);
+    }
+    function begin(e) {
+      if (e && e.cancelable) e.preventDefault();
+      if (raf) return;
+      start = 0; done = false; fired = false;
+      btn.classList.add('holding');
+      if (label !== btn) label.textContent = '按住不放 · 松开取消';
+      raf = requestAnimationFrame(tick);
+    }
+    function end() {
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      btn.classList.remove('holding');
+      if (prog) prog.style.width = '0%';
+      if (!done && label !== btn) label.textContent = original;
+      done = false;
+    }
+    btn.addEventListener('pointerdown', begin);
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointerleave', end);
+    btn.addEventListener('pointercancel', end);
+  }
+
+  /* 完成印章动画（借鉴 K12 学习台 .stamp：勾选/完成时盖一个「完成」戳） */
+  function showStamp(target) {
+    if (!target) return;
+    var s = document.createElement('span');
+    s.className = 'stamp';
+    s.textContent = '完成';
+    target.appendChild(s);
+    requestAnimationFrame(function () { s.classList.add('show'); });
+    setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 900);
+  }
   function showSub(container, sub) {
     var root = document.getElementById('tab-' + container);
     if (!root) return;
@@ -4472,6 +4709,11 @@
         if (t) switchTab(t);
       });
     });
+    // 设置抽屉：遮罩 / 关闭按钮 → 返回进入前 tab
+    var settingsMask = document.getElementById('settings-mask');
+    if (settingsMask) settingsMask.addEventListener('click', closeSettingsDrawer);
+    var settingsClose = document.getElementById('settings-close');
+    if (settingsClose) settingsClose.addEventListener('click', closeSettingsDrawer);
     updateMathTabVisibility();
     update408TabVisibility();
 
@@ -4528,8 +4770,6 @@
   function init() {
     // 注入线性 SVG 图标占位（方案 29 · Block 2）：把 [data-icon] 批量替换为图标
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(document);
-    // 快捷入口网格：首页四入口（计时/计划/模考/错题），由 renderHomeQuick 渲染
-    renderHomeQuick();
 
     // 导航切换最高优先级：无论后续渲染是否报错，先把导航/路由绑定好
     // （避免某个模块渲染异常导致整页导航失效、点不动）
@@ -4591,6 +4831,9 @@
     refs.badgesGrid = $('badges-grid');
     refs.heatmap = $('heatmap');
     refs.heatLabel = $('heat-label');
+    refs.battleStats = $('battle-stats');
+    refs.btnBattlePoster = $('btn-battle-poster');
+    refs.posterCanvas = $('posterCanvas');
     refs.heatPrev = $('heat-prev');
     refs.heatNext = $('heat-next');
     refs.heatNow = $('heat-now');
@@ -4886,11 +5129,11 @@
       autoGenPlan(ds); renderPlan(); renderToday(); showToast('已生成今日计划 ✅');
     });
     refs.btnAddPlan.addEventListener('click', function () {
-      var text = refs.planText.value.trim(); var min = Number(refs.planMin.value) || 0;
+      var text = refs.planText.value.trim(); var min = refs.planMin ? (Number(refs.planMin.value) || 0) : 0;
       var subj = refs.planSubject ? refs.planSubject.value : '';
       if (!text) { alert('请输入计划内容'); return; }
       Store.addDailyPlanItem(Store.todayStr(), { text: text, minutes: min, done: false, subjectKey: subj || '' });
-      refs.planText.value = ''; refs.planMin.value = '';
+      refs.planText.value = ''; if (refs.planMin) refs.planMin.value = '';
       if (refs.planSubject) refs.planSubject.value = '';
       renderPlan(); renderToday();
     });
@@ -4907,6 +5150,34 @@
     refs.heatPrev.addEventListener('click', function () { heatMonth--; if (heatMonth < 0) { heatMonth = 11; heatYear--; } renderData(); });
     refs.heatNext.addEventListener('click', function () { heatMonth++; if (heatMonth > 11) { heatMonth = 0; heatYear++; } renderData(); });
     refs.heatNow.addEventListener('click', function () { var n = new Date(); heatYear = n.getFullYear(); heatMonth = n.getMonth(); renderData(); });
+
+    // 学习战报：区间切换 + 生成海报
+    var battleRangeBox = document.getElementById('battle-range');
+    if (battleRangeBox) {
+      battleRangeBox.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          battleRange = b.getAttribute('data-range') || 'week';
+          battleRangeBox.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('active', x === b); });
+          renderBattleReport();
+        });
+      });
+    }
+    if (refs.btnBattlePoster) refs.btnBattlePoster.addEventListener('click', function () {
+      var canvas = buildReportCanvas();
+      if (!canvas) { showToast('生成海报失败', 'warn'); return; }
+      var link = document.createElement('a');
+      link.download = '学习战报_' + Store.todayStr() + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      canvas.toBlob && canvas.toBlob(function (blob) {
+        if (!blob) return;
+        var f = new File([blob], '学习战报.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) {
+          navigator.share({ files: [f], title: '考研学习战报', text: '我的' + battleRangeLabel() + '学习战报' }).catch(function () {});
+        }
+      });
+      showToast('战报海报已生成 ⬇️', 'ok');
+    });
 
     // 错题
     refs.btnAddMistake.addEventListener('click', function () {
@@ -5030,13 +5301,10 @@
       r.onload = function () { try { Store.importJSON(r.result); alert('导入成功'); renderAll(); } catch (err) { alert('导入失败：文件格式不正确'); } };
       r.readAsText(f);
     });
-    refs.btnResetAll.addEventListener('click', function () {
-      confirmDelete('确定清空全部本机数据？学习记录、计划、错题、词汇等会被永久删除（建议先导出备份）。', function () {
-        confirmDelete('二次确认：即将永久删除所有数据，此操作无法撤销，确定继续？', function () {
-          localStorage.removeItem('kaoyan_tracker_v1'); location.reload();
-        }, 'warn');
-      }, 'warn');
-    });
+    // 清空全部：改用 K12 长按确认（按住进度条满才执行，避免误触）
+    if (refs.btnResetAll) bindHoldButton(refs.btnResetAll, function () {
+      localStorage.removeItem('kaoyan_tracker_v1'); location.reload();
+    }, { duration: 900 });
 
     // 侧边栏折叠
     refs.navCollapse.addEventListener('click', onToggleSidebar);
