@@ -206,7 +206,7 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-soft);
+  box-shadow: 0 0 0 3px var(--primary-soft), 0 0 14px -2px rgba(62,155,232,.5);
 }
 /* 安卓适配 P1-3：select 统一扁平箭头（appearance:none 后补自定义箭头，避免无箭头） */
 select {
@@ -264,8 +264,13 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 
 .btn:active { transform: scale(0.97); }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.btn-primary { background: var(--primary-strong); color: #fff; }
-.btn-primary:hover { background: var(--primary-deep); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  color: #fff; border: none;
+  box-shadow: 0 4px 14px -4px rgba(31,111,184,.4), inset 0 1px 0 rgba(255,255,255,.28);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn-primary:hover { filter: brightness(1.05); box-shadow: 0 8px 22px -6px rgba(31,111,184,.55), inset 0 1px 0 rgba(255,255,255,.32); transform: translateY(-1px); }
 .btn-ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
 .btn-ghost:hover { border-color: var(--primary); background: var(--surface-2); }
 .btn-danger { background: var(--danger-weak); color: var(--danger); }
@@ -1447,7 +1452,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] input:focus,
 :root[data-theme="dark"] select:focus,
 :root[data-theme="dark"] textarea:focus {
-  box-shadow: 0 0 0 4px var(--primary-soft);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft), 0 0 14px -2px rgba(91,174,234,.5);
 }
 :root[data-theme="dark"] .btn-ghost { background: var(--surface-2); color: var(--ink); }
 :root[data-theme="dark"] .icon-btn { background: var(--surface-2); border-color: var(--line); color: var(--muted); }
@@ -1686,11 +1692,13 @@ h3.card-sub { font-size: 15px; font-weight: 700; color: var(--ink); margin: 2px 
 .btn { transition: transform .1s ease, box-shadow .2s ease, background .2s ease; }
 .btn:active { transform: scale(0.98); }
 .btn-primary {
-  background: var(--primary-strong); color: #fff; border: none; padding: 10px var(--sp-5); border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  color: #fff; border: none; padding: 11px var(--sp-5); border-radius: var(--radius-sm);
   font-weight: 700; font-size: 14px; cursor: pointer;
-  box-shadow: 0 4px 14px -4px rgba(44,132,212,.4);
+  box-shadow: 0 4px 14px -4px rgba(31,111,184,.45), inset 0 1px 0 rgba(255,255,255,.28);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
 }
-.btn-primary:hover { background: var(--primary-deep); box-shadow: 0 6px 20px -4px rgba(31,111,184,.45); }
+.btn-primary:hover { filter: brightness(1.05); box-shadow: 0 8px 22px -6px rgba(31,111,184,.6), inset 0 1px 0 rgba(255,255,255,.32); transform: translateY(-1px); }
 .btn-primary:active { transform: scale(0.98); }
 .btn-ghost {
   background: var(--card); color: var(--ink); border: 1px solid var(--line);
@@ -1709,7 +1717,7 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 4px var(--primary-soft);
+  box-shadow: 0 0 0 3px var(--primary-soft), 0 0 14px -2px rgba(62,155,232,.5) !important;
   outline: none;
 }
 
