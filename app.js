@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260831a';
+  var APP_VERSION = '20260903a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -4162,12 +4162,10 @@
     updateThemeChips(theme);
   }
   function updateThemeChips(theme) {
-    var group = document.getElementById('theme-mode-group');
-    if (!group) return;
-    Array.from(group.querySelectorAll('.chip')).forEach(function (chip) {
-      if (chip.getAttribute('data-theme') === theme) chip.classList.add('active');
-      else chip.classList.remove('active');
-    });
+    var toggle = document.getElementById('theme-toggle');
+    if (toggle) toggle.checked = (theme === 'dark');
+    var lbl = document.getElementById('theme-mode-label');
+    if (lbl) lbl.textContent = (theme === 'dark') ? '深色' : '浅色';
   }
   function toggleTheme() {
     var next = Store.getTheme() === 'dark' ? 'light' : 'dark';
@@ -4175,14 +4173,11 @@
     applyTheme();
   }
   function initThemeSetting() {
-    var group = document.getElementById('theme-mode-group');
-    if (!group) return;
-    group.addEventListener('click', function (e) {
-      var chip = e.target.closest('.chip');
-      if (!chip) return;
-      var t = chip.getAttribute('data-theme');
-      if (!t) return;
-      Store.setTheme(t);
+    var toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('change', function () {
+      var next = toggle.checked ? 'dark' : 'light';
+      Store.setTheme(next);
       applyTheme();
     });
     updateThemeChips(Store.getTheme());

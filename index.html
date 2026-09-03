@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260831a" />
+  <link rel="stylesheet" href="styles.css?v=20260903a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -906,9 +906,16 @@
         </div>
         <div class="field-row">
           <label>主题模式</label>
-          <div class="chip-row" id="theme-mode-group" role="radiogroup" aria-label="主题模式">
-            <button type="button" class="chip" data-theme="light" role="radio" aria-checked="false"><span class="ic-inline" data-icon="sun"></span> 浅色</button>
-            <button type="button" class="chip" data-theme="dark" role="radio" aria-checked="false"><span class="ic-inline" data-icon="moon"></span> 深色</button>
+          <div class="theme-switch-wrap">
+            <span class="theme-switch-label" id="theme-mode-label">浅色</span>
+            <label class="switch theme-switch" title="切换深色 / 浅色模式">
+              <input type="checkbox" id="theme-toggle" aria-label="切换深色模式" />
+              <span class="slider"></span>
+              <span class="star star_1"></span>
+              <span class="star star_2"></span>
+              <span class="star star_3"></span>
+              <svg class="cloud" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 19h9.2a4.3 4.3 0 0 0 .6-8.56A6 6 0 0 0 5.2 11.5 3.6 3.6 0 0 0 6.5 19z" fill="#ffffff"/></svg>
+            </label>
           </div>
         </div>
         <div class="field-row">
@@ -1101,14 +1108,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260831a"></script>
-  <script src="iconset.js?v=20260831a"></script>
-  <script src="words.js?v=20260831a"></script>
-  <script src="store.js?v=20260831a"></script>
-  <script src="charts.js?v=20260831a"></script>
-  <script src="share.js?v=20260831a"></script>
-  <script src="md5.js?v=20260831a"></script>
-  <script src="sentences.js?v=20260831a"></script>
-  <script src="app.js?v=20260831a"></script>
+  <script src="qrcode.min.js?v=20260903a"></script>
+  <script src="iconset.js?v=20260903a"></script>
+  <script src="words.js?v=20260903a"></script>
+  <script src="store.js?v=20260903a"></script>
+  <script src="charts.js?v=20260903a"></script>
+  <script src="share.js?v=20260903a"></script>
+  <script src="md5.js?v=20260903a"></script>
+  <script src="sentences.js?v=20260903a"></script>
+  <script src="app.js?v=20260903a"></script>
 </body>
 </html>
