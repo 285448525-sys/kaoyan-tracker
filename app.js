@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903e';
+  var APP_VERSION = '20260903f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -645,23 +645,6 @@
     });
   }
 
-  /* 模考卡片渲染：成绩录入 + 历史模考列表 + 近期学习日（随 tab-mock 独立） */
-  function renderExamCard() {
-    var subs = Store.getSubjects();
-    if (refs.examScores) {
-      refs.examScores.innerHTML = '';
-      if (!subs.length) { refs.examScores.appendChild(el('div', 'empty-hint', '请先配置科目')); }
-      subs.forEach(function (s) {
-        var row = el('div', 'field-row');
-        row.appendChild(el('label', null, s.name));
-        var inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.id = 'exam-score-' + s.key; inp.placeholder = '分数';
-        row.appendChild(inp);
-        refs.examScores.appendChild(row);
-      });
-    }
-    renderDayList();
-    renderExamList();
-  }
   function onSaveManual() {
     var ds = refs.manualDate.value || Store.todayStr();
     var durations = {};
@@ -679,77 +662,6 @@
     Store.saveDayMeta(Store.todayStr(), { summary: (refs.summaryEdit ? refs.summaryEdit.value : '') });
     showToast('已保存今日总结 ✅');
   }
-  function onSaveExam() {
-    var name = refs.examName.value.trim();
-    var date = refs.examDate2.value;
-    if (!name || !date) { alert('请填写考试名称与日期'); return; }
-    var scores = {}, total = 0, any = false;
-    Store.getSubjects().forEach(function (s) {
-      var inp = $('exam-score-' + s.key);
-      var v = inp ? Number(inp.value) : NaN;
-      if (inp && inp.value !== '' && !isNaN(v)) { scores[s.key] = v; total += v; any = true; }
-    });
-    if (!any) { alert('请至少填写一科成绩'); return; }
-    Store.addExam({ name: name, date: date, scores: scores, total: total });
-    refs.examName.value = '';
-    Store.getSubjects().forEach(function (s) { var i = $('exam-score-' + s.key); if (i) i.value = ''; });
-    renderExamCard(); renderData();
-  }
-  function renderDayList() {
-    refs.dayList.innerHTML = '';
-    var keys = Object.keys(Store.getDays()).filter(function (k) { return Store.totalMinutesForDay(Store.getDays()[k]) > 0; }).sort().reverse().slice(0, 12);
-    if (!keys.length) { emptyHint(refs.dayList, '还没有学习记录，先去计时或记录一科吧', { icon: 'clock', label: '去记录学习', fn: function () { switchTab('data'); showSub('data','records'); } }); return; }
-    keys.forEach(function (ds) {
-      var d = Store.getDays()[ds];
-      var item = el('div', 'list-item');
-      item.appendChild(el('div', 'list-title', ds + ' · 共 ' + Store.totalMinutesForDay(d) + ' 分钟'));
-      if (d.completed) item.appendChild(el('div', 'list-sub', d.completed));
-      refs.dayList.appendChild(item);
-    });
-  }
-  function renderExamList() {
-    refs.examList.innerHTML = '';
-    var exams = Store.getExams().slice().reverse();
-    if (!exams.length) { emptyHint(refs.examList, '还没有模考成绩，考完一场就来记一笔', { icon: 'target', label: '去添加模考', fn: function () { switchTab('mock'); } }); }
-    else {
-      // 最近 6 次总分折线
-      var recent = exams.slice(0, 6).reverse();
-      var svg = document.getElementById('exam-trend');
-      if (svg) {
-        var maxTotal = 150; // 模考满分参考（可按实际科目调整）
-        var pts = recent.map(function (e, i) {
-          var x = recent.length > 1 ? (i / (recent.length - 1)) * 290 + 5 : 150;
-          var y = 75 - (Math.min(e.total, maxTotal) / maxTotal) * 70;
-          return { x: x, y: y, total: e.total };
-        });
-        var poly = pts.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-        var dots = pts.map(function (p) { return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.5"></circle>'; }).join('');
-        svg.innerHTML = '<polyline points="' + poly + '"></polyline>' + dots;
-      }
-      exams.forEach(function (ex) {
-        var item = el('div', 'list-item');
-        item.appendChild(el('div', 'list-title', ex.name + '（' + ex.date + '）总分 ' + ex.total));
-        // 单科小条
-        var scores = ex.scores || {};
-        var subjNames = { politics: '政', english: '英', math: '数', cs408: '408' };
-        var scoreEls = [];
-        Object.keys(subjNames).forEach(function (k) {
-          if (scores[k] != null) scoreEls.push('<span>' + subjNames[k] + ' <b>' + scores[k] + '</b></span>');
-        });
-        if (scoreEls.length) item.appendChild(el('div', 'exam-scores', scoreEls.join('')));
-        var del = el('button', 'mini-btn', '删除');
-        del.addEventListener('click', function () {
-          confirmDelete('确定删除本次模考？该次成绩会从趋势图中移除。', function () {
-            Store.removeExam(ex.id); renderExamList(); renderData();
-            showToast('已删除该次模考记录', 'ok');
-          });
-        });
-        item.appendChild(del);
-        refs.examList.appendChild(item);
-      });
-    }
-  }
-
   /* ============ 今日：计划 ============ */
   function autoGenPlan(ds) {
     var subs = Store.getSubjects();
@@ -764,7 +676,7 @@
     var emptyHintEl = document.getElementById('plan-empty-hint');
     if (!plan.length) {
       if (emptyHintEl) emptyHintEl.classList.remove('hidden');
-      emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','progress'); } });
+      emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','review'); } });
       return;
     }
     if (emptyHintEl) emptyHintEl.classList.add('hidden');
@@ -1505,12 +1417,12 @@
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
-    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', mock:'mock', data:'data', settings:'settings', vocab:'vocab' };
+    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
     showTab(real);
-    if (real === 'data') { showSub('data', target === 'plan' ? 'progress' : (target === 'summary' ? 'summary' : (target === 'record' ? 'records' : 'overview'))); }
+    if (real === 'data') { showSub('data', (target === 'record' || target === 'plan' || target === 'summary') ? 'review' : 'overview'); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
-    else if (real === 'settings') { showSub('settings', target === 'sites' ? 'sites' : (target === 'manual' ? 'manual' : 'base')); }
+    else if (real === 'settings') { showSub('settings', (target === 'manual' || target === 'guide' || target === 'sites') ? 'help' : 'base'); }
     else if (real === 'mistakes') { showSub('mistakes', target === 'sentences' ? 'sentences' : 'mistakes'); }
     // 同步地址栏 hash，让各模块拥有独立 URL
     var nextHash = '#' + real;
@@ -3655,7 +3567,6 @@
       card.setAttribute('aria-label', label);
       var sub = '';
       if (tab === 'data') sub = '时长/成绩';
-      else if (tab === 'mock') sub = '真题模考';
       else if (tab === 'mistakes') sub = '薄弱复盘';
       card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span>' +
         '<span class="qe-text"><span class="qe-label">' + label + '</span>' +
@@ -4222,7 +4133,7 @@
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
       if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
       /* N：新建任务 → 跳到计划页并聚焦添加框 */
-      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','progress'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
+      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','review'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
       if (k === '/') { e.preventDefault(); var si = document.querySelector('.tab-panel.active input[type="text"], .tab-panel.active input[type="search"]'); if (si) si.focus(); }
     });
@@ -4515,7 +4426,6 @@
     if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
     if (target === 'vocab') { showSub('vocab', 'words'); renderWords(); }
-    if (target === 'mock') { renderExamCard(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
     if (window.matchMedia('(max-width: 860px)').matches) document.body.classList.remove('nav-open');
     // 同步底部 tabbar 高亮
@@ -4542,13 +4452,10 @@
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
       if (sub === 'overview') { renderData(); }
-      else if (sub === 'records') { renderManual(); }
-      else if (sub === 'progress') { renderMastery(); renderSubjectChapters(); renderPlanItems(); }
-      else if (sub === 'summary') { renderSummary(); }
+      else if (sub === 'review') { renderManual(); renderMastery(); renderSubjectChapters(); renderPlanItems(); renderSummary(); }
     } else if (container === 'settings') {
       if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); }
-      else if (sub === 'manual') { renderHelpManual(); }
-      else if (sub === 'guide') { renderTodayOnboarding(); }
+      else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
     }
   }
   function renderDashboardDigest() { renderTodayAggregate(); }
@@ -4675,12 +4582,6 @@
     refs.btnSaveSummary = $('btn-save-summary');
     refs.btnSaveManual = $('btn-save-manual');
     refs.btnResetDay = $('btn-reset-day');
-    refs.examName = $('exam-name');
-    refs.examDate2 = $('exam-date2');
-    refs.examScores = $('exam-scores');
-    refs.btnSaveExam = $('btn-save-exam');
-    refs.examList = $('exam-list');
-    refs.dayList = $('day-list');
 
     refs.countdown = $('countdown');
     refs.goalProgress = $('goal-progress');
@@ -4977,7 +4878,6 @@
         showToast('已清空 ' + ds + ' 学习记录', 'ok');
       });
     });
-    refs.btnSaveExam.addEventListener('click', onSaveExam);
 
     // 计划
     refs.btnAutoPlan.addEventListener('click', function () {
@@ -5193,7 +5093,6 @@
 
     // 仅倒计时开关
     refs.manualDate.value = Store.todayStr();
-    refs.examDate2.value = Store.todayStr();
 
     // 自动计划：启用且今日无计划则生成
     if (Store.getConfig().autoPlan) { var ds = Store.todayStr(); if (!Store.getPlan(ds)) autoGenPlan(ds); }

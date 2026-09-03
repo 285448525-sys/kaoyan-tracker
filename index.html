@@ -25,8 +25,8 @@
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>考研学习记录 · 计时/计划/模考/词汇/云端同步</title>
-  <meta name="description" content="考研学习记录：按模块计时、每日计划、模考成绩、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
+  <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
+  <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="favicon.svg" />
@@ -37,16 +37,16 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="考研学习记录" />
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
-  <meta property="og:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
+  <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
   <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
-  <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
+  <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903e" />
+  <link rel="stylesheet" href="styles.css?v=20260903f" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -87,7 +87,7 @@
       <span class="brand-logo">考</span>
       <div>
         <h1>考研学习记录</h1>
-        <p class="brand-sub">计时 · 计划 · 模考 · 词汇</p>
+        <p class="brand-sub">计时 · 计划 · 学科 · 词汇</p>
       </div>
     </div>
     <nav class="side-menu">
@@ -102,7 +102,6 @@
         <button class="tab-btn" data-tab="cs408"><span class="tab-ic" data-icon="cs408"></span><span class="tab-label">408</span></button>
         <button class="tab-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span class="tab-label">词汇</span></button>
         <button class="tab-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span class="tab-label">错题</span></button>
-        <button class="tab-btn" data-tab="mock"><span class="tab-ic" data-icon="mock"></span><span class="tab-label">模考</span></button>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">分析</div>
@@ -690,26 +689,9 @@
     </div>
     </section>
 
-    <!-- 模考 -->
-    <section id="tab-mock" class="tab-panel">
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 模考成绩</h2>
-        <div class="field-row"><label>考试名称</label><input type="text" id="exam-name" placeholder="如 9月模拟考" /></div>
-        <div class="field-row"><label>考试日期</label><input type="date" id="exam-date2" /></div>
-        <div id="exam-scores" class="dyn-grid"></div>
-        <button id="btn-save-exam" class="btn btn-primary full">保存模考</button>
-        <h3 class="sub-title">历史模考</h3>
-        <svg id="exam-trend" class="exam-trend" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
-        <div id="exam-list" class="list"></div>
-        <h3 class="sub-title">近期学习日</h3>
-        <div id="day-list" class="list"></div>
-      </div></div>
-    </section>
-
         <!-- 数据复盘 -->
     <section id="tab-data" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">概览</button><button class="sub-tab-btn" data-sub="records">记录</button><button class="sub-tab-btn" data-sub="progress">进度</button><button class="sub-tab-btn" data-sub="summary">总结</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">总览</button><button class="sub-tab-btn" data-sub="review">复盘</button></div>
       <div id="sub-overview" class="sub-panel active">
       <div class="section">
 <div class="card countdown-card"><div id="countdown" class="countdown">未设置考研日期</div></div></div>
@@ -788,7 +770,7 @@
         </div>
       </details>
     </div>
-      <div id="sub-records" class="sub-panel"><div class="section">
+      <div id="sub-review" class="sub-panel"><div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 每日学习记录</h2>
         <div class="field-row">
@@ -809,8 +791,6 @@
 
 
 
-    </div>
-      <div id="sub-progress" class="sub-panel">
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 模块掌握情况</h2>
@@ -840,8 +820,6 @@
         </div>
       </div></div>
 
-    </div>
-      <div id="sub-summary" class="sub-panel">
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="list"></span> 今日学习总结</h2>
@@ -865,7 +843,7 @@
 
     <!-- 设置 -->
     <section id="tab-settings" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="manual">使用说明</button><button class="sub-tab-btn" data-sub="guide">新手指引</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="help">帮助</button></div>
       <div id="sub-base" class="sub-panel active">
       <!-- ① 基础设置（首屏唯一主卡） -->
       <div class="section">
@@ -905,7 +883,7 @@
         <div class="field-row">
           <label>目标累计时长(h) <span class="opt">选填</span></label>
           <input type="number" id="goal-hours" min="0" step="10" placeholder="如 700" />
-          <button id="est-by-score" class="btn btn-ghost" type="button" title="用目标分与最近模考分估算">用目标分估算</button>
+          <button id="est-by-score" class="btn btn-ghost" type="button" title="按目标分缺口估算所需累计时长">用目标分估算</button>
         </div>
         <div class="field-row">
           <label>经验系数(h/分)</label>
@@ -1067,7 +1045,7 @@
         </div>
       </details>
     </div>
-      <div id="sub-manual" class="sub-panel">
+      <div id="sub-help" class="sub-panel">
       <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 考研学习记录 · 使用说明</h2>
@@ -1078,8 +1056,7 @@
         <div id="manual-list" class="manual-list"></div>
       </div></div>
 
-    </div>
-      <div id="sub-guide" class="sub-panel">      <div class="section">
+      <div class="section">
 <div id="today-onboarding" class="card onboarding-card" hidden>
         <h2 class="card-title"><span class="ic-inline" data-icon="rocket"></span> 30 秒快速开始</h2>
         <div id="onboarding-steps" class="onboarding-steps"></div>
@@ -1116,14 +1093,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903e"></script>
-  <script src="iconset.js?v=20260903e"></script>
-  <script src="words.js?v=20260903e"></script>
-  <script src="store.js?v=20260903e"></script>
-  <script src="charts.js?v=20260903e"></script>
-  <script src="share.js?v=20260903e"></script>
-  <script src="md5.js?v=20260903e"></script>
-  <script src="sentences.js?v=20260903e"></script>
-  <script src="app.js?v=20260903e"></script>
+  <script src="qrcode.min.js?v=20260903f"></script>
+  <script src="iconset.js?v=20260903f"></script>
+  <script src="words.js?v=20260903f"></script>
+  <script src="store.js?v=20260903f"></script>
+  <script src="charts.js?v=20260903f"></script>
+  <script src="share.js?v=20260903f"></script>
+  <script src="md5.js?v=20260903f"></script>
+  <script src="sentences.js?v=20260903f"></script>
+  <script src="app.js?v=20260903f"></script>
 </body>
 </html>
