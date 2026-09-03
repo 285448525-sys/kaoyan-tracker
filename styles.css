@@ -2768,3 +2768,102 @@ details.import-fold .import-body textarea { width: 100%; min-height: 80px; paddi
 .theme-switch input:checked ~ .slider .star { opacity: 0; }
 .theme-switch .cloud { width: 3.5em; position: absolute; bottom: -1.4em; left: -1.1em; opacity: 0; transition: all 0.4s; }
 .theme-switch input:checked ~ .slider .cloud { opacity: 1; }
+
+/* ================================================================
+   Uiverse 风格批量升级（v20260903c）
+   来源：本环境访问 uiverse.io 被 Cloudflare 拦，源码经 WebSearch 取真实片段
+         （progress/chase2k25 new-eagle-65、card、tab、input 等）后按 mist 蓝规约改写。
+   原则：全部走 CSS 变量（var(--primary) 等）→ 明暗主题自动适配；作用域隔离，
+         不破坏功能语义色（phase-badge 基础/强化/冲刺 等保留原色）。纯 CSS、零改 markup。
+   ================================================================ */
+
+/* 1) 卡片 hover 发光环（不位移，避免密集网格跳动；.card--lift 才上浮） */
+.card:hover {
+  box-shadow: var(--shadow-hover), 0 0 0 3px rgba(62,155,232,.10), 0 10px 28px -12px rgba(31,111,184,.22);
+}
+.card--lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover), 0 14px 34px -12px rgba(31,111,184,.30);
+}
+
+/* 2) 列表/错题/指标卡 hover 微光描边 */
+.list-item, .mistake-item, .stat-card {
+  transition: box-shadow .2s ease, border-color .2s ease, transform .15s ease;
+}
+.list-item:hover, .mistake-item:hover, .stat-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  box-shadow: var(--shadow-sm), 0 0 0 3px rgba(62,155,232,.08);
+}
+
+/* 3) 标签 chip / 词汇库 vchip：选中态改渐变药丸 + 发光 */
+.chip.active, .vchip.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 12px -4px rgba(31,111,184,.5);
+}
+
+/* 4) 次级按钮 ghost / mini：hover 发光上浮 */
+.btn-ghost { transition: transform .12s ease, box-shadow .2s ease, border-color .15s ease, background .15s ease; }
+.btn-ghost:hover {
+  border-color: var(--primary); background: var(--surface-2);
+  box-shadow: 0 6px 18px -6px rgba(31,111,184,.30); transform: translateY(-1px);
+}
+.mini-btn { transition: background .15s ease, color .15s ease, box-shadow .2s ease; }
+.mini-btn:hover { background: var(--primary-soft); color: var(--primary-deep); box-shadow: 0 4px 12px -6px rgba(31,111,184,.25); }
+
+/* 5) 标签页 sub-tab-btn：选中渐变发光（原纯色实底 → 渐变 + glow） */
+.sub-tab-btn { transition: background .15s ease, color .15s ease, border-color .15s ease, box-shadow .2s ease, transform .12s ease; }
+.sub-tab-btn.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 12px -4px rgba(31,111,184,.45);
+}
+.sub-tab-btn:hover { border-color: var(--primary); transform: translateY(-1px); }
+
+/* 6) 底部 Tab Bar 选中态发光 */
+.bottom-tabbar .btb-btn.active {
+  box-shadow: inset 0 0 0 1px rgba(62,155,232,.25), 0 4px 14px -6px rgba(31,111,184,.40);
+}
+
+/* 7) 图标按钮 hover 发光 */
+.icon-btn { transition: border-color .15s ease, color .15s ease, background .15s ease, box-shadow .2s ease; }
+.icon-btn:hover {
+  border-color: var(--primary); color: var(--primary); background: rgba(62,155,232,.06);
+  box-shadow: 0 4px 14px -6px rgba(31,111,184,.30);
+}
+
+/* 8) 开关行 checked：发光描边 */
+.toggle-row { transition: border-color .15s ease, background .15s ease, box-shadow .2s ease; }
+.toggle-row:has(input:checked) {
+  border-color: var(--primary); background: var(--primary-soft);
+  box-shadow: 0 0 0 3px rgba(62,155,232,.10);
+}
+
+/* 9) 进度条：chapter/yr 填充改渐变 + 发光（goal 填充为内联语义色，仅加高光） */
+.chapter-fill, .yr-fill {
+  background: linear-gradient(90deg, var(--primary-bright) 0%, var(--primary-deep) 100%);
+  box-shadow: 0 0 8px -1px rgba(62,155,232,.55);
+}
+.goal-fill { box-shadow: inset 0 1px 0 rgba(255,255,255,.30); }
+
+/* 10) 浮动按钮 FAB：加深渐变 + 悬浮发光环 + 按压 */
+.fab-action {
+  transition: transform .15s ease, box-shadow .2s ease;
+  box-shadow: 0 8px 22px -4px rgba(31,111,184,.50), 0 0 0 0 rgba(62,155,232,.45);
+}
+.fab-action:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(31,111,184,.60), 0 0 0 6px rgba(62,155,232,.12);
+}
+
+/* 11) 无障碍：尊重 prefers-reduced-motion，关闭位移类微交互 */
+@media (prefers-reduced-motion: reduce) {
+  .card--lift:hover,
+  .btn-ghost:hover,
+  .mini-btn:hover,
+  .sub-tab-btn:hover,
+  .fab-action:hover,
+  .list-item:hover,
+  .mistake-item:hover,
+  .stat-card:hover { transform: none; }
+}
