@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903i';
+  var APP_VERSION = '20260903j';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -502,20 +502,9 @@
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
-    renderHomeStreak();
     renderHomeOverview();
     renderHomeWeek();
     renderHomeTodo();
-  }
-
-  /* 顶栏🔥连续学习天数胶囊（借鉴 K12 学习台 .streak） */
-  function renderHomeStreak() {
-    var numEl = document.getElementById('home-streak-num');
-    if (!numEl) return;
-    var s = Store.consecutiveStreak();
-    numEl.textContent = s;
-    var pill = document.getElementById('home-streak');
-    if (pill) pill.classList.toggle('is-zero', s <= 0);
   }
 
   /* 今日待处理聚合卡（借鉴 K12 学习台「今日要处理」：把分散待办聚合到首页一眼可见） */

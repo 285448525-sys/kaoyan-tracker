@@ -2594,19 +2594,6 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .hh-countdown .tab-ic svg, .hh-countdown .ic svg { width: 16px; height: 16px; }
 .hh-cd-text { white-space: nowrap; }
 
-/* 🔥 连续学习天数胶囊（借鉴 K12 学习台 .streak，配色走 mist 蓝） */
-.hh-streak {
-  display: inline-flex; align-items: baseline; gap: 3px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
-  padding: 8px 12px; border-radius: 999px; border: 0;
-  background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary-strong);
-  transition: background .15s ease, transform .15s ease;
-}
-.hh-streak:hover { background: color-mix(in srgb, var(--primary) 18%, transparent); }
-.hh-streak:active { transform: scale(.96); }
-.hh-streak.is-zero { color: var(--muted); background: var(--line); }
-.hh-streak-flame { font-size: 14px; line-height: 1; filter: grayscale(var(--zero, 0)); }
-.hh-streak.is-zero .hh-streak-flame { filter: grayscale(1) opacity(.6); }
-.hh-streak-num { font-size: 15px; font-variant-numeric: tabular-nums; }
 
 .home-hero-card {
   margin: 0 16px; border-radius: 18px; padding: 20px;
@@ -3009,13 +2996,8 @@ details.import-fold .import-body textarea { width: 100%; min-height: 80px; paddi
    全部走 CSS 变量；明暗双主题各自收口；语义功能色不动。
    ============================================================ */
 
-/* 1) 全局环境光：页面四角铺极淡 mist 径向光晕，制造"有空气感"的 premium 底 */
-body {
-  background:
-    radial-gradient(900px 520px at 100% -8%, rgba(234, 88, 12,.10), transparent 60%),
-    radial-gradient(760px 460px at -6% 4%, rgba(111,182,238,.08), transparent 58%),
-    var(--bg);
-}
+/* 1) 去掉全局环境光晕，回归纯净底色 */
+body { background: var(--bg); }
 
 /* 2) 卡片静止态就有"浮起 + 顶部高光"的成品级质感（不是只有 hover 才有） */
 .card {
@@ -3042,11 +3024,6 @@ body {
   border-color: rgba(234, 88, 12,.18);
   box-shadow: var(--shadow), 0 0 0 1px rgba(234, 88, 12,.05);
 }
-@keyframes heroGlow {
-  0%, 100% { transform: translate(0,0) scale(1); opacity: .85; }
-  50%      { transform: translate(-14px,12px) scale(1.10); opacity: 1; }
-}
-.home-hero::before { animation: heroGlow 9s ease-in-out infinite; }
 
 /* 5) 大数字渐变文字（倒计时天数 / 关键指标值）—— 一眼"设计过"的质感 */
 .home-cd-num, .m-val {
@@ -3057,15 +3034,9 @@ body {
 }
 
 /* 6) 主按钮 / 首页 CTA：流动渐变微光（缓慢扫光），premium 动态感 */
-@keyframes mistSheen {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+/* 主按钮 / 首页 CTA：静态渐变（收敛扫光动画，保留高级渐变） */
 .btn-primary, .home-cta {
-  background-image: linear-gradient(120deg, var(--primary-bright), var(--primary) 42%, var(--primary-deep) 82%);
-  background-size: 200% 200%;
-  animation: mistSheen 6s ease infinite;
+  background-image: linear-gradient(135deg, var(--primary-bright), var(--primary) 55%, var(--primary-deep));
 }
 
 /* 7) 移动端底部 Tab Bar：磨砂玻璃（半透明 + 背景模糊），手机上最显眼的升级 */
@@ -3077,18 +3048,9 @@ body {
   box-shadow: 0 -8px 30px -12px rgba(194, 65, 12,.30);
 }
 
-/* 8) 无障碍：尊重 reduced-motion，关闭所有位移/扫光动画 */
-@media (prefers-reduced-motion: reduce) {
-  .btn-primary, .home-cta, .home-hero::before { animation: none; }
-}
 
 /* ===== 深色主题各自收口 ===== */
-:root[data-theme="dark"] body {
-  background:
-    radial-gradient(900px 520px at 100% -8%, rgba(234, 88, 12,.16), transparent 60%),
-    radial-gradient(760px 460px at -6% 4%, rgba(111,182,238,.10), transparent 58%),
-    var(--bg);
-}
+:root[data-theme="dark"] body { background: var(--bg); }
 :root[data-theme="dark"] .home-hero {
   background: linear-gradient(135deg, #1b2233 0%, #162033 100%);
   border-color: rgba(251,146,60,.22);
