@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903j" />
+  <link rel="stylesheet" href="styles.css?v=20260903k" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -329,80 +329,12 @@
             <option value="计算机组成原理">计算机组成原理</option>
             <option value="操作系统">操作系统</option>
             <option value="计算机网络">计算机网络</option>
-            <option value="自定义">我的题库</option>
           </select>
         </div>
         <div id="cs408-practice" class="practice-box"></div>
         <div class="btn-row" style="margin-top:12px">
           <button id="btn-cs408-practice-start" class="btn btn-primary">开始刷题</button>
         </div>
-      </div></div>
-
-      <!-- 我的题库（独立卡） -->
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 我的题库</h2>
-        <div id="cs408-question-list" class="mistake-list"></div>
-        <div class="entry-form">
-          <h4>添加题目</h4>
-          <div class="entry-row"><label>分类</label><input type="text" id="cq-cat" placeholder="分类，如 数据结构" /></div>
-          <div class="entry-row full"><label>题干</label><input type="text" id="cq-q" placeholder="题干" /></div>
-          <div class="entry-opts">
-            <div class="opt"><label>选项 A</label><input type="text" id="cq-opt0" placeholder="选项 A" /></div>
-            <div class="opt"><label>选项 B</label><input type="text" id="cq-opt1" placeholder="选项 B" /></div>
-            <div class="opt"><label>选项 C</label><input type="text" id="cq-opt2" placeholder="选项 C" /></div>
-            <div class="opt"><label>选项 D</label><input type="text" id="cq-opt3" placeholder="选项 D" /></div>
-          </div>
-          <div class="entry-row"><label>正确答案</label>
-            <select id="cq-answer">
-              <option value="">请选择</option>
-              <option value="0">0 · A</option>
-              <option value="1">1 · B</option>
-              <option value="2">2 · C</option>
-              <option value="3">3 · D</option>
-            </select>
-          </div>
-          <div class="entry-row full"><label>解析（可选）</label><input type="text" id="cq-explain" placeholder="解析（可选）" /></div>
-          <div class="entry-actions"><button id="btn-add-cq" class="btn btn-primary">+ 添加到题库</button></div>
-        </div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 知识点速查卡</h2>
-        <div class="entry-form">
-          <div class="entry-row"><label>分类</label>
-            <select id="kp-subject" style="max-width:220px">
-              <option value="数据结构">数据结构</option>
-              <option value="计算机组成原理">计算机组成原理</option>
-              <option value="操作系统">操作系统</option>
-              <option value="计算机网络">计算机网络</option>
-              <option value="其他">其他</option>
-            </select>
-          </div>
-          <div class="entry-row full"><label>标题</label><input type="text" id="kp-title" placeholder="标题，如：红黑树性质" /></div>
-          <div class="entry-row full"><label>内容</label><textarea id="kp-content" rows="2" placeholder="内容（支持多行）"></textarea></div>
-          <div class="entry-actions"><button id="btn-add-kp" class="btn btn-primary full">添加知识点</button></div>
-        </div>
-        <div class="chip-row" id="kp-filter" style="margin-top:12px"></div>
-        <div id="kp-list" class="kp-list"></div>
-      </div></div>
-
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 408 历年真题年份记录</h2>
-        <div class="entry-form">
-          <div class="entry-opts">
-            <div class="opt"><label>年份</label><input type="number" id="yr-year" placeholder="2024" min="2000" max="2099" /></div>
-            <div class="opt"><label>得分</label><input type="number" id="yr-score" placeholder="110" min="0" max="150" /></div>
-            <div class="opt"><label>总分</label><input type="number" id="yr-total" placeholder="150" min="0" max="150" /></div>
-            <div class="opt"><label>备注</label><input type="text" id="yr-note" placeholder="可选" /></div>
-          </div>
-          <div class="entry-actions"><button id="btn-add-yr" class="btn btn-primary">+ 添加</button></div>
-        </div>
-        <div id="yr-list" class="yr-list"></div>
       </div></div>
 
     </section>
@@ -684,10 +616,6 @@
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">总览</button><button class="sub-tab-btn" data-sub="review">复盘</button></div>
       <div id="sub-overview" class="sub-panel active">
       <div class="section">
-<div class="card countdown-card"><div id="countdown" class="countdown">未设置考研日期</div></div></div>
-
-
-      <div class="section">
 <div class="card">
         <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 近 30 天学习得分</h2>
         <div id="score-summary" class="score-summary"></div>
@@ -712,101 +640,10 @@
       </div></div>
 
 
-      <details class="analysis-fold">
-        <summary class="fold-summary"><span class="ic-inline" data-icon="chart"></span> 更多分析（成就 · 目标 · 雷达图 · 薄弱点）</summary>
-        <div class="section">
-  <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="medal"></span> 成就与等级</h2>
-          <div id="badges-level" class="badges-level"></div>
-          <div class="badges-count" id="badges-count"></div>
-          <div id="badges-grid" class="badges-grid"></div>
-        </div></div>
 
 
-        <div class="section">
-  <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 目标进度与差距</h2>
-          <div id="goal-progress" class="goal"></div>
-        </div></div>
-
-
-        <div class="section">
-  <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="fire"></span> 学习热力图</h2>
-          <div class="mheat-nav">
-            <button id="heat-prev" class="mini-btn">‹</button>
-            <span id="heat-label" class="mheat-label"></span>
-            <button id="heat-next" class="mini-btn">›</button>
-            <button id="heat-now" class="mini-btn">本月</button>
-          </div>
-          <div id="heatmap" class="mheat-wrap"></div>
-        </div></div>
-
-
-        <div class="section">
-  <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="radar"></span> 综合掌握度雷达图</h2>
-          <div id="subject-radar"></div>
-        </div></div>
-
-
-        <div class="section">
-  <div class="card weakness-card" id="weakness-card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 薄弱点分析报告（基于刷题正确率）</h2>
-          <p class="card-hint">根据数学 / 408 分类刷题的正确率自动判定薄弱分支，并映射到对应章节，给出优先复习清单（正确率 &lt; 60% 薄弱，60%~75% 待加强，样本 &lt; 3 题不判定）。</p>
-          <div id="weakness-report"></div>
-        </div></div>
-      </details>
-
-
-      <details class="charts-fold">
-        <summary><span class="ic-inline" data-icon="chart"></span> 更多图表（学习时长分布 · 成绩趋势 · 各科目统计）</summary>
-        <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="pie"></span> 今日学习时长分布</h2>
-          <div id="today-pie"></div>
-        </div>
-        <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="trend"></span> 成绩趋势</h2>
-          <div id="trend" class="trend-wrap"></div>
-        </div>
-        <div class="card">
-          <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 各科目学习统计</h2>
-          <div id="subject-bars" class="subject-bars"></div>
-          <div id="subject-stats" class="stats-grid" style="margin-top:14px"></div>
-        </div>
-      </details>
     </div>
-      <div id="sub-review" class="sub-panel"><div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="vocab"></span> 每日学习记录</h2>
-        <div class="field-row">
-          <label>日期</label>
-          <input type="date" id="manual-date" />
-        </div>
-        <div id="manual-durations" class="dyn-grid"></div>
-        <div class="field">
-          <label>完成内容</label>
-          <textarea id="manual-completed" rows="2" placeholder="今天做了什么（将展示在打卡图）"></textarea>
-        </div>
-        <div class="btn-row">
-          <button id="btn-save-manual" class="btn btn-primary">保存记录</button>
-          <button id="btn-reset-day" class="btn btn-ghost">清空当日</button>
-        </div>
-      </div></div>
-
-
-
-
-      <div class="section">
-<div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="target"></span> 模块掌握情况</h2>
-        <div id="mastery-list" class="mastery-list"></div>
-        <div class="plan-add">
-          <input type="text" id="module-name" placeholder="新增模块名，如 高数·极限" />
-          <button id="btn-add-module" class="btn btn-ghost">添加模块</button>
-        </div>
-      </div></div>
-
+      <div id="sub-review" class="sub-panel">
 
       <div class="section">
 <div class="card">
@@ -1111,14 +948,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903j"></script>
-  <script src="iconset.js?v=20260903j"></script>
-  <script src="words.js?v=20260903j"></script>
-  <script src="store.js?v=20260903j"></script>
-  <script src="charts.js?v=20260903j"></script>
-  <script src="share.js?v=20260903j"></script>
-  <script src="md5.js?v=20260903j"></script>
-  <script src="sentences.js?v=20260903j"></script>
-  <script src="app.js?v=20260903j"></script>
+  <script src="qrcode.min.js?v=20260903k"></script>
+  <script src="iconset.js?v=20260903k"></script>
+  <script src="words.js?v=20260903k"></script>
+  <script src="store.js?v=20260903k"></script>
+  <script src="charts.js?v=20260903k"></script>
+  <script src="share.js?v=20260903k"></script>
+  <script src="md5.js?v=20260903k"></script>
+  <script src="sentences.js?v=20260903k"></script>
+  <script src="app.js?v=20260903k"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903j';
+  var APP_VERSION = '20260903k';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -974,30 +974,14 @@
   /* ============ 数据看板 ============ */
   function renderData() {
     var cfg = Store.getConfig();
-    if (cfg.examDate) {
-      var diff = Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000);
-      refs.countdown.innerHTML = diff >= 0 ? ('距离考研还有 <b>' + diff + '</b> 天') : ('考研已结束 ' + Math.abs(diff) + ' 天');
-    } else { refs.countdown.textContent = '未设置考研日期'; }
-    renderGoalProgress();
-    // D3：今日时长饼图
-    renderTodayPieCard();
-    Charts.renderMonthHeatmap(refs.heatmap, heatYear, heatMonth, Store.getDays());
-    refs.heatLabel.textContent = heatYear + '年' + (heatMonth + 1) + '月';
-    Charts.renderTrend(refs.trend, Store.getExams(), Number(cfg.targetTotal) || 0, cfg.examDate);
-    // D3：掌握度雷达图
-    renderRadarCard();
-    renderSubjectStats();
-    // 学习得分 + 成就徽章
+    if (refs.countdown) {
+      if (cfg.examDate) {
+        var diff = Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(Store.todayStr() + 'T00:00:00')) / 86400000);
+        refs.countdown.innerHTML = diff >= 0 ? ('距离考研还有 <b>' + diff + '</b> 天') : ('考研已结束 ' + Math.abs(diff) + ' 天');
+      } else { refs.countdown.textContent = '未设置考研日期'; }
+    }
     renderScoreCard();
-    renderBadgesCard();
-    // 里程碑检测（首次达成触发庆祝）
-    checkMilestones();
-    renderWeaknessReport();
     renderBattleReport();
-    // S3：非数学/408 用户不展示薄弱点卡（无刷题数据）
-    var hasMath = Store.getSubjects().some(function (s) { return s.key === 'math'; });
-    var hasCs408 = Store.getSubjects().some(function (s) { return s.key === 'cs408'; });
-    if (refs.weaknessCard) refs.weaknessCard.classList.toggle('nav-hidden', !(hasMath || hasCs408));
   }
 
   /* ============ 学习战报（借鉴 K12 学习台分享海报）：周/月聚合统计 ============ */
@@ -1906,6 +1890,7 @@
         groups[p.g].push({ ch: ch, idx: idx });
       });
       var groupKeys = Object.keys(groups);
+      var defaultCollapsed = !!o.defaultCollapsed;
       var collapsed = o.getCollapsed();
       // 全部展开 / 收起
       var ctrl = el('div', 'book-ctrl');
@@ -1926,7 +1911,7 @@
         var items = groups[g];
         var gTotal = items.length;
         var gDone = items.filter(function (it) { return doneSet.indexOf(it.idx) >= 0; }).length;
-        var isCollapsed = !!collapsed[g];
+        var isCollapsed = (collapsed[g] !== undefined) ? !!collapsed[g] : defaultCollapsed;
         var book = el('div', 'book-group' + (isCollapsed ? ' collapsed' : ''));
         var bhead = el('div', 'book-head');
         bhead.appendChild(el('span', 'book-caret', isCollapsed ? '▸' : '▾'));
@@ -1979,6 +1964,7 @@
       groupColors: CS408_GROUP_COLORS,
       getCollapsed: Store.getCs408BooksCollapsed,
       setCollapsed: Store.setCs408BooksCollapsed,
+      defaultCollapsed: true,
       onToggle: function (i) { Store.toggle408Done(i); renderCs408Grouped(mount); renderAggSubjectProgress(); },
       onCurrent: function (i) { Store.set408Current(i); renderCs408Grouped(mount); },
       onAddChapter: function (v) { var arr = Store.get408Chapters().slice(); arr.push(v); Store.set408Chapters(arr); renderCs408Grouped(mount); }
@@ -4587,7 +4573,6 @@
     renderConfig();
     renderTimerMods(); renderRecMini(); renderTimerStreak();
     if (Store.getTimer().running) showGlobalTimer(Store.getTimer().subjectKey);
-    renderManual();
     populatePlanSubjects();
     renderPlan();
     renderToday();
@@ -4610,17 +4595,13 @@
       renderSummary();
       renderHfWords();
       renderWrongBook();
-      renderMastery();
       renderSubjectChapters();
       renderPlanItems();
       renderMathChapters();
       renderMathQuestionList();
       renderMathPractice();
       render408Chapters();
-      render408QuestionList();
       render408Practice();
-      render408Knowledge();
-      render408Years();
     }, 0);
   }
   function showTab(target) {
@@ -4629,7 +4610,7 @@
     if (target === 'home') { renderHome(); }
     if (target === 'timer') { renderTimerState(); }
     if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
-    if (target === 'cs408') { render408Chapters(); render408QuestionList(); render408Practice(); render408Knowledge(); render408Years(); }
+    if (target === 'cs408') { render408Chapters(); render408Practice(); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
     if (target === 'vocab') { showSub('vocab', 'words'); renderWords(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
@@ -4708,7 +4689,7 @@
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
       if (sub === 'overview') { renderData(); }
-      else if (sub === 'review') { renderManual(); renderMastery(); renderSubjectChapters(); renderPlanItems(); renderSummary(); }
+      else if (sub === 'review') { renderSubjectChapters(); renderPlanItems(); renderSummary(); }
     } else if (container === 'settings') {
       if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); }
       else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
@@ -5130,10 +5111,10 @@
       renderScoreWeights(); renderData(); showToast('已恢复默认权重', 'ok');
     });
 
-    // 记录
-    refs.manualDate.addEventListener('change', renderManual);
-    refs.btnSaveManual.addEventListener('click', onSaveManual);
-    refs.btnResetDay.addEventListener('click', function () {
+    // 记录（手动学习记录卡已移除，保留守卫避免空引用）
+    if (refs.manualDate) refs.manualDate.addEventListener('change', renderManual);
+    if (refs.btnSaveManual) refs.btnSaveManual.addEventListener('click', onSaveManual);
+    if (refs.btnResetDay) refs.btnResetDay.addEventListener('click', function () {
       var ds = refs.manualDate.value || Store.todayStr();
       confirmDelete('确定清空 ' + ds + ' 的学习记录？该日计时、学习内容、打卡信息都会被清空。', function () {
         Store.resetDay(ds); renderManual(); renderData(); renderToday();
@@ -5165,10 +5146,10 @@
     if (refs.btnStartTour) refs.btnStartTour.addEventListener('click', startTour);
     if (refs.btnRestartTour) refs.btnRestartTour.addEventListener('click', startTour);
 
-    // 数据
-    refs.heatPrev.addEventListener('click', function () { heatMonth--; if (heatMonth < 0) { heatMonth = 11; heatYear--; } renderData(); });
-    refs.heatNext.addEventListener('click', function () { heatMonth++; if (heatMonth > 11) { heatMonth = 0; heatYear++; } renderData(); });
-    refs.heatNow.addEventListener('click', function () { var n = new Date(); heatYear = n.getFullYear(); heatMonth = n.getMonth(); renderData(); });
+    // 数据（热力图卡已移除，保留守卫避免空引用）
+    if (refs.heatPrev) refs.heatPrev.addEventListener('click', function () { heatMonth--; if (heatMonth < 0) { heatMonth = 11; heatYear--; } renderData(); });
+    if (refs.heatNext) refs.heatNext.addEventListener('click', function () { heatMonth++; if (heatMonth > 11) { heatMonth = 0; heatYear++; } renderData(); });
+    if (refs.heatNow) refs.heatNow.addEventListener('click', function () { var n = new Date(); heatYear = n.getFullYear(); heatMonth = n.getMonth(); renderData(); });
 
     // 学习战报：区间切换 + 生成海报
     var battleRangeBox = document.getElementById('battle-range');
@@ -5341,8 +5322,8 @@
     if (refs.btnAiSummary) refs.btnAiSummary.addEventListener('click', onAiSummary);
     if (refs.btnSaveSummary) refs.btnSaveSummary.addEventListener('click', onSaveSummary);
 
-    // 学习计划：模块掌握
-    refs.btnAddModule.addEventListener('click', function () {
+    // 学习计划：模块掌握（模块掌握卡已移除，保留守卫避免空引用）
+    if (refs.btnAddModule) refs.btnAddModule.addEventListener('click', function () {
       var name = refs.moduleName.value.trim();
       if (!name) { alert('请输入模块名'); return; }
       Store.addModule(name); refs.moduleName.value = ''; renderMastery();
@@ -5379,7 +5360,7 @@
     if (refs.btnAddYr) refs.btnAddYr.addEventListener('click', onAdd408Year);
 
     // 仅倒计时开关
-    refs.manualDate.value = Store.todayStr();
+    if (refs.manualDate) refs.manualDate.value = Store.todayStr();
 
     // 自动计划：启用且今日无计划则生成
     if (Store.getConfig().autoPlan) { var ds = Store.todayStr(); if (!Store.getPlan(ds)) autoGenPlan(ds); }
