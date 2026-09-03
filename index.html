@@ -46,20 +46,21 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、模考、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903a" />
+  <link rel="stylesheet" href="styles.css?v=20260903b" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
     transition:opacity .4s ease}
   .loader-c.is-hidden{opacity:0;pointer-events:none}
-  .loader-c__dots{display:flex;gap:14px;margin-bottom:26px}
-  .loader-c__dots i{width:14px;height:14px;border-radius:50%;
-    animation:lc-breathe 1.4s ease-in-out infinite}
-  .loader-c__dots i:nth-child(1){background:#A7CEEC}
-  .loader-c__dots i:nth-child(2){background:#6FB6EA;animation-delay:.2s}
-  .loader-c__dots i:nth-child(3){background:#3E9BE8;animation-delay:.4s}
-  .loader-c__dots i:nth-child(4){background:#1F6FB2;animation-delay:.6s}
-  @keyframes lc-breathe{0%,100%{transform:scale(.6);opacity:.5}50%{transform:scale(1);opacity:1}}
+  .wrapper{width:200px;height:60px;position:relative;z-index:1;margin-bottom:26px}
+  .circle{width:20px;height:20px;position:absolute;border-radius:50%;background:#3E9BE8;left:15%;top:60px;transform-origin:50%;animation:lc-ball .5s alternate infinite ease}
+  @keyframes lc-ball{0%{top:60px;height:5px;border-radius:50px 50px 25px 25px;transform:scaleX(1.7)}40%{height:20px;border-radius:50%;transform:scaleX(1)}100%{top:0%}}
+  .circle:nth-child(2){left:45%;background:#6FB6EA;animation-delay:.2s}
+  .circle:nth-child(3){left:auto;right:15%;background:#1F6FB8;animation-delay:.3s}
+  .shadow{width:20px;height:4px;border-radius:50%;background:rgba(0,0,0,.2);position:absolute;top:62px;transform-origin:50%;z-index:-1;left:15%;filter:blur(1px);animation:lc-shadow .5s alternate infinite ease}
+  @keyframes lc-shadow{0%{transform:scaleX(1.5)}40%{transform:scaleX(1);opacity:.7}100%{transform:scaleX(.2);opacity:.4}}
+  .shadow:nth-child(4){left:45%;animation-delay:.2s}
+  .shadow:nth-child(5){left:auto;right:15%;animation-delay:.3s}
   .loader-c__brand{font-size:20px;font-weight:800;letter-spacing:3px;
     background:linear-gradient(100deg,#1F6FB2 30%,#A7CEEC 50%,#1F6FB2 70%);
     background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
@@ -70,7 +71,14 @@
 </head>
 <body>
   <div id="app-loading" class="loader-c" role="status" aria-label="加载中">
-    <div class="loader-c__dots"><i></i><i></i><i></i><i></i></div>
+    <div class="wrapper">
+      <div class="circle"></div>
+      <div class="circle"></div>
+      <div class="circle"></div>
+      <div class="shadow"></div>
+      <div class="shadow"></div>
+      <div class="shadow"></div>
+    </div>
     <div class="loader-c__brand">考研学习记录</div>
     <div class="loader-c__tip">正在准备你的学习数据…</div>
   </div>
@@ -1108,14 +1116,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903a"></script>
-  <script src="iconset.js?v=20260903a"></script>
-  <script src="words.js?v=20260903a"></script>
-  <script src="store.js?v=20260903a"></script>
-  <script src="charts.js?v=20260903a"></script>
-  <script src="share.js?v=20260903a"></script>
-  <script src="md5.js?v=20260903a"></script>
-  <script src="sentences.js?v=20260903a"></script>
-  <script src="app.js?v=20260903a"></script>
+  <script src="qrcode.min.js?v=20260903b"></script>
+  <script src="iconset.js?v=20260903b"></script>
+  <script src="words.js?v=20260903b"></script>
+  <script src="store.js?v=20260903b"></script>
+  <script src="charts.js?v=20260903b"></script>
+  <script src="share.js?v=20260903b"></script>
+  <script src="md5.js?v=20260903b"></script>
+  <script src="sentences.js?v=20260903b"></script>
+  <script src="app.js?v=20260903b"></script>
 </body>
 </html>
