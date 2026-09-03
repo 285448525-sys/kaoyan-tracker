@@ -2867,3 +2867,109 @@ details.import-fold .import-body textarea { width: 100%; min-height: 80px; paddi
   .mistake-item:hover,
   .stat-card:hover { transform: none; }
 }
+
+/* ============================================================
+   Premium 大幅升级（v20260903e）
+   目标：打开页面【立刻看得见】的高级感，而非仅 hover 才显现。
+   全部走 CSS 变量；明暗双主题各自收口；语义功能色不动。
+   ============================================================ */
+
+/* 1) 全局环境光：页面四角铺极淡 mist 径向光晕，制造"有空气感"的 premium 底 */
+body {
+  background:
+    radial-gradient(900px 520px at 100% -8%, rgba(62,155,232,.10), transparent 60%),
+    radial-gradient(760px 460px at -6% 4%, rgba(111,182,238,.08), transparent 58%),
+    var(--bg);
+}
+
+/* 2) 卡片静止态就有"浮起 + 顶部高光"的成品级质感（不是只有 hover 才有） */
+.card {
+  border-radius: 18px;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.70);
+}
+.stat-card, .sub-card, .ai-card, .kp-card, .checkin-card,
+.today-score-card, .cloud-sync-card, .translator-card, .weakness-card,
+.word-card, .flashcard-card, .syn-card, .reminder, .sub-tab-btn {
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.55);
+}
+/* 落在分区底色带内的卡片：更轻阴影避免双重浮起，但保留顶部高光 */
+.section .card { box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.60); }
+
+/* 3) 分区标题：左侧色条改为 mist 渐变药丸 + 发光，作为整站视觉签名 */
+.section-title::before {
+  background: linear-gradient(135deg, var(--primary-bright), var(--primary-deep));
+  box-shadow: 0 0 8px -1px rgba(62,155,232,.50);
+}
+
+/* 4) 首页 Hero：白→极淡蓝渐变面板 + mist 描边，自带呼吸光晕动画 */
+.home-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f2f8fe 100%);
+  border-color: rgba(62,155,232,.18);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(62,155,232,.05);
+}
+@keyframes heroGlow {
+  0%, 100% { transform: translate(0,0) scale(1); opacity: .85; }
+  50%      { transform: translate(-14px,12px) scale(1.10); opacity: 1; }
+}
+.home-hero::before { animation: heroGlow 9s ease-in-out infinite; }
+
+/* 5) 大数字渐变文字（倒计时天数 / 关键指标值）—— 一眼"设计过"的质感 */
+.home-cd-num, .m-val {
+  color: var(--primary);
+  background: linear-gradient(120deg, var(--primary-deep), var(--primary) 55%, var(--primary-bright));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 6) 主按钮 / 首页 CTA：流动渐变微光（缓慢扫光），premium 动态感 */
+@keyframes mistSheen {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.btn-primary, .home-cta {
+  background-image: linear-gradient(120deg, var(--primary-bright), var(--primary) 42%, var(--primary-deep) 82%);
+  background-size: 200% 200%;
+  animation: mistSheen 6s ease infinite;
+}
+
+/* 7) 移动端底部 Tab Bar：磨砂玻璃（半透明 + 背景模糊），手机上最显眼的升级 */
+.bottom-tabbar {
+  background: rgba(255,255,255,.72);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border-top: 1px solid rgba(255,255,255,.60);
+  box-shadow: 0 -8px 30px -12px rgba(31,111,184,.30);
+}
+
+/* 8) 无障碍：尊重 reduced-motion，关闭所有位移/扫光动画 */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary, .home-cta, .home-hero::before { animation: none; }
+}
+
+/* ===== 深色主题各自收口 ===== */
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(900px 520px at 100% -8%, rgba(62,155,232,.16), transparent 60%),
+    radial-gradient(760px 460px at -6% 4%, rgba(111,182,238,.10), transparent 58%),
+    var(--bg);
+}
+:root[data-theme="dark"] .home-hero {
+  background: linear-gradient(135deg, #1b2233 0%, #162033 100%);
+  border-color: rgba(91,174,234,.22);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(91,174,234,.08);
+}
+:root[data-theme="dark"] .home-cd-num,
+:root[data-theme="dark"] .m-val {
+  color: var(--primary-bright);
+  background: linear-gradient(120deg, var(--primary-bright), var(--primary) 55%, #bfe0fb);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+:root[data-theme="dark"] .bottom-tabbar {
+  background: rgba(18,21,34,.72);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-top-color: rgba(255,255,255,.08);
+  box-shadow: 0 -8px 30px -10px rgba(0,0,0,.55);
+}
