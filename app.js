@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903h';
+  var APP_VERSION = '20260903i';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -362,7 +362,7 @@
 
   /* ============ 按模块计时 ============ */
   var TIMER_SUBJECTS = [
-    { key: 'english',  name: '英语二', icon: 'book',  accent: '#3E9BE8' },
+    { key: 'english',  name: '英语二', icon: 'book',  accent: '#EA580C' },
     { key: 'math',     name: '数学二', icon: 'math',  accent: '#6366F1' },
     { key: 'politics', name: '政治',   icon: 'flag',  accent: '#F59E0B' },
     { key: 'cs408',    name: '408',    icon: 'chip',  accent: '#10B981' }
@@ -504,6 +504,7 @@
     renderHomeHero();
     renderHomeStreak();
     renderHomeOverview();
+    renderHomeWeek();
     renderHomeTodo();
   }
 
@@ -568,6 +569,35 @@
       if (b) switchTab(b.getAttribute('data-goto'));
     };
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
+  }
+
+  /* 近 7 天专注时长柱状图（借鉴四六级备考台「近 7 天复习量」周柱状图） */
+  function renderHomeWeek() {
+    var box = document.getElementById('home-week');
+    if (!box) return;
+    var t = Store.todayStr();
+    var arr = [], max = 1;
+    for (var i = 6; i >= 0; i--) {
+      var d = Store.dateStr(Store.addDays(new Date(t + 'T00:00:00'), -i));
+      var day = Store.getDay(d) || {};
+      var min = Store.totalMinutesForDay(day);
+      if (min > max) max = min;
+      arr.push({ d: d, min: min });
+    }
+    var wd = ['日', '一', '二', '三', '四', '五', '六'];
+    var html = '<div class="hw-head"><span class="hw-title">近 7 天专注时长</span><span class="hw-unit">分钟</span></div><div class="hw-bars">';
+    arr.forEach(function (o, idx) {
+      var dt = new Date(o.d + 'T00:00:00');
+      var isToday = idx === arr.length - 1;
+      var h = o.min > 0 ? Math.max(8, Math.round(o.min / max * 100)) : 3;
+      var label = isToday ? '今' : wd[dt.getDay()];
+      html += '<div class="hw-col' + (o.min > 0 ? ' hot' : '') + (isToday ? ' today' : '') + '" title="' + o.d + '：' + o.min + ' 分钟">' +
+        '<div class="hw-num">' + (o.min > 0 ? o.min : '') + '</div>' +
+        '<div class="hw-bar" style="height:' + h + '%"></div>' +
+        '<div class="hw-lab">' + label + '</div></div>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
   }
 
   function renderHomeHero() {
@@ -1029,7 +1059,7 @@
       box.appendChild(tile);
     });
   }
-  /* 生成战报海报（canvas 绘制，mist 蓝主题） */
+  /* 生成战报海报（canvas 绘制，暖橙主题） */
   function buildReportCanvas() {
     var n = battleRangeDays();
     var cfg = Store.getConfig();
@@ -1041,15 +1071,15 @@
     var ctx = canvas.getContext('2d');
     // 背景
     var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#3E9BE8'); g.addColorStop(1, '#1F6FB2');
+    g.addColorStop(0, '#EA580C'); g.addColorStop(1, '#9A3412');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // 卡片
     function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
     ctx.fillStyle = '#FFFFFF'; rr(70, 110, W - 140, H - 220, 36); ctx.fill();
     // 标题
-    ctx.fillStyle = '#1F6FB2'; ctx.textAlign = 'left'; ctx.font = '700 56px sans-serif';
+    ctx.fillStyle = '#9A3412'; ctx.textAlign = 'left'; ctx.font = '700 56px sans-serif';
     ctx.fillText('📊 学习战报', 120, 200);
-    ctx.fillStyle = '#5B7C99'; ctx.font = '400 30px sans-serif';
+    ctx.fillStyle = '#64748B'; ctx.font = '400 30px sans-serif';
     ctx.fillText(label + ' · ' + (cfg.nickname || '考研同学'), 122, 248);
     // 取与卡片一致的统计
     var days = Store.getDays() || {}; var vocab = Store.getVocab() || []; var mistakes = Store.getMistakes() || [];
@@ -1074,14 +1104,14 @@
     var gx = 120, gy = 320, gw = (W - 240 - 40) / 3, gh = 200, gap = 20;
     stats.forEach(function (s, i) {
       var cx = gx + (i % 3) * (gw + gap), cy = gy + Math.floor(i / 3) * (gh + gap);
-      ctx.fillStyle = '#E7F3FC'; rr(cx, cy, gw, gh, 22); ctx.fill();
-      ctx.fillStyle = '#1F6FB2'; ctx.textAlign = 'center'; ctx.font = '700 52px sans-serif';
+      ctx.fillStyle = '#FFF1E6'; rr(cx, cy, gw, gh, 22); ctx.fill();
+      ctx.fillStyle = '#9A3412'; ctx.textAlign = 'center'; ctx.font = '700 52px sans-serif';
       ctx.fillText(s.v, cx + gw / 2, cy + 110);
-      ctx.fillStyle = '#5B7C99'; ctx.font = '400 26px sans-serif';
+      ctx.fillStyle = '#64748B'; ctx.font = '400 26px sans-serif';
       ctx.fillText(s.l, cx + gw / 2, cy + 158);
     });
     // 页脚
-    ctx.fillStyle = '#9DB8CE'; ctx.textAlign = 'center'; ctx.font = '400 26px sans-serif';
+    ctx.fillStyle = '#94A3B8'; ctx.textAlign = 'center'; ctx.font = '400 26px sans-serif';
     ctx.fillText('考研学习记录 · ' + (window.location.origin || ''), W / 2, H - 90);
     return canvas;
   }
@@ -3761,7 +3791,7 @@
       card.addEventListener('click', function () { switchTab(tab); });
       box.appendChild(card);
     });
-    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）；配色统一走 mist 蓝 4 档刻度
+    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）；配色统一走暖橙 4 档刻度
     [['politics', 'flag', '政治'], ['english', 'book', '英语']].forEach(function (s) {
       var sb = el('button', 'quick-entry subj-head', '');
       sb.setAttribute('type', 'button');
@@ -3981,15 +4011,15 @@
     refs.tdRows.innerHTML = html;
   }
   // 科目语义色（与 renderAggSubjectProgress 映射一致，但返回 hex 供内联色条/色点使用）
-  // 科目语义色：mist 蓝单色家族 4 档明度刻度（铁律：严禁 orange/violet/green 等非蓝家族色）
+  // 科目语义色：暖橙单色家族 4 档明度刻度（与站点唯一主色一致）
   function subjectColorClass(key, name) {
     key = (key || '').toLowerCase(); name = (name || '').toLowerCase();
-    if (key === 'cs408' || name.indexOf('408') >= 0) return '#1F6FB2'; // 最深
-    if (key === 'english' || name.indexOf('英语') >= 0) return '#3E9BE8'; // 主色(--primary)
-    if (key === 'math' || name.indexOf('数学') >= 0) return '#6FB6EA'; // 浅
-    if (key === 'politics' || name.indexOf('政治') >= 0) return '#A7CEEC'; // 最浅
-    if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) return '#6FB6EA';
-    return '#A7CEEC';
+    if (key === 'cs408' || name.indexOf('408') >= 0) return '#9A3412'; // 最深
+    if (key === 'english' || name.indexOf('英语') >= 0) return '#EA580C'; // 主色(--primary)
+    if (key === 'math' || name.indexOf('数学') >= 0) return '#F97316'; // 浅
+    if (key === 'politics' || name.indexOf('政治') >= 0) return '#FDBA74'; // 最浅
+    if (key === 'major' || name.indexOf('专业') >= 0 || name.indexOf('专业课') >= 0) return '#F97316';
+    return '#FDBA74';
   }
   function fmtMinShort(min) {
     var h = Math.floor(min / 60), m = min % 60;
@@ -4191,7 +4221,7 @@
     var ctx = canvas.getContext('2d');
     var W = canvas.width = window.innerWidth;
     var H = canvas.height = window.innerHeight;
-    var colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#3b82f6'];
+    var colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#EA580C'];
     var particles = [];
     for (var i = 0; i < 120; i++) {
       particles.push({
