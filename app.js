@@ -989,7 +989,7 @@
     var today = new Date();
     for (var i = n - 1; i >= 0; i--) {
       var d = new Date(today); d.setDate(today.getDate() - i);
-      var ds = d.toISOString().slice(0, 10);
+      var ds = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
       cb(ds, d);
     }
   }
