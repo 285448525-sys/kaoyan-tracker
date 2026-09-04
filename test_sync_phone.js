@@ -63,7 +63,7 @@ window.fetch = function (url, opts) {
   });
 };
 
-const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js']; // md5.js 已于 v20260903o 精简删除，从加载清单移除
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
   try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }

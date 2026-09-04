@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260904b';
+  var APP_VERSION = '20260904c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -5463,6 +5463,7 @@
   var autoSyncTimer = null;
   var autoPushTimer = null;
   var isApplyingRemote = false;
+  var conflictPromptAt = 0; // 上次 409 版本冲突弹窗时间：10 分钟内只主动弹一次，其余静默以云端为准（防止背词等高频操作被弹窗反复打断）
   /* 同步时间戳等附属 key 的容错写入（localStorage 满/隐私模式下静默降级），
      收敛原先 8 处重复的 try{setItem}catch 样板 */
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -5485,41 +5486,65 @@
     if (autoPushTimer) clearTimeout(autoPushTimer);
     autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
   }
+  // 拉取云端快照并恢复本机（409 冲突选「以云端为准」时的共用路径）。
+  // 恢复成功后把 editAt 对齐到 pushAt：本机数据已与云端完全一致，避免下轮轮询误判
+  // "本机有未推送改动"而把刚拉下来的数据原样再推一遍（多余请求 + 白白抬高云端版本）。
+  function pullCloudSnapshot(code) {
+    syncApi('GET').then(function (res) {
+      if (res && res.data) {
+        isApplyingRemote = true;
+        Store.restoreSnapshot(res.data);
+        isApplyingRemote = false;
+        if (res.version) lastSyncVersion = res.version;
+        lastPushAt = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : Date.now();
+        lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
+        lastLocalEditAt = lastPushAt;
+        lsSet('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt));
+        if (typeof renderAll === 'function') renderAll();
+      }
+    }).catch(function (pullErr) {
+      // 拉取失败不再静默吞掉：明确提示 + 60s 后重试拉取检查
+      syncSetStatus('❌ 拉取云端数据失败：' + (pullErr && pullErr.message || pullErr || '网络异常') + '，稍后自动重试', 'error');
+      if (autoPushTimer) clearTimeout(autoPushTimer);
+      autoPushTimer = setTimeout(function () { doAutoPullCheck(); }, 60000);
+    });
+  }
   function doAutoPush(code, force) {
     if (!navigator.onLine) return;                  // 离线不空转、不报错
     if (!autoSyncEnabled || isApplyingRemote) return;
     var payload = Store.snapshot();
     // B1：携带 baseVersion 供服务端乐观并发比对；force=true 时省略（强制覆盖冲突版本）
     syncApi('PUT', payload, (force || !lastSyncVersion) ? {} : { baseVersion: lastSyncVersion })
-      .then(function () {
+      .then(function (res) {
         lastPushAt = Date.now();
         lastLocalEditAt = lastPushAt; // 推送成功后本地无未同步改动
         lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
         lsSet('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt));
+        // 修复「背两个词就弹版本冲突」：推送成功后云端版本已变化（服务端响应返回新 version），
+        // 必须同步刷新本机记录的版本号；否则下次 PUT 带着过期 baseVersion 去比对必然 409。
+        // 背词每 2 词保存一次、远快于 30s 轮询 GET 的版本刷新，所以每隔一次推送必弹一次冲突弹窗。
+        // 若响应异常缺失 version 则置空，下次推送不带 baseVersion（服务端跳过比对），同样不会误触 409。
+        lastSyncVersion = (res && res.version) ? String(res.version) : '';
       })
       .catch(function (err) {
-        // 409 冲突：云端已被其他设备修改（版本不一致）。征询用户：强制覆盖云端 or 拉取云端覆盖本机
+        // 409 冲突：云端已被其他设备修改（版本不一致）。
+        // 上面的 lastSyncVersion 刷新修复后，单设备正常使用不会再出现 409；
+        // 真冲突（两台设备同时改动）时 10 分钟内只弹一次窗询问，节流期内静默以云端为准，
+        // 避免 confirm 阻塞页面、背词等高频操作被反复打断。
         if (err && /conflict/i.test(err.message || '')) {
-          var overwrite = confirm('云端数据已被其他设备更新（版本冲突）。\n点「确定」用本机数据强制覆盖云端（其他设备的改动将丢失）；\n点「取消」拉取云端覆盖本机。');
-          if (overwrite) {
-            doAutoPush(code, true); // 强制覆盖，不带 baseVersion
+          var nowTs = Date.now();
+          if (conflictPromptAt && nowTs - conflictPromptAt < 600000) {
+            conflictPromptAt = nowTs;
+            syncSetStatus('☁️ 检测到多设备同时修改，已自动以云端为准（本机未推送的少量改动会被云端版本覆盖）', 'error');
+            pullCloudSnapshot(code);
           } else {
-            syncApi('GET').then(function (res) {
-              if (res && res.data) {
-                isApplyingRemote = true;
-                Store.restoreSnapshot(res.data);
-                isApplyingRemote = false;
-                if (res.version) lastSyncVersion = res.version;
-                lastPushAt = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : Date.now();
-                lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
-                if (typeof renderAll === 'function') renderAll();
-              }
-            }).catch(function (pullErr) {
-              // Bug b 修复：冲突后改选拉取云端，若拉取也失败不再静默吞掉
-              syncSetStatus('❌ 拉取云端数据失败：' + (pullErr && pullErr.message || pullErr || '网络异常') + '，稍后自动重试', 'error');
-              if (autoPushTimer) clearTimeout(autoPushTimer);
-              autoPushTimer = setTimeout(function () { doAutoPullCheck(); }, 60000);
-            });
+            conflictPromptAt = nowTs;
+            var overwrite = confirm('云端数据已被其他设备更新（版本冲突）。\n点「确定」用本机数据强制覆盖云端（其他设备的改动将丢失）；\n点「取消」拉取云端覆盖本机。');
+            if (overwrite) {
+              doAutoPush(code, true); // 强制覆盖，不带 baseVersion
+            } else {
+              pullCloudSnapshot(code);
+            }
           }
         } else if (!(err && /no sync code/i.test(err.message || ''))) {
           // Bug b/c 修复：非冲突失败（断网瞬间/服务异常/超时）不再"发出即不管"——
