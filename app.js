@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903n';
+  var APP_VERSION = '20260903o';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1583,14 +1583,9 @@
   }
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
-  var settingsReturnTab = 'home';
   function switchTab(target) {
     var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
     var real = map[target] || target;
-    if (real === 'settings') {
-      var cur = document.querySelector('.tab-panel.active');
-      settingsReturnTab = (cur && cur.id && cur.id.replace('tab-', '')) || 'home';
-    }
     showTab(real);
     if (real === 'data') { showSub('data', (target === 'record' || target === 'plan' || target === 'summary') ? 'review' : 'overview'); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
@@ -2685,25 +2680,12 @@
       showToast('已查到释义，点「存入生词本」收藏');
       return;
     }
-    // 词典未收录 → 走百度翻译（用户自带 key），结果自动归档到查词记录
-    refs.btnRecordWord.disabled = true;
-    translateWord(raw, function (res) {
-      refs.btnRecordWord.disabled = false;
-      if (res.error) {
-        pendingWord = null;
-        refs.wordManual.style.display = 'block';
-        refs.wordManualCn.value = '';
-        refs.wordResult.innerHTML = '<div class="word-card err"><div class="w-cn">' + escapeHtml(res.msg || '翻译失败') + '</div></div>';
-        showToast('未查到，请手动补充释义');
-        return;
-      }
-      pendingWord = { w: res.src || raw, cn: res.dst };
-      Store.addWrongWord(res.src || raw, res.dst, 'translate');
-      refs.wordManual.style.display = 'none';
-      refs.wordResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(res.src || raw) + '</div><div class="w-cn">' + escapeHtml(res.dst) + ' · 已归档查词记录</div></div>';
-      renderWords();
-      showToast('已查到释义，点「存入生词本」收藏');
-    });
+    // 词典未收录 → 提示手动补充释义（已移除百度翻译依赖，仅用内置本地词库）
+    pendingWord = null;
+    refs.wordManual.style.display = 'block';
+    refs.wordManualCn.value = '';
+    refs.wordResult.innerHTML = '<div class="word-card err"><div class="w-cn">本地词库未收录「' + escapeHtml(raw) + '」，请在下方手动补充释义后存入生词本</div></div>';
+    showToast('未查到，请手动补充释义');
   }
   function showWordCard(w, cn, saved) {
     refs.wordResult.innerHTML = '<div class="word-card"><div class="w-en">' + escapeHtml(w) + '</div><div class="w-cn">' + escapeHtml(cn || '（无释义）') + (saved ? ' · 已存入生词本' : '') + '</div></div>';
@@ -2730,32 +2712,6 @@
     pendingWord = null;
     renderWords();
     showToast('已存入生词本 ✅');
-  }
-
-  /* ============ 翻译（浏览器直连百度翻译开放平台，用户自带 key） ============ */
-  function renderTranslatorConfig() {
-    var t = Store.getTranslator();
-    if (refs.transAppid) refs.transAppid.value = t.appid || '';
-    if (refs.transKey) refs.transKey.value = t.key || '';
-    updateTranslateButton();
-  }
-  function onSaveTranslator() {
-    var a = (refs.transAppid.value || '').trim();
-    var k = (refs.transKey.value || '').trim();
-    Store.setTranslator(a, k);
-    refs.transStatus.textContent = (a && k) ? '✓ 密钥已保存（仅存本机浏览器）' : '✓ 已清空';
-    showToast('翻译密钥已保存 ✅');
-    updateTranslateButton();
-  }
-  function onTestTranslator() {
-    onSaveTranslator();
-    var t = Store.getTranslator();
-    if (!t.appid || !t.key) { refs.transStatus.textContent = '✗ 请先填写 APP ID 与 密钥'; return; }
-    refs.transStatus.textContent = '测试中…';
-    translateWord('hello', function (res) {
-      if (res.error) { refs.transStatus.textContent = '✗ ' + (res.msg || '测试失败') + (res.code ? '（' + res.code + '）' : ''); return; }
-      refs.transStatus.textContent = '✓ 连接成功：' + escapeHtml(res.dst);
-    });
   }
 
   /* ============ AI 能力（DeepSeek 内置，用户只需填 Key） ============ */
@@ -3149,54 +3105,7 @@
       refs.aiSolvedList.appendChild(card);
     });
   }
-  // 浏览器直连百度翻译开放平台：用户自带 APP ID + 密钥，前端本地用 md5 签名，JSONP 规避 CORS。无需任何后端。
-  function translateWord(word, cb) {
-    var t = Store.getTranslator();
-    if (!t.appid || !t.key) { cb({ error: 'NO_KEY', msg: '未填写翻译密钥，请先在「配置」页填写百度翻译 APP ID 与 密钥' }); return; }
-    var q = (word || '').trim();
-    if (!q) { cb({ error: 'EMPTY', msg: '单词为空' }); return; }
-    var from = 'en', to = 'zh';
-    var salt = String(Math.floor(Math.random() * 1e10));
-    var sign = md5(t.appid + q + salt + t.key);
-    var cbName = 'bd_trans_cb_' + salt;
-    var done = false;
-    var script = null;
-    var timer = null;
-    function cleanup() {
-      if (script && script.parentNode) { try { script.parentNode.removeChild(script); } catch (e) {} }
-      if (window[cbName]) { try { delete window[cbName]; } catch (e) {} }
-      if (timer) clearTimeout(timer);
-    }
-    window[cbName] = function (data) {
-      if (done) return; done = true; cleanup();
-      data = data || {};
-      if (data.error_code) { cb({ error: String(data.error_code), code: data.error_code, msg: data.error_msg || '翻译失败' }); return; }
-      var tr = data.trans_result;
-      var dst = (tr && tr[0] && tr[0].dst) ? tr[0].dst : '';
-      var src = (tr && tr[0] && tr[0].src) ? tr[0].src : q;
-      if (!dst) { cb({ error: 'EMPTY', msg: '翻译接口未返回结果' }); return; }
-      cb({ dst: dst, src: src });
-    };
-    timer = setTimeout(function () {
-      if (done) return; done = true; cleanup();
-      cb({ error: 'TIMEOUT', msg: '请求超时（请检查网络，或确认密钥与 IP 白名单是否正确）' });
-    }, 10000);
-    var base = 'https://fanyi-api.baidu.com/api/trans/vip/translate';
-    var params = 'q=' + encodeURIComponent(q) +
-      '&from=' + from + '&to=' + to +
-      '&appid=' + encodeURIComponent(t.appid) +
-      '&salt=' + salt +
-      '&sign=' + sign +
-      '&callback=' + cbName;
-    script = document.createElement('script');
-    script.src = base + '?' + params;
-    script.onerror = function () {
-      if (done) return; done = true; cleanup();
-      cb({ error: 'NETWORK', msg: '请求失败（请检查网络是否能访问百度翻译接口）' });
-    };
-    document.body.appendChild(script);
-  }
-  // 查词记词已合并「即时翻译」：词典未收录时 onLookupWord 复用 translateWord 作为兜底，结果自动归档查词记录
+  // 查词记词：内置本地词库查词；词库未收录时提示手动补充释义（已移除百度翻译依赖）。
   function renderWrongBook() { renderWords(); }
 
   // 查词记录 AI 讲解（展开/收起式，AI 输出用 textContent 防 XSS）
@@ -3304,16 +3213,6 @@
     }).then(function () {
       if (btn) { btn.disabled = false; btn.textContent = '🤖 AI 生成学习总结'; }
     });
-  }
-
-  function updateTranslateButton() {
-    if (!refs.btnTranslate) return;
-    var t = Store.getTranslator();
-    var has = !!(t.appid && t.key);
-    refs.btnTranslate.disabled = !has;
-    var st = refs.transQueryStatus.textContent || '';
-    if (!has && st.indexOf('请先在') !== 0) refs.transQueryStatus.textContent = '请先在「配置」页填写翻译密钥';
-    else if (has && st.indexOf('请先在') === 0) refs.transQueryStatus.textContent = '';
   }
 
   function setReviewMode(mode) {
@@ -4042,7 +3941,7 @@
   /* ============ 说明书模块（UI 散落说明集中处，分组卡片式） ============ */
   var MANUAL_GROUPS = [
     { cat: '快速上手', items: [
-      { t: '第一次使用', b: '点上方「重看新手完整引导」：引导会带你先配置考试科目、翻译 API 与 AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
+      { t: '第一次使用', b: '点上方「重看新手完整引导」：引导会带你先配置考试科目、AI 密钥，再逐页过一遍全部功能；之后随时回来查本页。' },
       { t: '每天的核心 4 步', b: '① 打开「今日学习」看总览 → ② 在「数据复盘 · 进度」安排任务 → ③ 在「今日学习」按模块计时 → ④ 睡前在「数据复盘 · 总结」打卡、在「数据复盘」看趋势。' }
     ]},
     { cat: '核心流程', items: [
@@ -4068,7 +3967,6 @@
       { t: '资源网站', b: '内置常用站点（国内可直接访问），也可添加自己的收藏，一键打开。' },
       { t: '配置', b: '填基础信息、勾选科目组合、调得分权重；「数据备份」可导出/导入 JSON、导出 Markdown 报告、清空全部。换设备前务必先导出备份。' },
       { t: '云端同步', b: '用手机号作为唯一账号：首次填写即注册并把数据上传到云端；换设备登录只需输入同一手机号即可同步，无需记密码。注册/登录二合一，下方状态会提示成功与否。' },
-      { t: '翻译 API', b: '在「配置」填你自己的百度翻译 APP ID 与 密钥（仅存本机、不上传）。填好后「即时翻译」可直接查词，查过的词自动归档到查词记录。' },
       { t: '🤖 AI 助手', b: '在「配置」填你自己的大模型 API Key（OpenAI 兼容接口），即可启用长难句深度分析、错题智能归纳等能力。密钥仅存本机、经云端函数中转，不暴露到前端。' }
     ]}
   ];
@@ -4090,8 +3988,7 @@
 
   /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
   var TOUR_STEPS = [
-    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成两步关键配置，让查词和 AI 讲解开箱即用。' },
-    { icon: 'key', title: '优先配置：翻译密钥', tab: 'config', target: '.translator-card', text: '查词和「翻译并归档」依赖百度翻译。去「配置」页填 APP ID 与密钥（免费申请，仅存本机浏览器，不上传）。' },
+    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成关键配置，让 AI 讲解开箱即用。' },
     { icon: '🤖', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
     { icon: 'calendar', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
     { icon: 'rocket', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
@@ -4580,11 +4477,9 @@
     renderCheckinCard();
     renderMistakeTypes();
     populateMistakeSubjects();
-    renderTranslatorConfig();
     renderAiConfig();
     renderVisionConfig();
     renderSyncConfig();
-    updateTranslateButton();
     // 第二批：不在当前 tab 或 DOM 密集的内容，延迟到下一帧执行，避免阻塞主线程
     setTimeout(function () {
       renderData();
@@ -4619,9 +4514,6 @@
     var btbBtns = document.querySelectorAll('.bottom-tabbar .btb-btn');
     btbBtns.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
   }
-
-  /* 关闭设置抽屉：回到进入抽屉前的 tab（借鉴 K12 学习台抽屉返回逻辑） */
-  function closeSettingsDrawer() { switchTab(settingsReturnTab || 'home'); }
 
   /* 长按确认按钮（借鉴 K12 学习台 .hold-btn）：按住时进度条增长，达 100% 才执行 onConfirm；提前松开关取消 */
   function bindHoldButton(btn, onConfirm, opts) {
@@ -4691,7 +4583,7 @@
       if (sub === 'overview') { renderData(); }
       else if (sub === 'review') { renderSubjectChapters(); renderPlanItems(); renderSummary(); }
     } else if (container === 'settings') {
-      if (sub === 'base') { renderTranslatorConfig(); renderAiConfig(); renderVisionConfig(); }
+      if (sub === 'base') { renderAiConfig(); renderVisionConfig(); }
       else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
     }
   }
@@ -4709,11 +4601,6 @@
         if (t) switchTab(t);
       });
     });
-    // 设置抽屉：遮罩 / 关闭按钮 → 返回进入前 tab
-    var settingsMask = document.getElementById('settings-mask');
-    if (settingsMask) settingsMask.addEventListener('click', closeSettingsDrawer);
-    var settingsClose = document.getElementById('settings-close');
-    if (settingsClose) settingsClose.addEventListener('click', closeSettingsDrawer);
     updateMathTabVisibility();
     update408TabVisibility();
 
@@ -5057,12 +4944,6 @@
       });
     }
 
-    // 翻译密钥（用户自带 key，仅存本机浏览器）
-    refs.transAppid = $('trans-appid');
-    refs.transKey = $('trans-key');
-    refs.btnSaveTranslator = $('btn-save-translator');
-    refs.btnTestTranslator = $('btn-test-translator');
-    refs.transStatus = $('trans-status');
     // AI 配置（仅填 DeepSeek Key，接口地址/模型内置默认值，key 经 /api/ai 中转）
     refs.aiKey = $('ai-key');
     refs.btnSaveAi = $('btn-save-ai');
@@ -5224,9 +5105,6 @@
       renderWords();
     });
 
-    // 翻译密钥
-    refs.btnSaveTranslator.addEventListener('click', onSaveTranslator);
-    refs.btnTestTranslator.addEventListener('click', onTestTranslator);
     refs.btnSaveAi.addEventListener('click', onSaveAi);
     refs.btnTestAi.addEventListener('click', onTestAi);
     // 👁 视觉模型双轨
@@ -5234,7 +5112,6 @@
     if (refs.btnTestVision) refs.btnTestVision.addEventListener('click', onTestVisionConfig);
     if (refs.visionProvider) refs.visionProvider.addEventListener('change', onVisionProviderChange);
     if (refs.linkOpenVision) refs.linkOpenVision.addEventListener('click', function (e) { e.preventDefault(); switchTab('settings'); showSub('settings', 'base'); openVisionConfig(); });
-    // 即时翻译已合并进查词记词（onLookupWord 兜底翻译）
     // 番茄钟（P4c 已从 UI 移除该模块，元素可能不存在，必须空值守卫，否则 init 崩溃导致首屏不渲染）
     refs.btnClearWrong.addEventListener('click', function () {
       if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }

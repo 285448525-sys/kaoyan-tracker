@@ -108,7 +108,6 @@
       mistakes: [], // {id,type,content,subject,date,note}
       websites: [], // {id,name,url,cat}
       vocab: [],    // {id,word,cn,phonetic,pos,example,note,category,box,next,added,wrong,last}
-      translator: { appid: '', key: '' }, // 百度翻译开放平台密钥（用户自行申请的 APP ID + 密钥）；仅存本机浏览器，不内置任何 key、不上传服务器
       aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
       visionConfig: { provider: '', baseUrl: '', model: '', key: '' }, // 👁 视觉模型配置（拍照/智能整理错题走此轨；provider 可选 doubao/qwen/openai/'' 自定义；仅存本机浏览器，key 经 /api/ai 中转不暴露）
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
@@ -185,7 +184,6 @@
         mistakes: (p.mistakes && Array.isArray(p.mistakes)) ? p.mistakes : [],
         websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
         vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
-        translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
         aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
       visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
         visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
@@ -570,21 +568,6 @@
     return (state.vocab || []).filter(function (v) { return normalizeVocabV12(v).next <= today; });
   }
 
-  /* ---------- 翻译密钥（用户自行申请填写，仅存本机浏览器，不内置任何 key） ---------- */
-  function getTranslator() {
-    return {
-      appid: (state.translator && state.translator.appid) || '',
-      key: (state.translator && state.translator.key) || ''
-    };
-  }
-  function setTranslator(appid, key) {
-    state.translator = {
-      appid: (typeof appid === 'string') ? appid.trim() : '',
-      key: (typeof key === 'string') ? key.trim() : ''
-    };
-    save();
-  }
-
   /* ---------- AI 配置（内置 DeepSeek 默认值，用户只需填 Key；仅存本机浏览器，key 经 /api/ai 中转不暴露） ---------- */
   function getAiConfig() {
     var ac = state.aiConfig || {};
@@ -746,7 +729,6 @@
           last: v.last || ''
         };
       }) : [],
-      translator: (p.translator && typeof p.translator === 'object') ? { appid: String(p.translator.appid || ''), key: String(p.translator.key || '') } : { appid: '', key: '' },
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
       visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
       practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
@@ -946,7 +928,6 @@
     getColorScheme: getColorScheme, setColorScheme: setColorScheme,
     exportJSON: exportJSON, importJSON: importJSON,
     getVocab: getVocab, findVocab: findVocab, addVocab: addVocab, removeVocab: removeVocab, updateVocab: updateVocab, getDueVocab: getDueVocab, migrateVocab: migrateVocab,
-    getTranslator: getTranslator, setTranslator: setTranslator,
     getAiConfig: getAiConfig, setAiConfig: setAiConfig,
     getVisionConfig: getVisionConfig, setVisionConfig: setVisionConfig,
     getAiSolved: getAiSolved, addAiSolved: addAiSolved, removeAiSolved: removeAiSolved,

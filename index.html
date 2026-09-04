@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903n" />
+  <link rel="stylesheet" href="styles.css?v=20260903o" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -738,14 +738,7 @@
     </section>
 
     <!-- 设置 -->
-    <section id="tab-settings" class="tab-panel settings-drawer">
-      <div class="drawer-mask" id="settings-mask"></div>
-      <div class="drawer-panel" id="settings-panel">
-        <div class="drawer-head">
-          <span class="drawer-title">设置</span>
-          <button class="drawer-close" id="settings-close" type="button" aria-label="关闭设置">✕</button>
-        </div>
-        <div class="drawer-body">
+    <section id="tab-settings" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="help">帮助</button></div>
       <div id="sub-base" class="sub-panel active">
       <!-- ① 基础设置（首屏唯一主卡） -->
@@ -888,22 +881,6 @@
             </div>
             <div id="sync-status" class="import-status"></div>
           </div>
-          <div class="sub-card translator-card">
-            <h3 class="card-sub"><span class="ic-inline" data-icon="key"></span> 翻译 API 密钥（自行申请填写 · 可选）</h3>
-            <div class="field-row">
-              <label>APP ID</label>
-              <input type="text" id="trans-appid" placeholder="百度翻译开放平台 APP ID" autocomplete="off" />
-            </div>
-            <div class="field-row">
-              <label>密钥 Secret</label>
-              <input type="password" id="trans-key" placeholder="百度翻译开放平台 密钥（Secret Key）" autocomplete="off" />
-            </div>
-            <div class="btn-row">
-              <button id="btn-save-translator" class="btn btn-primary">保存密钥</button>
-              <button id="btn-test-translator" class="btn btn-ghost">测试连接</button>
-              <span id="trans-status" class="import-status"></span>
-            </div>
-          </div>
           <div class="sub-card ai-card">
             <h3 class="card-sub"><span class="ic-inline">🤖</span> AI 能力（可选）</h3>
             <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
@@ -972,8 +949,6 @@
       </div></div>
 
 </div>
-        </div><!-- /drawer-body -->
-      </div><!-- /drawer-panel -->
     </section>
 
   </main>
@@ -1001,15 +976,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903n"></script>
-  <script src="iconset.js?v=20260903n"></script>
-  <script src="words.js?v=20260903n"></script>
-  <script src="store.js?v=20260903n"></script>
-  <script src="charts.js?v=20260903n"></script>
-  <script src="share.js?v=20260903n"></script>
-  <script src="md5.js?v=20260903n"></script>
-  <script src="sentences.js?v=20260903n"></script>
-  <script src="app.js?v=20260903n"></script>
-  <script src="workspace.js?v=20260903n"></script>
+  <script src="qrcode.min.js?v=20260903o"></script>
+  <script src="iconset.js?v=20260903o"></script>
+  <script src="words.js?v=20260903o"></script>
+  <script src="store.js?v=20260903o"></script>
+  <script src="charts.js?v=20260903o"></script>
+  <script src="share.js?v=20260903o"></script>
+  <script src="sentences.js?v=20260903o"></script>
+  <script src="app.js?v=20260903o"></script>
+  <script src="workspace.js?v=20260903o"></script>
 </body>
 </html>
