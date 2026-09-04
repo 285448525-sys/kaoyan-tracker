@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903p';
+  var APP_VERSION = '20260903q';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -738,24 +738,75 @@
     Store.saveDayMeta(Store.todayStr(), { summary: (refs.summaryEdit ? refs.summaryEdit.value : '') });
     showToast('已保存今日总结 ✅');
   }
-  /* ============ 今日：计划 ============ */
+  /* ============ 今日：计划（q 版重构：智能模板 + 自动顺延 + 进度条） ============ */
+  // 智能模板任务池（借鉴雅思站 SUB 模板，按科目 key 取用）
+  var PLAN_TEMPLATES = {
+    politics: ['政治选择题刷题 + 错题回顾', '背诵政治核心考点 30 分钟', '政治真题客观题一组'],
+    english: ['英语阅读真题 2 篇 + 逐句精读', '背/复习考研单词 40 个', '英语作文范文精读 + 仿写'],
+    math: ['数学强化讲义 + 例题跟做', '数学错题重做 + 方法归纳', '数学真题限时训练'],
+    major: ['专业课教材精读 + 笔记整理', '专业课真题客观题一组', '专业课大题专项训练'],
+    other: ['过一遍本科目笔记 / 错题']
+  };
+  function planTemplateFor(key) { return PLAN_TEMPLATES[key] || PLAN_TEMPLATES.other; }
+  // 智能自动生成：科目模板 + 到期生词/错题重点突破（替代旧「复习 X」）
   function autoGenPlan(ds) {
     var subs = Store.getSubjects();
-    var items = subs.map(function (s) { return { id: 'pl_' + Store.nextSeq(), text: '复习 ' + s.name, minutes: 60, done: false }; });
-    items.push({ id: 'pl_' + Store.nextSeq(), text: '整理错题 / 复盘', minutes: 20, done: false });
+    var items = [];
+    var dueVocab = Store.getDueVocab(ds).length;
+    var due408 = 0, dueMath = 0;
+    try { due408 = Store.get408DueMistakes(ds).length; } catch (e) {}
+    try { dueMath = Store.getMathDueMistakes(ds).length; } catch (e) {}
+    var hasEnglish = false, hasMajor = false, hasMath = false;
+    subs.forEach(function (s) {
+      if (s.key === 'english') hasEnglish = true;
+      if (s.key === 'major') hasMajor = true;
+      if (s.key === 'math') hasMath = true;
+      var pool = planTemplateFor(s.key);
+      var text = pool[items.length % pool.length];
+      if (s.key === 'english' && dueVocab > 0) text = '复习到期生词 ' + dueVocab + ' 个（记忆曲线）';
+      if (s.key === 'math' && dueMath > 0) text = '复习数学到期错题 ' + dueMath + ' 道';
+      if (s.key === 'major' && due408 > 0) text = '复习 408 到期错题 ' + due408 + ' 道';
+      items.push({ id: 'pl_' + Store.nextSeq(), text: text, minutes: 60, done: false, subjectKey: s.key });
+    });
+    if (dueVocab > 0 && !hasEnglish) items.push({ id: 'pl_' + Store.nextSeq(), text: '复习到期生词 ' + dueVocab + ' 个（记忆曲线）', minutes: 20, done: false, subjectKey: '' });
+    if (due408 > 0 && !hasMajor) items.push({ id: 'pl_' + Store.nextSeq(), text: '复习 408 到期错题 ' + due408 + ' 道', minutes: 20, done: false, subjectKey: '' });
+    if (dueMath > 0 && !hasMath) items.push({ id: 'pl_' + Store.nextSeq(), text: '复习数学到期错题 ' + dueMath + ' 道', minutes: 20, done: false, subjectKey: '' });
+    items.push({ id: 'pl_' + Store.nextSeq(), text: '整理今日错题 / 复盘', minutes: 20, done: false, subjectKey: '' });
     Store.setPlan(ds, items);
   }
+  // 自动顺延（雅思站同款）：仅当今天还没有计划对象时，把昨天未完成项搬过来。
+  // 注意：今天计划存在但被删空时绝不复活，避免「删了又回来」。
+  function ensurePlanCarry() {
+    var today = Store.todayStr();
+    if (Store.getPlan(today)) return;
+    var yKey = Store.dateStr(Store.addDays(new Date(), -1));
+    var yPlan = Store.getPlan(yKey);
+    if (!yPlan || !yPlan.length) return;
+    var carried = yPlan.filter(function (i) { return !i.done; });
+    if (!carried.length) return;
+    Store.setPlan(today, carried.map(function (i) {
+      return { id: 'pl_' + Store.nextSeq(), text: i.text, minutes: i.minutes || 0, done: false, subjectKey: i.subjectKey || '', carried: true };
+    }));
+  }
   function renderPlan() {
+    ensurePlanCarry();
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
     refs.planList.innerHTML = '';
     var emptyHintEl = document.getElementById('plan-empty-hint');
+    var carryTipEl = document.getElementById('plan-carry-tip');
     if (!plan.length) {
       if (emptyHintEl) emptyHintEl.classList.remove('hidden');
+      if (carryTipEl) carryTipEl.classList.add('hidden');
       emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','review'); } });
       return;
     }
     if (emptyHintEl) emptyHintEl.classList.add('hidden');
+    var carriedCount = plan.filter(function (i) { return i.carried && !i.done; }).length;
+    if (carryTipEl) {
+      if (carriedCount > 0) { carryTipEl.textContent = '⏪ 已自动顺延昨天的 ' + carriedCount + ' 项未完成任务'; carryTipEl.classList.remove('hidden'); }
+      else { carryTipEl.classList.add('hidden'); }
+    }
     var subs = Store.getSubjects();
     var subMap = {}; subs.forEach(function (s) { subMap[s.key] = s; });
     var doneCount = plan.filter(function (i) { return i.done; }).length;
@@ -790,7 +841,234 @@
       item.appendChild(chk); item.appendChild(txtWrap); item.appendChild(min); item.appendChild(del);
       refs.planList.appendChild(item);
     });
-    refs.planList.appendChild(el('div', 'plan-min', '今日计划完成 ' + doneCount + ' / ' + plan.length));
+    // 迷你进度条（替代纯文字统计行）
+    var pct = plan.length ? Math.round(doneCount / plan.length * 100) : 0;
+    var prog = el('div', 'plan-prog-row');
+    var bar = el('div', 'plan-prog-mini'); var fill = el('i'); fill.style.width = pct + '%'; bar.appendChild(fill);
+    prog.appendChild(bar);
+    prog.appendChild(el('span', 'plan-prog-label', doneCount + ' / ' + plan.length));
+    refs.planList.appendChild(prog);
+  }
+
+  /* ---------- 数据页·每日计划（日期切换 + 进度 + 行内编辑 + 历史 + AI） ---------- */
+  var planViewDate = Store.todayStr();
+  function planShiftDate(n) {
+    var d = new Date(planViewDate + 'T00:00:00'); d.setDate(d.getDate() + n);
+    planViewDate = Store.dateStr(d);
+    renderPlanDaily(); renderPlanHistory();
+  }
+  function renderPlanDaily() {
+    if (planViewDate === Store.todayStr()) ensurePlanCarry();
+    var box = $('plan-daily-list'); if (!box) return;
+    var ds = planViewDate;
+    var dateInput = $('plan-date'); if (dateInput && dateInput.value !== ds) dateInput.value = ds;
+    var plan = Store.getPlan(ds) || [];
+    var done = plan.filter(function (i) { return i.done; }).length;
+    var pct = plan.length ? Math.round(done / plan.length * 100) : 0;
+    var fill = $('plan-progress-fill'); if (fill) fill.style.width = pct + '%';
+    var label = $('plan-progress-label'); if (label) label.textContent = plan.length ? (done + ' / ' + plan.length + ' 完成') : '还没安排';
+    var subjSel = $('plan-daily-subject');
+    if (subjSel && !subjSel.options.length) {
+      subjSel.innerHTML = '<option value="">不指定科目</option>';
+      Store.getSubjects().forEach(function (s) {
+        var o = document.createElement('option'); o.value = s.key; o.textContent = s.name; subjSel.appendChild(o);
+      });
+    }
+    box.innerHTML = '';
+    var carriedCount = plan.filter(function (i) { return i.carried && !i.done; }).length;
+    if (carriedCount > 0) box.appendChild(el('div', 'plan-carry-tip', '⏪ 已自动顺延昨天的 ' + carriedCount + ' 项未完成任务'));
+    if (!plan.length) {
+      box.appendChild(el('div', 'empty-hint', '这天还没有计划：下方输入添加，或点「AI 安排这天」'));
+      return;
+    }
+    var subsCache = Store.getSubjects();
+    plan.forEach(function (it) {
+      var item = el('div', 'plan-item' + (it.done ? ' done' : ''));
+      var chk = el('div', 'plan-check', it.done ? '✓' : '');
+      chk.addEventListener('click', function () {
+        Store.toggleDailyPlanItem(ds, it.id);
+        renderPlanDaily();
+        if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
+      });
+      var txtWrap = el('div', 'plan-text');
+      if (it.subjectKey) {
+        var s0 = subsCache.filter(function (s) { return s.key === it.subjectKey; })[0];
+        if (s0) {
+          var dot = el('span', 'plan-subject-dot');
+          dot.style.background = s0.color || '#94a3b8'; dot.title = s0.name;
+          txtWrap.appendChild(dot);
+        }
+      }
+      var txt = document.createElement('span');
+      txt.textContent = it.text;
+      txt.title = '点击编辑';
+      txt.addEventListener('click', function () { startPlanDailyEdit(item, it, ds); });
+      txtWrap.appendChild(txt);
+      var min = el('div', 'plan-min', it.minutes ? (it.minutes + ' 分钟') : '');
+      var del = el('button', 'plan-del', '删除');
+      del.addEventListener('click', function () { Store.removeDailyPlanItem(ds, it.id); renderPlanDaily(); if (ds === Store.todayStr()) { renderPlan(); renderToday(); } });
+      item.appendChild(chk); item.appendChild(txtWrap); item.appendChild(min); item.appendChild(del);
+      box.appendChild(item);
+    });
+  }
+  // 行内编辑（雅思 startEdit 同款）：点文本→输入框，Enter/失焦保存，Esc 取消
+  function startPlanDailyEdit(itemEl, it, ds) {
+    if (itemEl.querySelector('input.plan-edit-input')) return;
+    var span = itemEl.querySelector('.plan-text');
+    if (!span) return;
+    var orig = it.text;
+    span.innerHTML = '';
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'plan-edit-input'; inp.value = orig;
+    span.appendChild(inp);
+    inp.focus(); inp.select();
+    var finished = false;
+    function save() {
+      if (finished) return; finished = true;
+      var t = inp.value.trim();
+      if (t && t !== orig) {
+        Store.updateDailyPlanItem(ds, it.id, { text: t });
+        showToast('已保存修改 ✅');
+      }
+      renderPlanDaily();
+      if (ds === Store.todayStr()) renderPlan();
+    }
+    function cancel() {
+      if (finished) return; finished = true;
+      renderPlanDaily();
+    }
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+  }
+  function onPlanDailyAdd() {
+    var ta = $('plan-daily-text'); if (!ta) return;
+    var lines = ta.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!lines.length) { alert('请输入计划内容（可多行，每行一条）'); return; }
+    var subj = $('plan-daily-subject') ? $('plan-daily-subject').value : '';
+    lines.forEach(function (t) { Store.addDailyPlanItem(planViewDate, { text: t.slice(0, 80), minutes: 0, done: false, subjectKey: subj || '' }); });
+    ta.value = '';
+    renderPlanDaily(); renderPlanHistory();
+    if (planViewDate === Store.todayStr()) { renderPlan(); renderToday(); }
+    showToast('已添加 ' + lines.length + ' 条计划 ✅');
+  }
+  function renderPlanHistory() {
+    var list = $('plan-history-list'); if (!list) return;
+    var meta = $('plan-history-meta');
+    var dates = Store.getPlanDates().filter(function (d) { return d !== planViewDate && (Store.getPlan(d) || []).length > 0; });
+    if (meta) meta.textContent = dates.length ? ('（共 ' + dates.length + ' 天）') : '';
+    list.innerHTML = '';
+    if (!dates.length) { list.appendChild(el('div', 'empty-hint', '还没有历史计划')); return; }
+    dates.slice(0, 30).forEach(function (ds) {
+      var plan = Store.getPlan(ds) || [];
+      var done = plan.filter(function (i) { return i.done; }).length;
+      var row = el('div', 'hist-plan');
+      row.appendChild(el('span', 'hist-plan-date', ds));
+      row.appendChild(el('span', 'hist-plan-stat', done + ' / ' + plan.length + ' 完成'));
+      var open = el('button', 'plan-del hist-plan-open', '打开编辑');
+      open.addEventListener('click', function () {
+        planViewDate = ds;
+        renderPlanDaily();
+        var fold = $('plan-history'); if (fold) fold.open = false;
+        showToast('已切换到 ' + ds + '，可直接编辑这天');
+      });
+      row.appendChild(open);
+      list.appendChild(row);
+    });
+  }
+  // AI 输出 → 计划条目（严格校验：JSON 数组 / text 非空 / minutes 10-240 / subjectKey 必须在科目表内）
+  function parseAiPlanItems(content, subs) {
+    var m = String(content || '').match(/\[[\s\S]*\]/); if (!m) return [];
+    var arr; try { arr = JSON.parse(m[0]); } catch (e) { return []; }
+    if (!Array.isArray(arr)) return [];
+    var keys = {}; subs.forEach(function (s) { keys[s.key] = true; });
+    var out = [];
+    arr.forEach(function (x) {
+      if (!x || out.length >= 8) return;
+      var t = String(x.text || '').trim(); if (!t) return;
+      var min = Math.min(240, Math.max(10, Number(x.minutes) || 60));
+      var sk = (x.subjectKey && keys[x.subjectKey]) ? x.subjectKey : '';
+      out.push({ id: 'pl_' + Store.nextSeq(), text: t.slice(0, 60), minutes: min, done: false, subjectKey: sk });
+    });
+    return out;
+  }
+  // 无 AI 配置兜底：模板任务直接铺满这天（借鉴雅思站无 Key 模板流）
+  function smartFillDay(ds) {
+    if ((Store.getPlan(ds) || []).length && !confirm('将覆盖 ' + ds + ' 已有计划，确定？')) return;
+    var subs = Store.getSubjects();
+    var items = [];
+    var dueVocab = Store.getDueVocab(ds).length;
+    if (dueVocab > 0) items.push({ id: 'pl_' + Store.nextSeq(), text: '复习到期生词 ' + dueVocab + ' 个（记忆曲线）', minutes: 20, done: false, subjectKey: '' });
+    subs.forEach(function (s, i) {
+      var pool = planTemplateFor(s.key);
+      items.push({ id: 'pl_' + Store.nextSeq(), text: pool[i % pool.length], minutes: 60, done: false, subjectKey: s.key });
+    });
+    items.push({ id: 'pl_' + Store.nextSeq(), text: '整理错题 / 复盘', minutes: 20, done: false, subjectKey: '' });
+    Store.setPlan(ds, items);
+    renderPlanDaily(); renderPlanHistory();
+    if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
+    showToast('未配置 AI，已按模板安排 ' + ds + ' 的计划', 'ok');
+  }
+  // AI 安排某天（NO_CONFIG → 模板兜底）
+  function planAiFill() {
+    var btn = $('btn-plan-ai'); if (!btn) return;
+    var ds = planViewDate;
+    var subs = Store.getSubjects();
+    var subjList = subs.map(function (s) { return s.name; }).join('、') || '政治、英语、数学、专业课';
+    var dueVocab = Store.getDueVocab(ds).length;
+    var cfg = Store.getConfig();
+    var left = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000) : null;
+    var usr = '请为 ' + ds + ' 制定考研学习计划。' + (left != null ? ('距考研还有 ' + left + ' 天。') : '') +
+      '科目：' + subjList + '。' + (dueVocab > 0 ? ('当天到期生词 ' + dueVocab + ' 个，优先安排复习。') : '') +
+      '只输出 JSON 数组（不要解释、不要 markdown 代码块），每项形如 {"text":"任务描述","minutes":60,"subjectKey":"科目key或空串"}，4-8 条，任务具体可执行、单条 20-120 分钟。';
+    btn.disabled = true; btn.textContent = '🤖 AI 规划中…';
+    aiChat([
+      { role: 'system', content: '你是考研学习规划助手。只输出 JSON 数组，不要输出任何解释文字或代码块标记。' },
+      { role: 'user', content: usr }
+    ], { maxTokens: 700 }).then(function (res) {
+      btn.disabled = false; btn.textContent = '🤖 AI 安排这天';
+      var items = parseAiPlanItems(res.content, subs);
+      if (!items.length) { showToast('AI 返回的计划无法解析，已保留原计划', 'warn'); return; }
+      if ((Store.getPlan(ds) || []).length && !confirm('将覆盖 ' + ds + ' 已有计划（' + items.length + ' 条），确定？')) return;
+      Store.setPlan(ds, items);
+      renderPlanDaily(); renderPlanHistory();
+      if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
+      showToast('AI 已安排 ' + ds + ' 的计划 ✅', 'ok');
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = '🤖 AI 安排这天';
+      if (err && err.error === 'NO_CONFIG') { smartFillDay(ds); return; }
+      showToast((err && err.msg) || 'AI 规划失败', 'warn');
+    });
+  }
+  // 首页「AI 帮我拆」：模板保底已生成，再尝试 AI 细化（失败静默保留模板）
+  function planAiToday() {
+    var ds = Store.todayStr();
+    var btn = refs.btnAutoPlan;
+    var subs = Store.getSubjects();
+    var subjList = subs.map(function (s) { return s.name; }).join('、') || '政治、英语、数学、专业课';
+    var dueVocab = Store.getDueVocab(ds).length;
+    var template = (Store.getPlan(ds) || []).map(function (i) { return i.text; }).join('；');
+    var usr = '今天模板计划：' + (template || '（空）') + '。科目：' + subjList + '。' +
+      (dueVocab > 0 ? ('今日到期生词 ' + dueVocab + ' 个。') : '') +
+      '把模板拆成 4-8 条更具体可执行的任务（单条 20-120 分钟），可调整顺序。只输出 JSON 数组，每项形如 {"text":"任务","minutes":60,"subjectKey":"科目key或空串"}。';
+    if (btn) { btn.disabled = true; btn.textContent = '🤖 拆解中…'; }
+    aiChat([
+      { role: 'system', content: '你是考研学习规划助手。只输出 JSON 数组，不要输出任何解释文字或代码块标记。' },
+      { role: 'user', content: usr }
+    ], { maxTokens: 700 }).then(function (res) {
+      if (btn) { btn.disabled = false; btn.textContent = 'AI 帮我拆'; }
+      var items = parseAiPlanItems(res.content, subs);
+      if (!items.length) { showToast('已用模板生成今日计划', 'ok'); return; }
+      Store.setPlan(ds, items);
+      renderPlan(); renderToday();
+      showToast('AI 已拆解今日计划 ✅', 'ok');
+    }).catch(function (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'AI 帮我拆'; }
+      if (err && err.error === 'NO_CONFIG') showToast('未配置 AI，已用内置模板生成计划', 'ok');
+      else showToast((err && err.msg) || 'AI 拆解失败，已保留模板计划', 'warn');
+    });
   }
 
   /* ============ 今日：总结 + 分享 ============ */
@@ -2590,11 +2868,16 @@
     var vocab = Store.getVocab();
     var wrong = Store.getWrongWords();
     var items = [];
-    if (libFilter === 'vocab' || libFilter === 'all' || libFilter.indexOf('cat:') === 0) {
-      vocab.forEach(function (v) { items.push({ kind: 'vocab', data: v }); });
-    }
-    if (libFilter === 'wrong' || libFilter === 'all') {
-      wrong.forEach(function (w) { items.push({ kind: 'wrong', data: w }); });
+    if (libFilter === 'due') {
+      // 待复习：仅生词本中 next<=今天 的词（雅思「到期词」视角）
+      vocab.forEach(function (v) { if ((v.next || '') <= Store.todayStr()) items.push({ kind: 'vocab', data: v }); });
+    } else {
+      if (libFilter === 'vocab' || libFilter === 'all' || libFilter.indexOf('cat:') === 0) {
+        vocab.forEach(function (v) { items.push({ kind: 'vocab', data: v }); });
+      }
+      if (libFilter === 'wrong' || libFilter === 'all') {
+        wrong.forEach(function (w) { items.push({ kind: 'wrong', data: w }); });
+      }
     }
     if (libFilter.indexOf('cat:') === 0) {
       var cat = libFilter.slice(4);
@@ -2608,6 +2891,14 @@
         return hay.indexOf(q) >= 0;
       });
     }
+    // 等级升序展示（雅思 renderWords 同款：低等级在前），同等级错得多的靠前
+    items.sort(function (a, b) {
+      if (a.kind !== b.kind) return a.kind === 'vocab' ? -1 : 1;
+      if (a.kind !== 'vocab') return 0;
+      var la = a.data.level || 0, lb = b.data.level || 0;
+      if (la !== lb) return la - lb;
+      return (b.data.errTotal || 0) - (a.data.errTotal || 0);
+    });
     refs.vocabCount.textContent = items.length;
     refs.vocabList.innerHTML = '';
     if (!items.length) { emptyHint(refs.vocabList, '没有符合条件的词，去上方查一个吧', { icon: 'book', label: '去查词', fn: function () { switchTab('vocab'); showSub('vocab', 'words'); if (refs.wordInput) refs.wordInput.focus(); } }); return; }
@@ -3224,7 +3515,7 @@
     if (refs.btnPracticeRestart) refs.btnPracticeRestart.style.display = mode === 'practice' ? '' : 'none';
     if (refs.btnPracticeSettings) refs.btnPracticeSettings.style.display = mode === 'practice' ? '' : 'none';
     document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-mode') === mode); });
-    if (mode === 'review') { if (!reviewQueue) startReview(); }
+    if (mode === 'review') { if (vocabSess) { renderReview(); } else { startReview(); } }
     else { if (!practiceSession) startPractice(); }
   }
   function buildPracticePool(scope) {
@@ -3350,33 +3641,160 @@
     renderPractice();
   }
 
-  function startReview() {
+  /* ============ 记忆曲线复习：雅思 v4.1 会话引擎（队列锁定/刷新恢复/错词重练） ============ */
+  var vocabSess = null;        // 内存会话 {words[],pos,total,passed,wrong,judged,hold{},wrongCount{},isRetry,startedAt}
+  var MAX_ATTEMPT = 15;        // 单词当日最大尝试次数（防死循环，雅思同款）
+  function reconcileShortCount(v) {
+    // 短线计数衰减：距上次过词 >24h 清零，>4h 减 1（移植自雅思 reconcileShortCount）
+    var t = v.lastShortTouch ? new Date(v.lastShortTouch) : null;
+    if (!t || isNaN(t.getTime())) return;
+    var hr = (Date.now() - t.getTime()) / 3600000;
+    if (hr > 24) v.shortCount = 0;
+    else if (hr > 4 && (v.shortCount || 0) > 0) v.shortCount = v.shortCount - 1;
+  }
+  function vocabDueCmp(a, b) {
+    // 5 键排序：到期早优先 → 错多优先 → 难词优先 → 重点词优先 → 等级低优先（雅思 dueCmp）
+    var an = a.next || '', bn = b.next || '';
+    if (an !== bn) return an < bn ? -1 : 1;
+    var ae = a.errTotal || 0, be = b.errTotal || 0;
+    if (ae !== be) return be - ae;
+    if (!!a.hardWord !== !!b.hardWord) return a.hardWord ? -1 : 1;
+    if (!!a.keyWord !== !!b.keyWord) return a.keyWord ? -1 : 1;
+    return (a.level || 0) - (b.level || 0);
+  }
+  function markVocabSeenToday(v) {
+    var today = Store.todayStr();
+    var st = Store.getVocabSeenToday();
+    if (st.date !== today) st = { date: today, words: [] };
+    if (st.words.indexOf(v.id) < 0) { st.words.push(v.id); Store.setVocabSeenToday(st); }
+  }
+  function recordVocabWrong(v) {
+    var today = Store.todayStr();
+    var dw = Store.getDailyWrong();
+    var arr = dw[today] || [];
+    if (!arr.some(function (x) { return x.id === v.id; })) arr.push({ id: v.id, word: v.word, cn: v.cn || '' });
+    dw[today] = arr;
+    Store.setDailyWrong(dw);
+  }
+  function persistVocabSession() {
+    if (!vocabSess) { Store.clearVocabSession(); return; }
+    Store.setVocabSession({
+      date: Store.todayStr(),
+      words: vocabSess.words.map(function (v) { return v.word; }),
+      pos: vocabSess.pos || 0, total: vocabSess.total || 0, passed: vocabSess.passed || 0,
+      wrong: vocabSess.wrong || 0, judged: vocabSess.judged || 0,
+      hold: vocabSess.hold || {}, wrongCount: vocabSess.wrongCount || {},
+      isRetry: !!vocabSess.isRetry, startedAt: vocabSess.startedAt || ''
+    });
+  }
+  function buildReviewQueue(today) {
+    var due = Store.getDueVocab(today).map(function (v) {
+      ensureVocabV12(v); applyVocabOverdue(v); reconcileShortCount(v); persistVocab(v);
+      return v;
+    });
+    // 今日已过词不再复活（雅思 wordSeenToday 跨轮去重）
+    var st = Store.getVocabSeenToday();
+    var seen = (st && st.date === today) ? st.words : [];
+    due = due.filter(function (v) { return seen.indexOf(v.id) < 0; });
+    due.sort(vocabDueCmp);
+    return due;
+  }
+  function startReview(forceRebuild) {
     Store.migrateVocab();
-    var due = Store.getDueVocab(Store.todayStr());
+    var today = Store.todayStr();
+    if (forceRebuild) {
+      vocabSess = null; Store.clearVocabSession();
+    } else {
+      // 尝试恢复当日会话（刷新/关页后回到原队列原位置）
+      var saved = Store.getVocabSession();
+      if (saved && saved.date === today && Array.isArray(saved.words) && saved.words.length) {
+        var live = [];
+        saved.words.forEach(function (w) { var v = Store.findVocab(w); if (v) { ensureVocabV12(v); live.push(v); } });
+        if (live.length) {
+          vocabSess = {
+            words: live, pos: Number(saved.pos) || 0, total: saved.total || live.length,
+            passed: saved.passed || 0, wrong: saved.wrong || 0, judged: saved.judged || 0,
+            hold: saved.hold || {}, wrongCount: saved.wrongCount || {},
+            isRetry: !!saved.isRetry, startedAt: saved.startedAt || ''
+          };
+          if (vocabSess.pos >= vocabSess.words.length) { vocabSess = null; Store.clearVocabSession(); }
+          else {
+            refs.reviewHint.textContent = '已恢复上次复习进度（第 ' + (vocabSess.pos + 1) + ' / ' + vocabSess.words.length + ' 个）';
+            renderReview(); return;
+          }
+        } else {
+          vocabSess = null; Store.clearVocabSession();
+        }
+      }
+    }
+    var due = buildReviewQueue(today);
     if (!due.length) {
-      reviewQueue = { items: [], index: 0, total: 0, passed: 0 };
-      refs.reviewHint.textContent = '今天没有待复习的生词～去背单词或记录生词吧';
+      vocabSess = null; Store.clearVocabSession();
+      var seenSt = Store.getVocabSeenToday();
+      var seenTodayCount = (seenSt && seenSt.date === today) ? seenSt.words.length : 0;
+      refs.reviewHint.textContent = seenTodayCount > 0
+        ? '今天没有新的待复习词（今日已过 ' + seenTodayCount + ' 个）～明天再来'
+        : '今天没有待复习的生词～去背单词或记录生词吧';
       refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">暂无待复习词</div></div>';
       return;
     }
-    var items = due.slice();
-    shuffle(items);
-    reviewQueue = { items: items, index: 0, total: items.length, passed: 0 };
-    refs.reviewHint.textContent = '今日待复习 ' + items.length + ' 个生词（等级制记忆曲线推送）';
+    vocabSess = { words: due, pos: 0, total: due.length, passed: 0, wrong: 0, judged: 0, hold: {}, wrongCount: {}, isRetry: false, startedAt: new Date().toISOString() };
+    persistVocabSession();
+    refs.reviewHint.textContent = '今日待复习 ' + due.length + ' 个生词（按到期日 + 错误率优先推送）';
     renderReview();
   }
+  function startWrongRetry() {
+    var today = Store.todayStr();
+    var arr = Store.getDailyWrong()[today] || [];
+    var seen = {}, live = [];
+    arr.forEach(function (x) {
+      if (seen[x.word]) return; seen[x.word] = true;
+      var v = Store.findVocab(x.word);
+      if (v) { ensureVocabV12(v); live.push(v); }
+    });
+    if (!live.length) { showToast('今天暂无错词可重练', 'info'); return; }
+    shuffle(live);
+    vocabSess = { words: live, pos: 0, total: live.length, passed: 0, wrong: 0, judged: 0, hold: {}, wrongCount: {}, isRetry: true, startedAt: new Date().toISOString() };
+    persistVocabSession();
+    refs.reviewHint.textContent = '错词重练 ' + live.length + ' 个（今天记错的词再来一遍）';
+    renderReview();
+  }
+  function finishReviewSession() {
+    var today = Store.todayStr();
+    var q = vocabSess;
+    var st = Store.getVocabDayStats();
+    var prev = st[today] || { total: 0, correct: 0, wrong: 0 };
+    st[today] = {
+      total: (prev.total || 0) + (q.judged || 0),
+      correct: (prev.correct || 0) + (q.passed || 0),
+      wrong: (prev.wrong || 0) + (q.wrong || 0)
+    };
+    Store.setVocabDayStats(st);
+    vocabSess = null;
+    Store.clearVocabSession();
+  }
   function renderReview() {
-    if (!reviewQueue) { refs.reviewBox.innerHTML = '<div class="empty-hint">进入本页开始复习</div>'; return; }
-    var q = reviewQueue;
-    if (q.index >= q.items.length) {
-      refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">今日复习完成 🎉</div><div class="muted" style="margin-top:8px">共复习 ' + q.total + ' 个生词，过关 ' + (q.passed || 0) + ' 个</div></div>';
+    if (!refs.reviewBox) return;
+    if (!vocabSess) { refs.reviewBox.innerHTML = '<div class="empty-hint">进入本页开始复习</div>'; return; }
+    var q = vocabSess;
+    var today = Store.todayStr();
+    if (q.pos >= q.words.length) {
+      finishReviewSession();
+      var wrongArr = (Store.getDailyWrong()[today] || []);
+      var daySt = Store.getVocabDayStats()[today] || { total: 0, correct: 0, wrong: 0 };
+      var html = '<div class="review-done"><div class="big">' + (q.isRetry ? '错词重练完成 🎉' : '今日复习完成 🎉') + '</div>';
+      html += '<div class="muted" style="margin-top:8px">本轮 ' + (q.judged || 0) + ' 词 · 过关 ' + (q.passed || 0) + ' · 记错 ' + (q.wrong || 0) + '</div>';
+      html += '<div class="muted" style="margin-top:4px">今日累计 ' + daySt.total + ' 次 · 过关 ' + daySt.correct + ' · 记错 ' + daySt.wrong + '</div></div>';
+      if (wrongArr.length) {
+        html += '<div class="practice-actions" style="margin-top:12px"><button class="btn btn-primary" id="btn-wrong-retry">错词重练（' + wrongArr.length + ' 个）</button></div>';
+      }
+      refs.reviewBox.innerHTML = html;
+      var retryBtn = $('btn-wrong-retry');
+      if (retryBtn) retryBtn.addEventListener('click', startWrongRetry);
       return;
     }
-    var v = q.items[q.index];
+    var v = q.words[q.pos];
     ensureVocabV12(v);
-    applyVocabOverdue(v);          // 复习前应用逾期降级（消费后落库，避免重复降级）
-    persistVocab(v);
-    var today = Store.todayStr();
     var lvl = v.level || 0;
     var dueTxt = (v.next <= today) ? '待复习' : ('下次 ' + v.next);
     var tags = [];
@@ -3390,38 +3808,56 @@
         [0, 1, 2].map(function (i) { return '<span class="sdot' + (i < sc ? ' on' : '') + '"></span>'; }).join('') +
         ' <span class="streak-tip">（还差 ' + (SHORT_PASS - sc) + ' 次记牢，隔几个词后回考）</span></div>';
     }
+    var seenSt = Store.getVocabSeenToday();
+    var seenTodayCount = (seenSt && seenSt.date === today) ? seenSt.words.length : 0;
     var html = '<div class="review-lv">Lv ' + lvl + ' · ' + dueTxt + '</div>' + catPill + tags.join('');
     html += '<div class="review-word">' + escapeHtml(v.word) + '</div>';
     html += '<div class="review-cn" id="review-cn" style="visibility:hidden">' + escapeHtml(v.cn || '（无释义）') + '</div>';
     html += streakHtml;
+    html += '<div class="review-meta-row"><span class="review-stats-chip">第 ' + (q.pos + 1) + ' / ' + q.words.length + '</span><span class="review-stats-chip">今日已过 ' + seenTodayCount + '</span>' + (q.isRetry ? '<span class="review-stats-chip">错词重练</span>' : '') + '</div>';
     html += '<div class="practice-actions"><button class="btn btn-ghost" id="review-show">显示释义</button></div>';
     html += '<div class="review-actions" style="margin-top:12px"><button class="btn btn-primary" id="review-know">✅ 认识</button><button class="btn btn-danger" id="review-unknow">❌ 不认识</button></div>';
     refs.reviewBox.innerHTML = html;
     $('review-show').addEventListener('click', function () { var c = $('review-cn'); if (c) { c.style.visibility = 'visible'; this.style.display = 'none'; } });
+    function requeueCur(gap) {
+      q.words.splice(q.pos, 1);
+      var pos = Math.min(q.words.length, q.pos + gap);
+      if (pos >= q.words.length) q.words.push(v); else q.words.splice(pos, 0, v);
+    }
     $('review-know').addEventListener('click', function () {
+      markVocabSeenToday(v);
+      q.judged = (q.judged || 0) + 1;
       v.shortCount = (v.shortCount || 0) + 1;          // 短线成功 +1
       v.lastShortTouch = new Date().toISOString();
       if (v.shortCount >= SHORT_PASS) {
         promoteVocabLongTerm(v, today);               // 3 次全对→长线升级，移出队列
         persistVocab(v);
-        q.items.splice(q.index, 1);
         q.passed = (q.passed || 0) + 1;
-        renderReview();
+        q.words.splice(q.pos, 1);
       } else {
-        var gap = vocabGapFor(v, v.shortCount);        // 难词走加密 GAP
-        q.items.splice(q.index, 1);
-        var pos = Math.min(q.items.length, q.index + gap);
-        if (pos >= q.items.length) q.items.push(v); else q.items.splice(pos, 0, v);
         persistVocab(v);
-        renderReview();
+        requeueCur(vocabGapFor(v, v.shortCount));     // 难词走加密 GAP
       }
+      persistVocabSession();
+      renderReview();
     });
     $('review-unknow').addEventListener('click', function () {
-      demoteVocabLongTerm(v, today, true);            // 完全不认识→加重惩罚+明天复习
+      markVocabSeenToday(v);
+      q.judged = (q.judged || 0) + 1;
+      q.wrong = (q.wrong || 0) + 1;
+      q.wrongCount[v.word] = (q.wrongCount[v.word] || 0) + 1;
+      var firstHold = !q.hold[v.word];
+      q.hold[v.word] = true;
+      demoteVocabLongTerm(v, today, !firstHold);      // 首错正常降级；再错加重惩罚（雅思 rehold）
       persistVocab(v);
-      q.items.splice(q.index, 1);
-      var pos = Math.min(q.items.length, q.index + 1);
-      if (pos >= q.items.length) q.items.push(v); else q.items.splice(pos, 0, v);
+      recordVocabWrong(v);
+      if (q.wrongCount[v.word] >= MAX_ATTEMPT) {
+        showToast('「' + v.word + '」今天练了 ' + MAX_ATTEMPT + ' 次还没记牢，先跳过，明天再来', 'warn');
+        q.words.splice(q.pos, 1);                     // 防死循环：直接出队（demote 已设明天复习）
+      } else {
+        requeueCur(firstHold ? 1 : vocabGapFor(v, 1)); // 首错隔 1 词回考；再错按 GAP 间隔
+      }
+      persistVocabSession();
       renderReview();
     });
   }
@@ -4492,6 +4928,8 @@
       renderWrongBook();
       renderSubjectChapters();
       renderPlanItems();
+      renderPlanDaily();
+      renderPlanHistory();
       renderMathChapters();
       renderMathQuestionList();
       renderMathPractice();
@@ -4581,7 +5019,7 @@
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
       if (sub === 'overview') { renderData(); }
-      else if (sub === 'review') { renderSubjectChapters(); renderPlanItems(); renderSummary(); }
+      else if (sub === 'review') { renderSubjectChapters(); renderPlanItems(); renderSummary(); ensurePlanCarry(); renderPlanDaily(); renderPlanHistory(); }
     } else if (container === 'settings') {
       if (sub === 'base') { renderAiConfig(); renderVisionConfig(); }
       else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
@@ -5008,6 +5446,7 @@
       var ds = Store.todayStr();
       if ((Store.getPlan(ds) || []).length && !confirm('将覆盖今日已有计划，确定重新生成？')) return;
       autoGenPlan(ds); renderPlan(); renderToday(); showToast('已生成今日计划 ✅');
+      planAiToday();   // 模板保底后尝试 AI 细化（未配置 AI 静默保留模板）
     });
     refs.btnAddPlan.addEventListener('click', function () {
       var text = refs.planText.value.trim(); var min = refs.planMin ? (Number(refs.planMin.value) || 0) : 0;
@@ -5018,6 +5457,18 @@
       if (refs.planSubject) refs.planSubject.value = '';
       renderPlan(); renderToday();
     });
+
+    // 数据页·每日计划（日期切换 / 添加 / AI / 历史）
+    var planDateInput = $('plan-date');
+    if (planDateInput) planDateInput.addEventListener('change', function () {
+      if (!planDateInput.value) return;
+      planViewDate = planDateInput.value; renderPlanDaily(); renderPlanHistory();
+    });
+    if ($('btn-plan-prev')) $('btn-plan-prev').addEventListener('click', function () { planShiftDate(-1); });
+    if ($('btn-plan-next')) $('btn-plan-next').addEventListener('click', function () { planShiftDate(1); });
+    if ($('btn-plan-today')) $('btn-plan-today').addEventListener('click', function () { planViewDate = Store.todayStr(); renderPlanDaily(); renderPlanHistory(); });
+    if ($('btn-plan-daily-add')) $('btn-plan-daily-add').addEventListener('click', onPlanDailyAdd);
+    if ($('btn-plan-ai')) $('btn-plan-ai').addEventListener('click', planAiFill);
 
     // 云同步（手机号账号：注册/登录合一）
     if (refs.btnSyncConfirm) refs.btnSyncConfirm.addEventListener('click', onSyncConfirm);
@@ -5124,7 +5575,7 @@
     if (refs.btnAiSummarizeWrong) refs.btnAiSummarizeWrong.addEventListener('click', summarizeWrongBook);
     // 词汇：背单词 / 复习
     refs.btnPracticeRestart.addEventListener('click', startPractice);
-    refs.btnReviewRestart.addEventListener('click', startReview);
+    refs.btnReviewRestart.addEventListener('click', function () { startReview(true); });
     // 复习/自测 tab 内的子模式切换
     document.querySelectorAll('.mode-btn').forEach(function (b) {
       b.addEventListener('click', function () { setReviewMode(b.getAttribute('data-mode')); });

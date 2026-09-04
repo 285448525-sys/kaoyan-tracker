@@ -112,6 +112,10 @@
       visionConfig: { provider: '', baseUrl: '', model: '', key: '' }, // 👁 视觉模型配置（拍照/智能整理错题走此轨；provider 可选 doubao/qwen/openai/'' 自定义；仅存本机浏览器，key 经 /api/ai 中转不暴露）
       practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
       wrongWords: [], // 查词记录（独立）{id,word,cn,created,src}
+      vocabSession: null, // 背词会话（雅思 v4.1 流程：进行中锁定队列，刷新可恢复）{date,words,pos,total,passed,wrong,judged,hold,wrongCount,isRetry,startedAt}
+      vocabSeenToday: { date: '', words: [] }, // 今日已过词去重 {date, words:[vocabId...]}（防止重开队列复活已过词）
+      vocabDayStats: {}, // 'YYYY-MM-DD' -> {total,correct,wrong} 背词每日统计（多轮累加）
+      dailyWrong: {},    // 'YYYY-MM-DD' -> [{id,word,cn}] 背词每日错词（用于错词重练）
       checkins: [], // ['YYYY-MM-DD', ...] 显式打卡日（用于连续学习提醒）
       milestones: [], // 已达成里程碑 id 列表（用于庆祝动画去重，避免重复触发）
       moduleMastery: {},     // { 模块名: '已掌握'|'进行中'|'未开始' }
@@ -191,7 +195,11 @@
           ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
           : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
         wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
-        checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
+        vocabSession: (p.vocabSession && typeof p.vocabSession === 'object' && p.vocabSession.date) ? p.vocabSession : null,
+        vocabSeenToday: (p.vocabSeenToday && typeof p.vocabSeenToday === 'object' && Array.isArray(p.vocabSeenToday.words)) ? { date: String(p.vocabSeenToday.date || ''), words: p.vocabSeenToday.words.filter(function (x) { return typeof x === 'string'; }) } : { date: '', words: [] },
+        vocabDayStats: (p.vocabDayStats && typeof p.vocabDayStats === 'object') ? p.vocabDayStats : {},
+        dailyWrong: (p.dailyWrong && typeof p.dailyWrong === 'object') ? p.dailyWrong : {},
+        checkins: [],
         milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
         moduleMastery: (p.moduleMastery && typeof p.moduleMastery === 'object') ? p.moduleMastery : {},
         subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
@@ -322,6 +330,8 @@
   function removeDailyPlanItem(ds, id) {
     if (state.plans[ds]) state.plans[ds] = state.plans[ds].filter(function (it) { return it.id !== id; }); save();
   }
+  // 所有存有计划的日期（倒序，历史计划折叠区用）
+  function getPlanDates() { return Object.keys(state.plans || {}).sort().reverse(); }
 
   /* ---------- 错题整理 ---------- */
   function getMistakes() {
@@ -654,6 +664,24 @@
   }
 
 
+  /* ---------- 背词会话 / 每日统计（雅思 SRS v4.1 流程配套） ---------- */
+  function getVocabSession() { return (state.vocabSession && typeof state.vocabSession === 'object') ? state.vocabSession : null; }
+  function setVocabSession(s) { state.vocabSession = (s && typeof s === 'object') ? s : null; save(); }
+  function clearVocabSession() { state.vocabSession = null; save(); }
+  function getVocabSeenToday() {
+    var st = state.vocabSeenToday;
+    if (!st || typeof st !== 'object' || !Array.isArray(st.words)) { st = { date: '', words: [] }; state.vocabSeenToday = st; }
+    return st;
+  }
+  function setVocabSeenToday(st) {
+    if (!st || typeof st !== 'object' || !Array.isArray(st.words)) st = { date: todayStr(), words: [] };
+    state.vocabSeenToday = st; save();
+  }
+  function getVocabDayStats() { return (state.vocabDayStats && typeof state.vocabDayStats === 'object') ? state.vocabDayStats : {}; }
+  function setVocabDayStats(obj) { state.vocabDayStats = (obj && typeof obj === 'object') ? obj : {}; save(); }
+  function getDailyWrong() { return (state.dailyWrong && typeof state.dailyWrong === 'object') ? state.dailyWrong : {}; }
+  function setDailyWrong(obj) { state.dailyWrong = (obj && typeof obj === 'object') ? obj : {}; save(); }
+
   /* ---------- 计时器 ---------- */
   function getTimer() { return state.timer; }
   function setTimer(t) { state.timer = t; save(); }
@@ -726,7 +754,18 @@
           next: v.next || todayStr(),
           added: v.added || todayStr(),
           wrong: v.wrong || 0,
-          last: v.last || ''
+          last: v.last || '',
+          // v1.2 字段（q 版修复：旧导入会丢 SRS 记忆曲线状态）
+          level: (typeof v.level === 'number' && v.level >= 0) ? Math.min(7, v.level) : Math.min(7, Math.max(0, (typeof v.box === 'number' && v.box >= 1 ? v.box - 1 : 0))),
+          errTotal: (typeof v.errTotal === 'number') ? v.errTotal : 0,
+          errStreak: (typeof v.errStreak === 'number') ? v.errStreak : 0,
+          hardWord: v.hardWord === true,
+          okStreak: (typeof v.okStreak === 'number') ? v.okStreak : 0,
+          keyWord: v.keyWord === true,
+          cleared: v.cleared === true,
+          shortCount: (typeof v.shortCount === 'number') ? v.shortCount : 0,
+          lastShortTouch: (typeof v.lastShortTouch === 'string') ? v.lastShortTouch : null,
+          cleanRounds: (typeof v.cleanRounds === 'number') ? v.cleanRounds : 0
         };
       }) : [],
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
@@ -735,7 +774,11 @@
         ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
         : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
       wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
-      checkins: (p.checkins && Array.isArray(p.checkins)) ? p.checkins : [],
+      vocabSession: null, // 会话不随备份导入（会话是本机进行时状态）
+      vocabSeenToday: (p.vocabSeenToday && typeof p.vocabSeenToday === 'object' && Array.isArray(p.vocabSeenToday.words)) ? { date: String(p.vocabSeenToday.date || ''), words: p.vocabSeenToday.words.filter(function (x) { return typeof x === 'string'; }) } : { date: '', words: [] },
+      vocabDayStats: (p.vocabDayStats && typeof p.vocabDayStats === 'object') ? p.vocabDayStats : {},
+      dailyWrong: (p.dailyWrong && typeof p.dailyWrong === 'object') ? p.dailyWrong : {},
+      checkins: [],
       milestones: (p.milestones && Array.isArray(p.milestones)) ? p.milestones.slice() : [],
       moduleMastery: (p.moduleMastery && typeof p.moduleMastery === 'object') ? p.moduleMastery : {},
       subjectChapters: (p.subjectChapters && typeof p.subjectChapters === 'object') ? p.subjectChapters : {},
@@ -933,6 +976,10 @@
     getAiSolved: getAiSolved, addAiSolved: addAiSolved, removeAiSolved: removeAiSolved,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
     getPracticeSettings: getPracticeSettings, setPracticeSettings: setPracticeSettings,
+    getVocabSession: getVocabSession, setVocabSession: setVocabSession, clearVocabSession: clearVocabSession,
+    getVocabSeenToday: getVocabSeenToday, setVocabSeenToday: setVocabSeenToday,
+    getVocabDayStats: getVocabDayStats, setVocabDayStats: setVocabDayStats,
+    getDailyWrong: getDailyWrong, setDailyWrong: setDailyWrong, getPlanDates: getPlanDates,
     getTimer: getTimer, setTimer: setTimer,
     consecutiveStreak: consecutiveStreak, isCheckedIn: isCheckedIn, getCheckins: getCheckins, checkin: checkin,
     getMilestones: getMilestones, addMilestone: addMilestone,

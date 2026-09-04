@@ -3462,3 +3462,43 @@ input:focus,select:focus,textarea:focus{
 :root[data-theme="dark"] .m-item .meta{ color:#9AA3B2; }
 :root[data-theme="dark"] .m-heat .cell{ background:#2A2E37; color:#9AA3B2; }
 :root[data-theme="dark"] .m-quote{ background:var(--surface-2); color:var(--ink); }
+
+/* ============ v20260903q 计划模块 + 复习引擎升级（每日计划卡 / 顺延提示 / 进度条 / 统计行） ============ */
+.plan-carry-tip{display:flex;align-items:center;gap:6px;margin:0 0 var(--sp-2);padding:6px 10px;border-radius:var(--radius-xs);background:var(--primary-soft);color:var(--primary-deep);font-size:12px;font-weight:700;border:1px dashed rgba(234,88,12,.45)}
+.plan-carry-tip.hidden{display:none}
+.plan-prog-row{display:flex;align-items:center;gap:8px;margin:var(--sp-2) 0 2px}
+.plan-prog-mini{flex:1;height:6px;border-radius:999px;background:rgba(234,88,12,.14);overflow:hidden}
+.plan-prog-mini i{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--primary-bright),var(--primary));transition:width .3s ease}
+.plan-prog-label{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+.plan-date-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.plan-date-row input[type="date"]{max-width:150px}
+.plan-today-btn{padding:4px 10px;font-size:12px}
+.plan-progress-row{display:flex;align-items:center;gap:10px;margin:2px 0 var(--sp-3)}
+.plan-progress{flex:1;height:8px;border-radius:999px;background:rgba(234,88,12,.14);overflow:hidden}
+.plan-progress i{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--primary-bright),var(--primary-strong));transition:width .3s ease}
+.plan-progress-label{font-size:12px;font-weight:800;color:var(--muted)}
+.plan-daily-list{display:flex;flex-direction:column;gap:8px;min-height:44px}
+.plan-daily-list .plan-item{cursor:default}
+.plan-edit-input{width:100%;border:1.5px solid var(--primary);border-radius:var(--radius-xs);padding:4px 8px;font-size:14px;font-weight:600;background:var(--surface-2);color:var(--ink);outline:none}
+.plan-daily-add{margin-top:var(--sp-2)}
+.plan-daily-add textarea{width:100%;resize:vertical}
+.plan-daily-add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.plan-history-fold{margin-top:var(--sp-3);border-top:1px dashed var(--line);padding-top:10px}
+.plan-history-fold summary{cursor:pointer;font-weight:800;color:var(--muted);list-style:none}
+.plan-history-fold summary::-webkit-details-marker{display:none}
+.plan-history-fold summary::before{content:'\25B8 '}
+.plan-history-fold[open] summary::before{content:'\25BE '}
+.plan-history-meta{font-weight:600;font-size:12px}
+.plan-history-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:260px;overflow:auto}
+.hist-plan{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:var(--radius-xs);background:var(--surface-2);font-size:13px}
+.hist-plan-date{font-weight:800;min-width:96px}
+.hist-plan-stat{color:var(--muted);flex:1}
+.hist-plan-open{white-space:nowrap}
+.review-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:var(--sp-2) 0}
+.review-stats-chip{padding:2px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary-deep);font-weight:800;font-size:12px}
+/* dark 主题适配（q 版新增组件） */
+:root[data-theme="dark"] .plan-carry-tip{background:rgba(234,88,12,.18);color:#FDBA74}
+:root[data-theme="dark"] .plan-prog-mini,:root[data-theme="dark"] .plan-progress{background:rgba(255,255,255,.10)}
+:root[data-theme="dark"] .plan-edit-input{background:var(--surface-2);color:var(--ink)}
+:root[data-theme="dark"] .hist-plan{background:var(--surface-2)}
+:root[data-theme="dark"] .review-stats-chip{background:rgba(234,88,12,.22);color:#FDBA74}

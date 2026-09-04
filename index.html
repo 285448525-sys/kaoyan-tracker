@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903p" />
+  <link rel="stylesheet" href="styles.css?v=20260903q" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -184,6 +184,7 @@
             <span class="ic-inline" data-icon="sparkles"></span>
             今天还没有计划，点下面让 AI 帮你拆任务。
           </div>
+          <div id="plan-carry-tip" class="plan-carry-tip hidden">⏪ 已自动顺延昨天的未完成任务</div>
           <div id="plan-list" class="plan-list"></div>
           <div class="todo-add-row">
             <input type="text" id="plan-text" class="todo-add-input" placeholder="添加计划项，如：复盘英语阅读错题" />
@@ -563,6 +564,7 @@
       <button type="button" class="vchip active" data-filter="all">全部</button>
       <button type="button" class="vchip" data-filter="vocab">生词本</button>
       <button type="button" class="vchip" data-filter="wrong">查词记录</button>
+      <button type="button" class="vchip" data-filter="due">待复习</button>
       <button type="button" class="vchip" data-filter="cat:数据结构">数据结构</button>
       <button type="button" class="vchip" data-filter="cat:计算机组成">计算机组成</button>
       <button type="button" class="vchip" data-filter="cat:操作系统">操作系统</button>
@@ -692,6 +694,36 @@
 
     </div>
       <div id="sub-review" class="sub-panel">
+
+      <div class="section">
+<div class="card">
+        <div class="card-head">
+          <h2 class="card-title"><span class="ic-inline" data-icon="list"></span> 每日计划</h2>
+          <div class="plan-date-row">
+            <button type="button" id="btn-plan-prev" class="icon-btn" aria-label="前一天">‹</button>
+            <input type="date" id="plan-date" />
+            <button type="button" id="btn-plan-next" class="icon-btn" aria-label="后一天">›</button>
+            <button type="button" id="btn-plan-today" class="btn btn-ghost plan-today-btn">今天</button>
+          </div>
+        </div>
+        <div class="plan-progress-row">
+          <div class="plan-progress"><i id="plan-progress-fill"></i></div>
+          <span id="plan-progress-label" class="plan-progress-label">还没安排</span>
+        </div>
+        <div id="plan-daily-list" class="plan-daily-list"></div>
+        <div class="plan-daily-add">
+          <textarea id="plan-daily-text" rows="2" placeholder="添加计划，可多行，每行一条…"></textarea>
+          <div class="plan-daily-add-row">
+            <select id="plan-daily-subject" class="todo-subject"><option value="">不指定科目</option></select>
+            <button id="btn-plan-daily-add" class="btn btn-ghost">＋ 添加</button>
+            <button id="btn-plan-ai" class="btn btn-primary">🤖 AI 安排这天</button>
+          </div>
+        </div>
+        <details id="plan-history" class="plan-history-fold">
+          <summary class="card-sub">历史计划 <span id="plan-history-meta" class="plan-history-meta"></span></summary>
+          <div id="plan-history-list" class="plan-history-list"></div>
+        </details>
+      </div></div>
 
       <div class="section">
 <div class="card">
@@ -971,14 +1003,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903p"></script>
-  <script src="iconset.js?v=20260903p"></script>
-  <script src="words.js?v=20260903p"></script>
-  <script src="store.js?v=20260903p"></script>
-  <script src="charts.js?v=20260903p"></script>
-  <script src="share.js?v=20260903p"></script>
-  <script src="sentences.js?v=20260903p"></script>
-  <script src="app.js?v=20260903p"></script>
-  <script src="workspace.js?v=20260903p"></script>
+  <script src="qrcode.min.js?v=20260903q"></script>
+  <script src="iconset.js?v=20260903q"></script>
+  <script src="words.js?v=20260903q"></script>
+  <script src="store.js?v=20260903q"></script>
+  <script src="charts.js?v=20260903q"></script>
+  <script src="share.js?v=20260903q"></script>
+  <script src="sentences.js?v=20260903q"></script>
+  <script src="app.js?v=20260903q"></script>
+  <script src="workspace.js?v=20260903q"></script>
 </body>
 </html>
