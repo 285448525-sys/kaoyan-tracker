@@ -56,7 +56,7 @@ async function main() {
   }
 
   // ---- 2. JS files (terser v5 异步, 需 await) ----
-  const jsFiles = ['app.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'words.js', 'md5.js', 'iconset.js'];
+  const jsFiles = ['app.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'words.js', 'md5.js', 'iconset.js', 'workspace.js'];
   try {
     const terser = require('terser');
     for (const f of jsFiles) {

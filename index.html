@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903k" />
+  <link rel="stylesheet" href="styles.css?v=20260903m" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:#F5F9FC;
@@ -104,6 +104,11 @@
         <button class="tab-btn" data-tab="mistakes"><span class="tab-ic" data-icon="mistakes"></span><span class="tab-label">错题</span></button>
       </div>
       <div class="nav-group">
+        <div class="nav-group-title">规划</div>
+        <button class="tab-btn" data-tab="roadmap"><span class="tab-ic">🪜</span><span class="tab-label">备考时间轴</span></button>
+        <button class="tab-btn" data-tab="routine"><span class="tab-ic">⏰</span><span class="tab-label">每日作息</span></button>
+      </div>
+      <div class="nav-group">
         <div class="nav-group-title">分析</div>
         <button class="tab-btn" data-tab="data"><span class="tab-ic" data-icon="data"></span><span class="tab-label">数据</span></button>
       </div>
@@ -133,6 +138,20 @@
           <span class="hh-cd-text" id="home-cd-text">距考研 29 天</span>
         </button>
       </header>
+
+      <!-- Memphis 统计组（借鉴工作台看板：数字优先，一屏看完关键指标） -->
+      <div class="m-grid m-g4" style="margin-bottom:16px">
+        <div class="m-stat red"><div class="num" id="m-stat-cd">--</div><div class="lbl">距考研（天）</div></div>
+        <div class="m-stat blue"><div class="num" id="m-stat-todo">0</div><div class="lbl">今日待办</div></div>
+        <div class="m-stat green"><div class="num" id="m-stat-week">0</div><div class="lbl">本周专注（分）</div></div>
+        <div class="m-stat purple"><div class="num" id="m-stat-streak">0</div><div class="lbl">连续学习（天）</div></div>
+      </div>
+
+      <!-- 每日语录（借鉴工作台看板：情感化激励） -->
+      <div class="card">
+        <h2 class="card-title">🌟 每日语录 <span class="chip">鼓励一下</span></h2>
+        <div class="m-quote" id="m-quote">「慢慢来，比较快。」</div>
+      </div>
 
       <!-- Hero 轻卡 -->
       <div class="home-hero-card" id="home-hero-card">
@@ -180,6 +199,40 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- 备考阶段时间轴（Memphis · 借鉴工作台看板） -->
+    <section id="tab-roadmap" class="tab-panel">
+      <div class="m-topbar">
+        <h1 class="m-page-title">备考阶段时间轴</h1>
+        <div class="m-pill"><span class="m-dot"></span><span id="roadmap-progress">0/12 已完成</span></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">🪜 12 个考研里程碑</h2>
+        <p style="margin:-6px 0 14px;color:var(--muted);font-size:13px;font-weight:600">
+          从基础启动到初试当天的完整节奏，点「标记完成」记录进度（数据存本机浏览器）。
+        </p>
+        <div class="m-timeline" id="roadmap-list"></div>
+      </div>
+    </section>
+
+    <!-- 每日作息打卡（Memphis · 借鉴工作台看板） -->
+    <section id="tab-routine" class="tab-panel">
+      <div class="m-topbar">
+        <h1 class="m-page-title">每日作息打卡</h1>
+        <div class="m-pill"><span class="m-dot"></span><span id="routine-progress">0/0 已打卡</span></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">⏰ 今日作息清单</h2>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;max-width:440px">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:800;margin:0 0 4px">打卡日期</label>
+            <input type="date" id="routine-date" />
+          </div>
+          <button class="btn btn-ghost" id="routine-seed" style="padding:11px 14px">填充今日默认时段</button>
+        </div>
+        <div id="routine-list" style="margin-top:14px"></div>
+      </div>
     </section>
 
 
@@ -948,14 +1001,15 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903k"></script>
-  <script src="iconset.js?v=20260903k"></script>
-  <script src="words.js?v=20260903k"></script>
-  <script src="store.js?v=20260903k"></script>
-  <script src="charts.js?v=20260903k"></script>
-  <script src="share.js?v=20260903k"></script>
-  <script src="md5.js?v=20260903k"></script>
-  <script src="sentences.js?v=20260903k"></script>
-  <script src="app.js?v=20260903k"></script>
+  <script src="qrcode.min.js?v=20260903m"></script>
+  <script src="iconset.js?v=20260903m"></script>
+  <script src="words.js?v=20260903m"></script>
+  <script src="store.js?v=20260903m"></script>
+  <script src="charts.js?v=20260903m"></script>
+  <script src="share.js?v=20260903m"></script>
+  <script src="md5.js?v=20260903m"></script>
+  <script src="sentences.js?v=20260903m"></script>
+  <script src="app.js?v=20260903m"></script>
+  <script src="workspace.js?v=20260903m"></script>
 </body>
 </html>
