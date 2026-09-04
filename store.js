@@ -110,7 +110,7 @@
       vocab: [],    // {id,word,cn,phonetic,pos,example,note,category,box,next,added,wrong,last}
       aiConfig: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', key: '' }, // AI 中转配置（内置 DeepSeek 默认值，用户只需填 Key）；仅存本机浏览器，key 经 /api/ai 中转不暴露
       visionConfig: { provider: '', baseUrl: '', model: '', key: '' }, // 👁 视觉模型配置（拍照/智能整理错题走此轨；provider 可选 doubao/qwen/openai/'' 自定义；仅存本机浏览器，key 经 /api/ai 中转不暴露）
-      practiceSettings: { count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, // 背单词设置：题量/出题范围/答题模式/不认识自动收入生词本
+      practiceCfg: {}, // 背单词设置（雅思 practiceCfg 同款：部分覆盖合并存储，数值钳制在 app 侧 pc() 完成；mode=出题方向 en2cn/cn2en）
       wrongWords: [], // 查词记录（独立）{id,word,cn,created,src}
       vocabSession: null, // 背词会话（雅思 v4.1 流程：进行中锁定队列，刷新可恢复）{date,words,pos,total,passed,wrong,judged,hold,wrongCount,isRetry,startedAt}
       vocabSeenToday: { date: '', words: [] }, // 今日已过词去重 {date, words:[vocabId...]}（防止重开队列复活已过词）
@@ -189,11 +189,13 @@
         websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
         vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab : [],
         aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
-      visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
         visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
-        practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
-          ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
-          : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
+        practiceCfg: (function () {
+          // 迁移：优先新 practiceCfg；旧 practiceSettings 仅保留下仍有效的 mode 出题方向，其余由新默认接管
+          if (p.practiceCfg && typeof p.practiceCfg === 'object') return p.practiceCfg;
+          if (p.practiceSettings && typeof p.practiceSettings === 'object' && p.practiceSettings.mode === 'cn2en') return { mode: 'cn2en' };
+          return {};
+        })(),
         wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
         vocabSession: (p.vocabSession && typeof p.vocabSession === 'object' && p.vocabSession.date) ? p.vocabSession : null,
         vocabSeenToday: (p.vocabSeenToday && typeof p.vocabSeenToday === 'object' && Array.isArray(p.vocabSeenToday.words)) ? { date: String(p.vocabSeenToday.date || ''), words: p.vocabSeenToday.words.filter(function (x) { return typeof x === 'string'; }) } : { date: '', words: [] },
@@ -645,22 +647,19 @@
   function removeWrongWord(id) { state.wrongWords = (state.wrongWords || []).filter(function (x) { return x.id !== id; }); save(); }
   function clearWrongWords() { state.wrongWords = []; save(); }
 
-  /* ---------- 背单词设置 ---------- */
-  function getPracticeSettings() {
-    return Object.assign({ count: 12, scope: 'all', mode: 'en2cn', autoSave: true }, state.practiceSettings || {});
+  /* ---------- 背单词设置（雅思 practiceCfg 同款：部分覆盖合并存储，数值钳制在 app 侧 pc() 完成） ---------- */
+  function getPracticeCfg() {
+    return (state.practiceCfg && typeof state.practiceCfg === 'object') ? state.practiceCfg : {};
   }
-  function setPracticeSettings(p) {
-    p = p || {};
-    var cur = getPracticeSettings();
-    var next = {
-      count: Math.min(Math.max(Number(p.count) || cur.count, 4), 50),
-      scope: (p.scope === 'all' || p.scope === 'vocab' || p.scope === 'wrong') ? p.scope : cur.scope,
-      mode: (p.mode === 'en2cn' || p.mode === 'cn2en') ? p.mode : cur.mode,
-      autoSave: (typeof p.autoSave === 'boolean') ? p.autoSave : cur.autoSave
-    };
-    state.practiceSettings = next;
+  function setPracticeCfg(obj) {
+    var next = (obj && typeof obj === 'object') ? obj : {};
+    var cur = getPracticeCfg();
+    var merged = {}; var k;
+    for (k in cur) { if (cur.hasOwnProperty(k)) merged[k] = cur[k]; }
+    for (k in next) { if (next.hasOwnProperty(k)) merged[k] = next[k]; }
+    state.practiceCfg = merged;
     save();
-    return next;
+    return merged;
   }
 
 
@@ -770,9 +769,9 @@
       }) : [],
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
       visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
-      practiceSettings: (p.practiceSettings && typeof p.practiceSettings === 'object')
-        ? { count: Number(p.practiceSettings.count) || 12, scope: (p.practiceSettings.scope === 'vocab' || p.practiceSettings.scope === 'wrong') ? p.practiceSettings.scope : 'all', mode: (p.practiceSettings.mode === 'cn2en') ? 'cn2en' : 'en2cn', autoSave: p.practiceSettings.autoSave !== false }
-        : { count: 12, scope: 'all', mode: 'en2cn', autoSave: true },
+      practiceCfg: (p.practiceCfg && typeof p.practiceCfg === 'object')
+        ? p.practiceCfg
+        : ((p.practiceSettings && typeof p.practiceSettings === 'object' && p.practiceSettings.mode === 'cn2en') ? { mode: 'cn2en' } : {}),
       wrongWords: (p.wrongWords && Array.isArray(p.wrongWords)) ? p.wrongWords : [],
       vocabSession: null, // 会话不随备份导入（会话是本机进行时状态）
       vocabSeenToday: (p.vocabSeenToday && typeof p.vocabSeenToday === 'object' && Array.isArray(p.vocabSeenToday.words)) ? { date: String(p.vocabSeenToday.date || ''), words: p.vocabSeenToday.words.filter(function (x) { return typeof x === 'string'; }) } : { date: '', words: [] },
@@ -975,7 +974,7 @@
     getVisionConfig: getVisionConfig, setVisionConfig: setVisionConfig,
     getAiSolved: getAiSolved, addAiSolved: addAiSolved, removeAiSolved: removeAiSolved,
     getWrongWords: getWrongWords, findWrongWord: findWrongWord, addWrongWord: addWrongWord, removeWrongWord: removeWrongWord, clearWrongWords: clearWrongWords,
-    getPracticeSettings: getPracticeSettings, setPracticeSettings: setPracticeSettings,
+    getPracticeCfg: getPracticeCfg, setPracticeCfg: setPracticeCfg,
     getVocabSession: getVocabSession, setVocabSession: setVocabSession, clearVocabSession: clearVocabSession,
     getVocabSeenToday: getVocabSeenToday, setVocabSeenToday: setVocabSeenToday,
     getVocabDayStats: getVocabDayStats, setVocabDayStats: setVocabDayStats,

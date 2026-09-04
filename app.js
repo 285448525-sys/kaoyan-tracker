@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903r';
+  var APP_VERSION = '20260904a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -69,9 +69,7 @@
   var DICT = (typeof window !== 'undefined' && window.DICTIONARY) ? window.DICTIONARY : [];
   var DICT_MAP = {};
   DICT.forEach(function (d) { DICT_MAP[d.w.toLowerCase()] = d; });
-  var practiceSession = null; // {items, index, answered}
-  var reviewQueue = null;     // {items, index, total}
-  var reviewMode = 'review';  // 'review' | 'practice'（复习/自测 tab 内的子模式）
+  // （v20260904a 旧背词双模式 practiceSession/reviewQueue/reviewMode 已删除，统一为雅思四选一学习引擎）
   var LEITNER = [1, 2, 4, 7, 15]; // box 1..5 -> 间隔天数
   function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
@@ -958,24 +956,34 @@
     var list = $('plan-history-list'); if (!list) return;
     var meta = $('plan-history-meta');
     var dates = Store.getPlanDates().filter(function (d) { return d !== planViewDate && (Store.getPlan(d) || []).length > 0; });
-    if (meta) meta.textContent = dates.length ? ('（共 ' + dates.length + ' 天）') : '';
+    if (meta) meta.textContent = dates.length ? ('（共 ' + dates.length + ' 天 · 点击展开）') : '';
     list.innerHTML = '';
     if (!dates.length) { list.appendChild(el('div', 'empty-hint', '还没有历史计划')); return; }
+    // v20260904a 对齐雅思 renderHistory：按日期 details 折叠，展开看 ✓/○ 明细 + 打开编辑
     dates.slice(0, 30).forEach(function (ds) {
       var plan = Store.getPlan(ds) || [];
       var done = plan.filter(function (i) { return i.done; }).length;
-      var row = el('div', 'hist-plan');
-      row.appendChild(el('span', 'hist-plan-date', ds));
-      row.appendChild(el('span', 'hist-plan-stat', done + ' / ' + plan.length + ' 完成'));
-      var open = el('button', 'plan-del hist-plan-open', '打开编辑');
-      open.addEventListener('click', function () {
+      var det = el('details', 'hist-plan-fold');
+      var sum = el('summary');
+      sum.appendChild(el('span', 'hist-plan-date', ds));
+      sum.appendChild(el('span', 'plan-history-badge', done + ' / ' + plan.length + ' 完成'));
+      sum.appendChild(el('span', 'hist-chev', '▸'));
+      det.appendChild(sum);
+      var body = el('div', 'hist-plan-body');
+      var ul = el('ul', 'hist-items');
+      plan.forEach(function (i) { ul.appendChild(el('li', i.done ? 'done' : null, (i.done ? '✓ ' : '○ ') + i.text)); });
+      body.appendChild(ul);
+      var open = el('button', 'btn btn-ghost hist-plan-open', '打开编辑这天');
+      open.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
         planViewDate = ds;
         renderPlanDaily();
         var fold = $('plan-history'); if (fold) fold.open = false;
         showToast('已切换到 ' + ds + '，可直接编辑这天');
       });
-      row.appendChild(open);
-      list.appendChild(row);
+      body.appendChild(open);
+      det.appendChild(body);
+      list.appendChild(det);
     });
   }
   // AI 输出 → 计划条目（严格校验：JSON 数组 / text 非空 / minutes 10-240 / subjectKey 必须在科目表内）
@@ -992,6 +1000,27 @@
       var sk = (x.subjectKey && keys[x.subjectKey]) ? x.subjectKey : '';
       out.push({ id: 'pl_' + Store.nextSeq(), text: t.slice(0, 60), minutes: min, done: false, subjectKey: sk });
     });
+    return out;
+  }
+  // 考研弱项估算（v20260904a）：到期生词→英语；近7天错题按科目归类→政治/数学/408（供 AI 排序与模板加练）
+  function computeKaoyanWeak() {
+    var out = [];
+    var today = Store.todayStr();
+    var dueVocab = Store.getDueVocab(today).length;
+    if (dueVocab > 0) out.push({ key: 'english', label: '英语（到期生词 ' + dueVocab + ' 个）', rank: 2 + Math.min(3, dueVocab / 20) });
+    var since = Store.dateStr(Store.addDays(new Date(), -7));
+    var cnt = { pol: 0, math: 0, cs: 0 };
+    Store.getMistakes().forEach(function (m) {
+      if (!m || !m.date || m.date < since) return;
+      var s = String(m.subject || '');
+      if (s.indexOf('政治') >= 0) cnt.pol++;
+      else if (s.indexOf('数学') >= 0) cnt.math++;
+      else if (s.indexOf('408') >= 0 || s.indexOf('计算机') >= 0 || s.indexOf('数据结构') >= 0 || s.indexOf('操作系统') >= 0 || s.indexOf('组成') >= 0 || s.indexOf('网络') >= 0) cnt.cs++;
+    });
+    if (cnt.pol) out.push({ key: 'politics', label: '政治（近7天错题 ' + cnt.pol + ' 道）', rank: 1 + Math.min(3, cnt.pol / 5) });
+    if (cnt.math) out.push({ key: 'math', label: '数学（近7天错题 ' + cnt.math + ' 道）', rank: 1.5 + Math.min(3, cnt.math / 5) });
+    if (cnt.cs) out.push({ key: 'major', label: '408 专业课（近7天错题 ' + cnt.cs + ' 道）', rank: 1.5 + Math.min(3, cnt.cs / 5) });
+    out.sort(function (a, b) { return b.rank - a.rank; });
     return out;
   }
   // 无 AI 配置兜底：模板任务直接铺满这天（借鉴雅思站无 Key 模板流）
@@ -1011,31 +1040,42 @@
     if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
     showToast('未配置 AI，已按模板安排 ' + ds + ' 的计划', 'ok');
   }
-  // AI 安排某天（NO_CONFIG → 模板兜底）
+  // AI 安排某天（v20260904a 重写对齐雅思 aiPlanItem：读懂输入框自由文本+缩写展开、结果「追加」而非覆盖；NO_CONFIG → 模板兜底）
   function planAiFill() {
     var btn = $('btn-plan-ai'); if (!btn) return;
     var ds = planViewDate;
+    var ta = $('plan-daily-text');
+    var raw = ta ? ta.value.trim() : '';
     var subs = Store.getSubjects();
-    var subjList = subs.map(function (s) { return s.name; }).join('、') || '政治、英语、数学、专业课';
-    var dueVocab = Store.getDueVocab(ds).length;
+    var subjList = subs.map(function (s) { return s.name; }).join('、') || '政治、英语、数学、专业课(408)';
+    var weak = computeKaoyanWeak();
+    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '暂无';
     var cfg = Store.getConfig();
     var left = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000) : null;
-    var usr = '请为 ' + ds + ' 制定考研学习计划。' + (left != null ? ('距考研还有 ' + left + ' 天。') : '') +
-      '科目：' + subjList + '。' + (dueVocab > 0 ? ('当天到期生词 ' + dueVocab + ' 个，优先安排复习。') : '') +
-      '只输出 JSON 数组（不要解释、不要 markdown 代码块），每项形如 {"text":"任务描述","minutes":60,"subjectKey":"科目key或空串"}，4-8 条，任务具体可执行、单条 20-120 分钟。';
+    var usr = (raw ? ('我今天想完成：' + raw + '\n\n') : '请直接为这天生成考研学习计划。\n\n') +
+      '目标日期：' + ds + '。' + (left != null && left > 0 ? ('距考研还有 ' + left + ' 天。') : '') +
+      '\n科目：' + subjList + '。\n弱项排序（优先多排、排前面）：' + weakStr + '。' +
+      '\n\n【缩写展开规则】政X=政治 第X章/套X；英X=英语按原话篇数展开（英2=英语阅读 第1篇、第2篇各自独立任务）；数X=数学 第X章/套X；408/专业=计算机408（数据结构/组成原理/操作系统/计算机网络，按原话展开）；背词/背单词=背单词 30 分钟。模考/真题套卷必须整体出现不拆分；刷题后紧跟对应错题复盘。' +
+      '\n只输出 JSON 数组（不要解释、不要 markdown 代码块），每项形如 {"text":"任务描述","minutes":60,"subjectKey":"politics|english|math|major 或科目key或空串"}，4-8 条，单条 20-120 分钟；只写任务本身，不要时间段、不要括号说明。';
     btn.disabled = true; btn.textContent = '🤖 AI 规划中…';
     aiChat([
       { role: 'system', content: '你是考研学习规划助手。只输出 JSON 数组，不要输出任何解释文字或代码块标记。' },
       { role: 'user', content: usr }
-    ], { maxTokens: 700 }).then(function (res) {
+    ], { maxTokens: 800 }).then(function (res) {
       btn.disabled = false; btn.textContent = '🤖 AI 安排这天';
       var items = parseAiPlanItems(res.content, subs);
       if (!items.length) { showToast('AI 返回的计划无法解析，已保留原计划', 'warn'); return; }
-      if ((Store.getPlan(ds) || []).length && !confirm('将覆盖 ' + ds + ' 已有计划（' + items.length + ' 条），确定？')) return;
-      Store.setPlan(ds, items);
-      renderPlanDaily(); renderPlanHistory();
-      if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
-      showToast('AI 已安排 ' + ds + ' 的计划 ✅', 'ok');
+      var existing = Store.getPlan(ds) || [];
+      var doAppend = function () {
+        items.forEach(function (it) { Store.addDailyPlanItem(ds, it); });
+        if (ta) ta.value = '';
+        renderPlanDaily(); renderPlanHistory();
+        if (ds === Store.todayStr()) { renderPlan(); renderToday(); }
+        showToast('AI 已追加 ' + items.length + ' 条到 ' + ds + ' ✅', 'ok');
+      };
+      if (existing.length) {
+        if (confirm(ds + ' 已有 ' + existing.length + ' 条计划，把 AI 新安排的 ' + items.length + ' 条追加进去？（取消则不改动）')) doAppend();
+      } else doAppend();
     }).catch(function (err) {
       btn.disabled = false; btn.textContent = '🤖 AI 安排这天';
       if (err && err.error === 'NO_CONFIG') { smartFillDay(ds); return; }
@@ -1068,6 +1108,166 @@
       if (btn) { btn.disabled = false; btn.textContent = 'AI 帮我拆'; }
       if (err && err.error === 'NO_CONFIG') showToast('未配置 AI，已用内置模板生成计划', 'ok');
       else showToast((err && err.msg) || 'AI 拆解失败，已保留模板计划', 'warn');
+    });
+  }
+
+  /* ============ 多日安排（v20260904a 移植雅思 plans.js 多日 AI 排程，考研化） ============ */
+  var WEEK_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  var weekSchedule = null; // [{key:'YYYY-MM-DD', date:Date, focus, tasks:[string]}]
+  function getWeekTasks() { var c = Store.getConfig(); return (c && c.weekTasks) ? String(c.weekTasks) : ''; }
+  // 解析 AI 返回的 JSON 对象（兼容 ```json 围栏；与 parseJsonArray 区分：这个取 {..} 包裹）
+  function parseJsonObject(str) {
+    var s = String(str || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b < 0 || b < a) return null;
+    try { var o = JSON.parse(s.slice(a, b + 1)); return (o && typeof o === 'object') ? o : null; } catch (e) { return null; }
+  }
+  function weekUpcomingDates(n) {
+    var arr = []; var start = new Date(); start.setHours(0, 0, 0, 0);
+    for (var i = 0; i < n; i++) { var d = new Date(start); d.setDate(start.getDate() + i); arr.push(d); }
+    return arr;
+  }
+  function skName(k) {
+    var s = Store.getSubjects().filter(function (x) { return x.key === k; })[0];
+    return s ? s.name : ({ politics: '政治', english: '英语', math: '数学', major: '408 专业课' }[k] || '综合');
+  }
+  // 无 AI：按弱项科目模板 + 自定义任务铺开 N 天（N 由任务量估算 2-14，每约 2 条压一天）
+  function buildWeekSchedule(customTasks) {
+    customTasks = customTasks || [];
+    var weakKeys = computeKaoyanWeak().map(function (w) { return w.key; });
+    var baseKeys = ['english', 'math', 'major', 'politics'];
+    var n = customTasks.length ? Math.max(2, Math.min(14, Math.ceil(customTasks.length / 2))) : 5;
+    var dates = weekUpcomingDates(n);
+    weekSchedule = [];
+    for (var i = 0; i < n; i++) {
+      var d = dates[i];
+      var key = Store.dateStr(d);
+      var sk = baseKeys[i % baseKeys.length];
+      var pool = planTemplateFor(sk);
+      var tasks = [];
+      if (weakKeys.indexOf(sk) >= 0) tasks.push('⚠️ 重点突破：' + skName(sk) + ' 加练一组');
+      tasks.push(pool[i % pool.length]);
+      var due = Store.getDueVocab(key).length;
+      tasks.push('背单词 30 分钟' + (due ? ('（到期 ' + due + ' 个）') : ''));
+      weekSchedule.push({ key: key, date: d, focus: skName(sk), tasks: tasks });
+    }
+    customTasks.forEach(function (t, j) { weekSchedule[j % n].tasks.splice(1, 0, '📌 ' + t); });
+    renderWeekBox();
+  }
+  function renderWeekBox() {
+    var box = $('week-box'); if (!box) return;
+    box.innerHTML = '';
+    if (!weekSchedule || !weekSchedule.length) {
+      box.appendChild(el('div', 'empty-hint', '点「AI 排进日程」或「按弱项生成」，先把建议排出来'));
+      return;
+    }
+    var head = el('div', 'week-head');
+    head.appendChild(el('span', 'week-head-title', '计划安排（' + weekSchedule.length + ' 天）'));
+    var allBtn = el('button', 'btn btn-ghost week-fill-btn', '全部填入每日计划');
+    allBtn.addEventListener('click', fillWeekAll);
+    head.appendChild(allBtn);
+    box.appendChild(head);
+    weekSchedule.forEach(function (day, idx) {
+      var card = el('div', 'week-day-card');
+      var row = el('div', 'week-day-head');
+      row.appendChild(el('span', 'week-day-title', day.key + ' · ' + WEEK_CN[day.date.getDay()] + (day.focus ? ' · ' + day.focus : '')));
+      var fill = el('button', 'btn btn-ghost week-fill-btn', '填入');
+      fill.addEventListener('click', function () { fillWeekDay(idx); });
+      row.appendChild(fill);
+      card.appendChild(row);
+      var ul = el('ul', 'week-task-list');
+      day.tasks.forEach(function (t) { ul.appendChild(el('li', null, t)); });
+      card.appendChild(ul);
+      box.appendChild(card);
+    });
+  }
+  // 把某天建议追加进每日计划（按文本去重，不覆盖已有）
+  function fillWeekDay(idx) {
+    var day = weekSchedule && weekSchedule[idx]; if (!day) return;
+    var plan = Store.getPlan(day.key) || [];
+    var added = 0;
+    day.tasks.forEach(function (t) {
+      var exists = plan.some(function (i) { return i.text === t; });
+      if (!exists) { Store.addDailyPlanItem(day.key, { text: t.slice(0, 80), minutes: 0, done: false, subjectKey: '' }); added++; }
+    });
+    if (day.key === Store.todayStr()) { renderPlan(); renderToday(); }
+    if (day.key === planViewDate) renderPlanDaily();
+    showToast(day.key + ' 已填入（新增 ' + added + ' 项）');
+  }
+  function fillWeekAll() {
+    if (!weekSchedule || !weekSchedule.length) return;
+    var total = 0;
+    weekSchedule.forEach(function (day, idx) {
+      var before = (Store.getPlan(day.key) || []).length;
+      fillWeekDay(idx);
+      total += ((Store.getPlan(day.key) || []).length - before);
+    });
+    showToast('已把 ' + weekSchedule.length + ' 天的建议全部填入（共新增 ' + total + ' 项）✅');
+  }
+  // 有 AI：读懂文本框自由安排，智能分配到未来 14 天白名单日期（NO_CONFIG/OFFLINE → 弱项模板铺开）
+  function aiWeekSchedule() {
+    var ta = $('week-tasks'); if (!ta) return;
+    var raw = ta.value.trim();
+    Store.setConfig({ weekTasks: raw });
+    if (!raw) { showToast('先写下接下来几天要做的任务（每行一条，支持 政2/英1/数3/408 缩写）'); return; }
+    var box = $('week-box');
+    var cfg = Store.getConfig();
+    var left = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date()) / 86400000) : null;
+    var weak = computeKaoyanWeak();
+    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '暂无';
+    var span = 14;
+    var optDates = [];
+    weekUpcomingDates(span).forEach(function (d, i) {
+      optDates.push({ iso: Store.dateStr(d), label: i === 0 ? '今天' : (i === 1 ? '明天' : WEEK_CN[d.getDay()]) });
+    });
+    var dateListStr = optDates.map(function (d) { return d.iso + '（' + d.label + '）'; }).join('、');
+    var sys = '你是资深考研备考计划教练。考生会在文本框里写下接下来几天要做的任务与安排（可能含"今天/明天/周X/上午/具体日期"等时间词，也常使用她自己的缩写）。请读懂考生真实意图，把这些任务智能分配到合适的日期。\n' +
+      '\n【缩写与含义（必须先理解再分配）】\n' +
+      '- 政X = 政治 第X章/套X（如 政2=政治第2章；"政1000"类按原话理解题册安排）。\n' +
+      '- 英X = 英语，X 为篇数/套数（英2=英语阅读 2 篇，展开成"英语阅读 第1篇/第2篇"独立任务；"英一真题2018"=做 2018 年英语一真题，套题整体出现）。\n' +
+      '- 数X = 数学 第X章/套X（按原话展开；套题整体出现不拆分）。\n' +
+      '- 408 / 专业 = 计算机408专业课（数据结构/计算机组成/操作系统/计算机网络，按原话展开）。\n' +
+      '- 背词/背单词 = 背单词，固定 30 分钟，记作"背单词 30 分钟"。\n' +
+      '- 模考/真题套卷必须整体出现，不拆成单科段落；模考后必须紧跟对应科目错题复盘。\n' +
+      '\n【分配规则】\n' +
+      '1. 写了明确时间词的严格按时间词归位，不要自行挪动。\n' +
+      '2. 没有明确时间词的，按任务总量判断天数：少压 2-3 天，多铺 4-14 天，不强行塞满也不全堆一天。\n' +
+      '3. 考生列出的任务必须全部分配，不能遗漏；列得多就提高密度或增加天数。\n' +
+      '4. 每个任务只写名称，不要写预估时长、不要括号说明；最难的排最前；同类分散避免疲劳。\n' +
+      '5. 每天可补 1 条"背单词 30 分钟"。\n' +
+      '\n只从下面的日期清单里选日期，不要发明其它日期：\n' + dateListStr + '\n' +
+      '输出严格 JSON：{"days":[{"date":"YYYY-MM-DD（必须是清单里的某一天）","focus":"当天主题（如 数学突破/英语真题/408）","tasks":["任务1","任务2",...]}]}。只输出 JSON，不要解释。';
+    var usr = '接下来几天我想做的事（原文）：\n' + raw +
+      '\n\n弱项排序（差得最多在前）：' + weakStr +
+      (left != null && left > 0 ? '\n距考研 ' + left + ' 天' : '') +
+      '\n\n请智能分配到合适日期（JSON）。有具体时间词的严格归位；所有任务必须分配完；任务只写名称不要时长。';
+    if (box) { box.innerHTML = ''; box.appendChild(el('div', 'empty-hint', '正在让 AI 读懂你的安排并分配…')); }
+    aiChat([
+      { role: 'system', content: sys },
+      { role: 'user', content: usr }
+    ], { maxTokens: 1600, temperature: 0.6 }).then(function (res) {
+      var j = parseJsonObject(res.content);
+      var days = (j && Array.isArray(j.days)) ? j.days : null;
+      if (!days) { showToast('AI 返回格式异常，可重试或改用「按弱项生成」', 'warn'); return; }
+      var valid = {}; optDates.forEach(function (d) { valid[d.iso] = 1; });
+      weekSchedule = days.filter(function (d) { return d && valid[d.date]; }).map(function (d) {
+        var dt = new Date(d.date + 'T00:00:00');
+        return {
+          key: d.date, date: dt,
+          focus: (Array.isArray(d.focus) ? d.focus.join(' / ') : (d.focus == null ? '' : String(d.focus))),
+          tasks: Array.isArray(d.tasks) ? d.tasks.map(String).filter(Boolean) : []
+        };
+      }).sort(function (a, b) { return a.key.localeCompare(b.key); });
+      if (!weekSchedule.length) { showToast('AI 返回的日期不在有效范围内，可重试', 'warn'); return; }
+      renderWeekBox();
+      showToast('AI 已把你的安排分配到 ' + weekSchedule.length + ' 天 ✅');
+    }).catch(function (err) {
+      if (err && (err.error === 'NO_CONFIG' || err.error === 'OFFLINE')) {
+        buildWeekSchedule(raw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean));
+        showToast('未配置 AI，已按弱项模板生成', 'ok');
+        return;
+      }
+      if (box) { box.innerHTML = ''; box.appendChild(el('div', 'empty-hint', 'AI 排程失败：' + ((err && err.msg) || '未知错误'))); }
     });
   }
 
@@ -1748,6 +1948,222 @@
     var r = new FileReader();
     r.onload = function () { refs.importText.value = r.result; applyImport(parseImportText(r.result)); };
     r.readAsText(f);
+  }
+
+  /* ============ AI 智能导入 / 补全（v20260904a 移植雅思 importSmart/backfillCn/extractWords/normPos/bindDrop） ============ */
+  // 从任意文本抽取英文词（不翻译）：中英文混排只取中文前的英文片段；纯英文行取首个英文词/词组
+  function extractWordsText(raw) {
+    var rows = [], seen = {};
+    String(raw || '').split(/\n/).forEach(function (line) {
+      line = line.trim(); if (!line) return;
+      var cjk = line.search(/[一-鿿]/);
+      var seg = (cjk >= 0) ? line.slice(0, cjk) : line;
+      var m = seg.match(/[A-Za-z][A-Za-z'.\-]*(?:\s+[A-Za-z][A-Za-z'.\-]*)*/);
+      var en = m ? m[0].trim() : '';
+      if (!en) return;
+      var key = en.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = 1;
+      rows.push({ en: en });
+    });
+    return rows;
+  }
+  // 词性归一化：各种写法规范为 n./v./adj./adv./prep./conj./pron./num./int./art.，多词性分号连接（移植雅思 normPos）
+  function normPos(s) {
+    s = String(s || '').trim().toLowerCase();
+    if (!s) return '';
+    var parts = s.split(/[;/,、\s]+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    var dict = {
+      'n': 'n.', 'noun': 'n.', '名词': 'n.',
+      'v': 'v.', 'verb': 'v.', '动词': 'v.',
+      'adj': 'adj.', 'adjective': 'adj.', '形容词': 'adj.',
+      'adv': 'adv.', 'adverb': 'adv.', '副词': 'adv.',
+      'prep': 'prep.', 'preposition': 'prep.', '介词': 'prep.',
+      'conj': 'conj.', 'conjunction': 'conj.', '连词': 'conj.',
+      'pron': 'pron.', 'pronoun': 'pron.', '代词': 'pron.',
+      'num': 'num.', 'numeral': 'num.', '数词': 'num.',
+      'int': 'int.', 'interjection': 'int.', '感叹词': 'int.',
+      'art': 'art.', 'article': 'art.', '冠词': 'art.'
+    };
+    var out = [];
+    parts.forEach(function (p) {
+      var key = p.replace(/\.+$/, '');
+      var v = dict[key] || dict[p];
+      if (!v) {
+        if (/^n/.test(p)) v = 'n.';
+        else if (/^v/.test(p)) v = 'v.';
+        else if (/^adj/.test(p)) v = 'adj.';
+        else if (/^adv/.test(p)) v = 'adv.';
+        else if (/^prep/.test(p)) v = 'prep.';
+        else if (/^conj/.test(p)) v = 'conj.';
+        else if (/^pron/.test(p)) v = 'pron.';
+        else if (/^num/.test(p)) v = 'num.';
+        else if (/^int/.test(p)) v = 'int.';
+        else if (/^art/.test(p)) v = 'art.';
+        else v = p; // 兜底保留原值
+      }
+      if (v && out.indexOf(v) < 0) out.push(v);
+    });
+    return out.join(';');
+  }
+  // 释义分列：pos="n.;v." cn="算法；运转" → [n.算法][v.运转]（移植雅思 formatMean，DOM 版防注入）
+  function formatMean(pos, cn) {
+    var frag = document.createDocumentFragment();
+    var cnStr = String(cn || '').trim();
+    if (!cnStr) {
+      var s0 = el('span', 'wl-sense'); s0.appendChild(el('span', 'wl-sense-cn', '无释义'));
+      frag.appendChild(s0); return frag;
+    }
+    var posList = String(pos || '').split(';').map(function (x) { return x.trim(); }).filter(Boolean);
+    var cnList = cnStr.split('；').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!posList.length) {
+      var s1 = el('span', 'wl-sense'); s1.appendChild(el('span', 'wl-sense-cn', cnStr));
+      frag.appendChild(s1); return frag;
+    }
+    if (cnList.length >= posList.length) {
+      posList.forEach(function (p, i) {
+        var s = el('span', 'wl-sense');
+        s.appendChild(el('span', 'wl-sense-pos', p));
+        s.appendChild(el('span', 'wl-sense-cn', cnList[i] || ''));
+        frag.appendChild(s);
+      });
+    } else {
+      var s2 = el('span', 'wl-sense');
+      s2.appendChild(el('span', 'wl-sense-pos', posList[0]));
+      s2.appendChild(el('span', 'wl-sense-cn', cnStr));
+      frag.appendChild(s2);
+    }
+    return frag;
+  }
+  // AI 智能导入：粘贴任意内容 → AI 抽词+直出中文释义 → 批量入生词本；未配置 AI / 本地打开 → 正则抽取降级（不翻译）
+  function importSmartWords() {
+    var raw = refs.importText.value.trim();
+    if (!raw) { showToast('先粘贴点内容（单词 / 句子 / 段落都行）'); return; }
+    var btn = refs.btnSmartImport;
+    var oldHtml = btn ? btn.innerHTML : '';
+    var setBusy = function (busy) {
+      if (!btn) return;
+      btn.disabled = busy;
+      if (busy) btn.textContent = 'AI 提取中…'; else btn.innerHTML = oldHtml;
+    };
+    var importParsed = function (arr) {
+      var added = 0, skipped = 0;
+      arr.forEach(function (item) {
+        var en = String((item && (item.en || item.word)) || '').trim();
+        var cn = String((item && item.cn) || '').trim();
+        if (!en) return;
+        if (Store.findVocab(en)) { skipped++; return; }
+        Store.addVocab(en, cn); added++;
+      });
+      refs.importText.value = '';
+      renderWords();
+      return { added: added, skipped: skipped };
+    };
+    var runFallback = function () {
+      var rows = extractWordsText(raw);
+      if (!rows.length) { showToast('没有识别到有效英文单词'); return; }
+      var r = importParsed(rows.map(function (x) { return { en: x.en, cn: '' }; }));
+      var msg = '已导入 ' + r.added + ' 个（未配置 AI，未翻译）' + (r.skipped ? ('，跳过重复 ' + r.skipped + ' 个') : '') + '。在「配置」页填好 AI 接口后可自动翻译';
+      if (refs.importStatus) refs.importStatus.textContent = msg;
+      showToast('导入完成 ✅');
+    };
+    setBusy(true);
+    var sys = '你是一个英文词库助手。从用户输入（可能是单个单词、一行词表、整段英文、或中英文混排）中，抽取所有值得记忆的英文单词或词组。' +
+      '对每个词给出简洁中文释义（最多列 3 个常见义项，用"；"分隔）。' +
+      '只返回 JSON 数组，格式：[{"en":"algorithm","cn":"算法；运算法则"}, ...]。不要任何解释文字、不要 markdown 围栏。' +
+      '如果输入里没有英文单词，返回空数组 []。';
+    aiChat([{ role: 'system', content: sys }, { role: 'user', content: raw }], { maxTokens: 3000, temperature: 0.3 })
+      .then(function (res) {
+        var arr = parseJsonArray(res.content);
+        if (!arr) throw { error: 'PARSE', msg: 'AI 返回格式异常' };
+        var r = importParsed(arr);
+        var msg = 'AI 导入完成：新增 ' + r.added + ' 个' + (r.skipped ? ('，跳过重复 ' + r.skipped + ' 个') : '');
+        if (refs.importStatus) refs.importStatus.textContent = msg;
+        showToast(msg + ' ✅');
+      })
+      .catch(function (err) {
+        if (err && (err.error === 'NO_CONFIG' || err.error === 'OFFLINE')) { runFallback(); return; }
+        var msg = 'AI 提取失败：' + ((err && err.msg) || '未知错误') + '（可重试）';
+        if (refs.importStatus) refs.importStatus.textContent = msg;
+        showToast(msg);
+      })
+      .then(function () { setBusy(false); });
+  }
+  // AI 补全：给缺失 中文释义/词性/音标 的词批量补（每批 20 个防超 token）；只补缺失字段不覆盖已有；词组（含空格）只补中文
+  function backfillVocabCn() {
+    var isPhrase = function (en) { return /\s/.test(String(en || '').trim()); };
+    var needFill = function (w) {
+      if (isPhrase(w.word)) return !(w.cn && String(w.cn).trim());
+      return !(w.cn && String(w.cn).trim()) || !(w.pos && String(w.pos).trim()) || !(w.phonetic && String(w.phonetic).trim());
+    };
+    var miss = Store.getVocab().filter(needFill);
+    if (!miss.length) { showToast('没有需要补全的词'); return; }
+    var btn = refs.btnVocabBackfill;
+    var oldHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = '补全中…'; }
+    var finish = function () { if (btn) { btn.disabled = false; btn.innerHTML = oldHtml; } };
+    var i = 0;
+    var runBatch = function () {
+      if (i >= miss.length) {
+        var left = Store.getVocab().filter(needFill).length;
+        showToast(left ? ('已补全一批，还剩 ' + left + ' 个未识别，可再点一次') : '全部已补全 ✅');
+        finish(); return;
+      }
+      var chunk = miss.slice(i, i + 20); i += 20;
+      var enList = chunk.map(function (w) { return w.word; }).join('\n');
+      var sys = '你是英文词库助手。下面每行一个英文单词或词组。请给每个词返回：' +
+        '①简洁中文释义（最多 3 个义项，用";"分隔）；' +
+        '②词性，用标准英文缩写（n./v./adj./adv./prep./conj./pron./num.），多个词性用分号分隔如 n.;v.；' +
+        '③音标，用 IPA 格式，如 /ˈælɡərɪðəm/。' +
+        '对于词组（含空格），只返回中文释义，pos 和 ipa 留空字符串。' +
+        '只返回 JSON 数组：[{"en":"algorithm","cn":"算法；运算法则","pos":"n.","ipa":"/ˈælɡərɪðəm/"}, ...]，顺序与输入一致，不要任何解释文字、不要 markdown 围栏。';
+      aiChat([{ role: 'system', content: sys }, { role: 'user', content: enList }], { maxTokens: 3000, temperature: 0.3 })
+        .then(function (res) {
+          var arr = parseJsonArray(res.content);
+          if (!arr) throw { error: 'PARSE', msg: 'AI 返回格式异常（已中止，可再点一次重试）' };
+          var map = {};
+          arr.forEach(function (x) { if (x && (x.en || x.word)) map[String(x.en || x.word).toLowerCase()] = x; });
+          chunk.forEach(function (w) {
+            var fresh = Store.findVocab(w.word);
+            if (!fresh) return; // 批次中途被删的词跳过
+            var key = String(fresh.word || '').toLowerCase();
+            var it = map[key] || {};
+            var patch = {};
+            if (!(fresh.cn && String(fresh.cn).trim())) { var cn = String(it.cn || '').trim(); if (cn) patch.cn = cn; }
+            if (!isPhrase(fresh.word)) {
+              if (!(fresh.pos && String(fresh.pos).trim())) { var p = normPos(it.pos); if (p) patch.pos = p; }
+              if (!(fresh.phonetic && String(fresh.phonetic).trim())) { var ipa = String(it.ipa || '').trim(); if (ipa) patch.phonetic = ipa; }
+            }
+            if (patch.cn || patch.pos || patch.phonetic) Store.updateVocab(fresh.id, patch);
+          });
+          renderWords();
+          runBatch();
+        })
+        .catch(function (err) {
+          showToast('补全失败：' + ((err && err.msg) || '未知错误'));
+          finish();
+        });
+    };
+    runBatch();
+  }
+  // 拖 .txt/.md/.csv/.json 进导入框：读入文本并直接解析导入（移植雅思 bindDrop）
+  function bindDropImport() {
+    var zone = refs.importText; if (!zone) return;
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('drag-over'); });
+    });
+    zone.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f) return;
+      if (!/\.(txt|md|csv|json|text)$/i.test(f.name)) { showToast('目前只支持 .txt/.md/.csv/.json 文本文件'); return; }
+      var reader = new FileReader();
+      reader.onload = function () { refs.importText.value = reader.result; applyImport(parseImportText(reader.result)); };
+      reader.onerror = function () { showToast('文件读取失败'); };
+      reader.readAsText(f);
+    });
   }
 
   /* ============ 长难句分析 ============ */
@@ -2729,7 +3145,9 @@
 
 
   /* ============ 词汇模块：生词记录 / 背单词 / 生词复习 ============ */
-  var libFilter = 'all';      // 我的词库筛选：all | vocab | wrong | cat:xxx
+  var libFilter = 'all';      // 我的词库筛选：all | vocab | wrong | due | cat:xxx
+  var libTypeFilter = 'all';  // 词型筛选：all | word | phrase（v20260904a 移植雅思）
+  var libLevelFilter = 'all'; // 等级筛选：all | '0'..'7'（v20260904a 移植雅思）
   var pendingWord = null;     // 查词并释义后暂存待存入生词本的单词
   var vocabMigratedOnce = false; // 一次性迁移旧 box→level 字段
   function readVocabExtra() {
@@ -2832,23 +3250,27 @@
     return Math.max(1, val);
   }
   // 动态干扰项：同/相邻 level 优先（移植自雅思 genDistractors，适配 word/cn）
-  function genVocabDistractors(correct, allWords) {
+  // v20260904a：尊重设置 optCount（干扰项 = optCount-1）；单词/词组按含空格判型、不混出（雅思 7ea0a9e 同款）
+  function genVocabDistractors(correct, allWords, optCount) {
+    var need = Math.max(2, ((optCount || 4) | 0) - 1);
     var cWord = String(correct.word || '').toLowerCase();
     var cCn = String(correct.cn || '');
+    var cPhrase = /\s/.test(String(correct.word || '').trim());
     var pool = shuffle((allWords || []).filter(function (w) {
       var e = String(w.word || '').toLowerCase();
       if (e === '' || e === cWord) return false;
       if (cCn && String(w.cn || '') === cCn) return false;
+      if (cPhrase !== /\s/.test(String(w.word || '').trim())) return false;   // 单词与词组不混出
       return true;
     }));
     var similar = pool.filter(function (w) { return Math.abs((w.level || 0) - (correct.level || 0)) <= 1; });
     var uniq = [], seenCn = {};
     var pushIfNew = function (x) { var cn = String(x.cn || ''); if (cn && !seenCn[cn]) { seenCn[cn] = 1; uniq.push(x); } };
-    for (var i = 0; i < similar.length && uniq.length < 2; i++) pushIfNew(similar[i]);
-    for (var j = 0; j < pool.length && uniq.length < 2; j++) pushIfNew(pool[j]);
+    for (var i = 0; i < similar.length && uniq.length < need; i++) pushIfNew(similar[i]);
+    for (var j = 0; j < pool.length && uniq.length < need; j++) pushIfNew(pool[j]);
     var k = 0;
-    while (uniq.length < 3 && k < pool.length) { pushIfNew(pool[k]); k++; }
-    return shuffle([correct].concat(uniq.slice(0, 3)));
+    while (uniq.length < need && k < pool.length) { pushIfNew(pool[k]); k++; }
+    return shuffle([correct].concat(uniq.slice(0, need)));
   }
   // 词库快标（key/hard/master/forgot），移植自雅思 markWord
   function markVocab(word, action) {
@@ -2859,12 +3281,30 @@
     if (action === 'key') w.keyWord = !w.keyWord;
     else if (action === 'hard') w.hardWord = !w.hardWord;
     else if (action === 'master') { w.level = 7; w.next = vocabAddDays(t, 90); w.last = t; w.cleared = true; } // 非破坏：标已掌握→90天后再复习（雅思为删除，考研保留）
-    else if (action === 'forgot') demoteVocabLongTerm(w, t, true);
+    else if (action === 'forgot') { demoteVocabLongTerm(w, t, true); recordVocabWrong(w); } // 记当日错词（对齐雅思 markWord forgot）
     persistVocab(w);
     renderWords();
   }
+  // 等级筛选 chips：按词库实际出现的等级动态生成（移植雅思 initLevelFilter）
+  function renderVocabLevelChips() {
+    var box = refs.vocabLevelChips; if (!box) return;
+    var levels = {};
+    Store.getVocab().forEach(function (v) { levels[String(v.level || 0)] = 1; });
+    var keys = Object.keys(levels).sort(function (a, b) { return (+a) - (+b); });
+    var cur = libLevelFilter;
+    box.innerHTML = '';
+    var mk = function (label, val) {
+      var b = el('button', 'vchip' + (cur === val ? ' active' : ''), label);
+      b.type = 'button';
+      b.addEventListener('click', function () { libLevelFilter = val; renderVocabLevelChips(); renderWords(); });
+      box.appendChild(b);
+    };
+    mk('全部等级', 'all');
+    keys.forEach(function (lv) { mk('Lv ' + lv, lv); });
+  }
   function renderWords() {
     if (!vocabMigratedOnce) { Store.migrateVocab(); vocabMigratedOnce = true; }
+    renderVocabLevelChips();
     var vocab = Store.getVocab();
     var wrong = Store.getWrongWords();
     var items = [];
@@ -2882,6 +3322,19 @@
     if (libFilter.indexOf('cat:') === 0) {
       var cat = libFilter.slice(4);
       items = items.filter(function (it) { return it.kind === 'vocab' && (it.data.category || '其他') === cat; });
+    }
+    // 词型/等级筛选（v20260904a 移植雅思）：激活时只看生词本词项
+    if (libTypeFilter !== 'all' || libLevelFilter !== 'all') {
+      items = items.filter(function (it) { return it.kind === 'vocab'; });
+      if (libTypeFilter !== 'all') {
+        items = items.filter(function (it) {
+          var isPhrase = /\s/.test(String(it.data.word || '').trim());
+          return libTypeFilter === 'phrase' ? isPhrase : !isPhrase;
+        });
+      }
+      if (libLevelFilter !== 'all') {
+        items = items.filter(function (it) { return String(it.data.level || 0) === libLevelFilter; });
+      }
     }
     var q = (refs.vocabSearch && refs.vocabSearch.value || '').trim().toLowerCase();
     if (q) {
@@ -2919,9 +3372,21 @@
     del.addEventListener('click', function () { Store.removeVocab(v.id); renderWords(); showToast('已删除'); });
     top.appendChild(del);
     item.appendChild(top);
-    var wline = v.word + (v.phonetic ? '  ' + v.phonetic : '') + (v.pos ? '  ' + v.pos : '');
+    // 词性/释义分列（v20260904a 移植雅思 formatMean；词组保持整行不拆）
+    var isPhrase = /\s/.test(String(v.word || '').trim());
+    var wline = v.word + (v.phonetic ? '  ' + v.phonetic : '');
     item.appendChild(el('div', 'mistake-content', wline));
-    if (v.cn) item.appendChild(el('div', 'mistake-content vocab-cn', v.cn));
+    if (v.cn) {
+      if (!isPhrase && v.pos) {
+        var meanLine = el('div', 'mistake-content vocab-cn');
+        meanLine.appendChild(formatMean(v.pos, v.cn));
+        item.appendChild(meanLine);
+      } else {
+        item.appendChild(el('div', 'mistake-content vocab-cn', (!isPhrase && v.pos ? v.pos + ' ' : '') + v.cn));
+      }
+    } else if (v.pos && !isPhrase) {
+      item.appendChild(el('div', 'mistake-content vocab-cn', v.pos));
+    }
     if (v.example) item.appendChild(el('div', 'vocab-ex', v.example));
     if (v.note) item.appendChild(el('div', 'vocab-note', v.note));
     var due = (v.next <= Store.todayStr());
@@ -3506,143 +3971,118 @@
     });
   }
 
-  function setReviewMode(mode) {
-    reviewMode = mode;
-    if (refs.reviewBox) refs.reviewBox.style.display = mode === 'review' ? '' : 'none';
-    if (refs.practiceBox) refs.practiceBox.style.display = mode === 'practice' ? '' : 'none';
-    if (refs.reviewHint) refs.reviewHint.style.display = mode === 'review' ? '' : 'none';
-    if (refs.btnReviewRestart) refs.btnReviewRestart.style.display = mode === 'review' ? '' : 'none';
-    if (refs.btnPracticeRestart) refs.btnPracticeRestart.style.display = mode === 'practice' ? '' : 'none';
-    if (refs.btnPracticeSettings) refs.btnPracticeSettings.style.display = mode === 'practice' ? '' : 'none';
-    document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-mode') === mode); });
-    if (mode === 'review') { if (vocabSess) { renderReview(); } else { startReview(); } }
-    else { if (!practiceSession) startPractice(); }
+  /* ============ 背单词引擎（雅思 practice.js v5 全流程对齐 v20260904a）============
+     四选一看词选义 + 短线分散重复 + 答错当场重考 + 当日轮次锁定/刷新恢复
+     + 跨轮去重 + 防死循环 + 完成统计/错词重练 + 自动计时 + TTS + 全屏 + 设置弹窗 */
+  var _speakTimers = [];            // 朗读定时器（集中管理，切题取消排队避免串台）
+
+  /* ---------- 全局练习配置（雅思 practiceCfg 同款 + 考研出题方向扩展） ---------- */
+  var PC_DEFAULTS = {
+    rate: 0.9, repeat: 1, intervalMs: 1800,
+    batchSize: 50,          // 每轮固定题量（白名单 20/50/100/200/-1=全部）
+    shuffle: true,
+    autoNext: true, autoNextDelay: 1000,
+    autoPlay: true,
+    showCn: false,
+    showEn: 0,              // 0=不显示 1=答错时显示 2=始终显示
+    optCount: 4,            // 4 或 6
+    wrongHoldMs: 2500,
+    mode: 'en2cn'           // 考研扩展：en2cn 看词选义 / cn2en 看义选词
+  };
+  function pc() {
+    var raw = Store.getPracticeCfg();
+    var c = {}; var k;
+    for (k in PC_DEFAULTS) { if (PC_DEFAULTS.hasOwnProperty(k)) c[k] = PC_DEFAULTS[k]; }
+    for (k in raw) { if (raw.hasOwnProperty(k) && PC_DEFAULTS.hasOwnProperty(k)) c[k] = raw[k]; }
+    var clampNum = function (v, min, max, def) {
+      var n = (typeof v === 'number' && !isNaN(v)) ? v : (typeof v === 'string' ? parseFloat(v) : NaN);
+      return (isNaN(n) || n < min || n > max) ? def : n;
+    };
+    c.rate = clampNum(c.rate, 0.1, 3, PC_DEFAULTS.rate);
+    c.repeat = Math.round(clampNum(c.repeat, 1, 5, PC_DEFAULTS.repeat));
+    c.intervalMs = clampNum(c.intervalMs, 100, 60000, PC_DEFAULTS.intervalMs);
+    c.batchSize = (typeof c.batchSize === 'number' && !isNaN(c.batchSize)) ? c.batchSize : PC_DEFAULTS.batchSize;
+    if ([20, 50, 100, 200, -1].indexOf(c.batchSize) === -1) c.batchSize = PC_DEFAULTS.batchSize;
+    c.autoNextDelay = clampNum(c.autoNextDelay, 300, 3000, PC_DEFAULTS.autoNextDelay);
+    c.showEn = clampNum(c.showEn, 0, 2, PC_DEFAULTS.showEn);
+    c.optCount = Math.round(clampNum(c.optCount, 2, 10, PC_DEFAULTS.optCount));
+    c.wrongHoldMs = clampNum(c.wrongHoldMs, 1000, 5000, PC_DEFAULTS.wrongHoldMs);
+    c.shuffle = !!c.shuffle; c.autoNext = !!c.autoNext; c.autoPlay = !!c.autoPlay; c.showCn = !!c.showCn;
+    c.mode = (c.mode === 'cn2en') ? 'cn2en' : 'en2cn';
+    return c;
   }
-  function buildPracticePool(scope) {
-    if (scope === 'vocab') return Store.getVocab().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn, category: v.category }; });
-    if (scope === 'wrong') return Store.getWrongWords().filter(function (v) { return v.word && v.cn; }).map(function (v) { return { w: v.word, c: v.cn, category: v.category }; });
-    return DICT.slice().filter(function (d) { return d.w && d.c; }).map(function (d) { return { w: d.w, c: d.c, category: '' }; });
+  function pcSave(obj) { Store.setPracticeCfg(Object.assign(pc(), obj)); }
+
+  /* ---------- 朗读（雅思 speakN/cancelSpeak 同款） ---------- */
+  function cancelSpeak() {
+    (_speakTimers || []).forEach(function (t) { clearTimeout(t); });
+    _speakTimers = [];
+    try { window.speechSynthesis.cancel(); } catch (e) {}
   }
-  function startPractice() {
-    Store.migrateVocab();
-    var ps = Store.getPracticeSettings();
-    var pool = buildPracticePool(ps.scope);
-    if (!pool.length) {
-      practiceSession = null;
-      var hint = ps.scope === 'vocab' ? '生词本为空，先记录几个生词再来练吧' : ps.scope === 'wrong' ? '查词记录为空，练习中答错会自动归档' : '词库为空';
-      refs.practiceBox.innerHTML = '<div class="empty-hint">' + hint + '</div>';
-      return;
-    }
-    shuffle(pool);
-    practiceSession = { items: pool.slice(0, Math.min(ps.count, pool.length)), index: 0, answered: false, mode: ps.mode, autoSave: ps.autoSave, pool: pool };
-    renderPractice();
-  }
-  function renderPractice() {
-    if (!practiceSession) { refs.practiceBox.innerHTML = '<div class="empty-hint">进入本页开始练习</div>'; return; }
-    var s = practiceSession;
-    if (s.index >= s.items.length) {
-      refs.practiceBox.innerHTML = '<div class="review-done"><div class="big">本批练习完成 🎉</div><div class="muted" style="margin-top:8px">共 ' + s.items.length + ' 词，点「换一批」继续</div></div>';
-      return;
-    }
-    var cur = s.items[s.index];
-    var en2cn = s.mode !== 'cn2en';
-    var today = Store.todayStr();
-    var lvOf = (function () { var x = Store.findVocab(cur.w); return x ? (x.level || 0) : 0; })();
-    // 干扰项：优先同/相邻 level（移植自雅思 genVocabDistractors），更准；词库不足时兜底原逻辑
-    var poolAll = Store.getVocab();
-    var correctObj = { word: cur.w, cn: cur.c, level: lvOf };
-    var distractors = (poolAll.length >= 4) ? genVocabDistractors(correctObj, poolAll) : null;
-    var opts = [];
-    if (distractors && distractors.length >= 2) {
-      opts = distractors.map(function (d) { return en2cn ? d.cn : d.word; });
-    } else {
-      var others = s.pool.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
-      shuffle(others);
-      var fillers = DICT.filter(function (d) { return d.w !== cur.w && d.c !== cur.c; });
-      opts.push(en2cn ? cur.c : cur.w);
-      var src = en2cn ? others.map(function (d) { return d.c; }) : others.map(function (d) { return d.w; });
-      var fill = en2cn ? fillers.map(function (d) { return d.c; }) : fillers.map(function (d) { return d.w; });
-      for (var i = 0; i < src.length && opts.length < 4; i++) if (opts.indexOf(src[i]) < 0) opts.push(src[i]);
-      for (var j = 0; j < fill.length && opts.length < 4; j++) if (opts.indexOf(fill[j]) < 0) opts.push(fill[j]);
-    }
-    shuffle(opts);
-    var stem = en2cn ? cur.w : cur.c;
-    var answer = en2cn ? cur.c : cur.w;
-    var catPill = (cur.category && cur.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(cur.category) + '</span>' : '';
-    var lvTxt = '<span class="vocab-cat-pill key-pill" style="margin-left:8px">Lv ' + lvOf + '</span>';
-    var html = '<div class="practice-head">' + catPill + lvTxt + '</div>';
-    // 3D 翻转卡（借鉴 K12 学习台 .word-card：点词翻面看释义；判定后自动翻面）
-    html += '<div class="word-card" id="practice-wordcard" role="button" tabindex="0" aria-label="点击翻面看' + (en2cn ? '释义' : '单词') + '">';
-    html += '<div class="word-card-inner">';
-    html += '<div class="word-card-front"><div class="practice-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div><div class="word-card-hint">点击翻面看' + (en2cn ? '释义' : '单词') + '</div></div>';
-    html += '<div class="word-card-back"><div class="practice-en' + (en2cn ? ' practice-cn' : '') + '">' + escapeHtml(answer) + '</div><div class="word-card-hint">点击翻回</div></div>';
-    html += '</div></div>';
-    html += '<div class="practice-progress">第 ' + (s.index + 1) + ' / ' + s.items.length + ' 个 · ' + (en2cn ? '英选译' : '中选英') + '</div>';
-    html += '<div class="practice-options">';
-    opts.forEach(function (o) {
-      html += '<button class="practice-opt' + (en2cn ? '' : ' practice-opt-en') + '" data-correct="' + (o === answer) + '">' + escapeHtml(o) + '</button>';
-    });
-    html += '</div>';
-    html += '<div class="practice-feedback" id="practice-feedback"></div>';
-    html += '<div class="practice-actions"><button class="btn btn-dontknow" id="practice-dontknow">不认识</button></div>';
-    refs.practiceBox.innerHTML = html;
-    var fb = $('practice-feedback');
-    var wordCard = $('practice-wordcard');
-    if (wordCard) {
-      wordCard.addEventListener('click', function () { wordCard.classList.toggle('flipped'); });
-      wordCard.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); wordCard.classList.toggle('flipped'); } });
-    }
-    refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (s.answered) return;
-        s.answered = true;
-        var correct = btn.getAttribute('data-correct') === 'true';
-        refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (b) {
-          b.disabled = true;
-          if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
-        });
-        if (wordCard) wordCard.classList.add('flipped');
-        if (correct) {
-          btn.classList.add('correct'); fb.textContent = '✅ 答对了'; fb.style.color = '#059669';
-          var vv = Store.findVocab(cur.w);
-          if (vv) { ensureVocabV12(vv); promoteVocabLongTerm(vv, today); persistVocab(vv); }  // 答对→长线升级
-        } else {
-          btn.classList.add('wrong'); fb.textContent = '❌ 正确答案：' + answer; fb.style.color = '#dc2626';
-        }
-        addNextButton();
-      });
-    });
-    $('practice-dontknow').addEventListener('click', function () {
-      if (s.answered) return;
-      s.answered = true;
-      if (s.autoSave) Store.addVocab(cur.w, cur.c);
-      var vv = Store.findVocab(cur.w);
-      if (vv) { ensureVocabV12(vv); demoteVocabLongTerm(vv, today, true); persistVocab(vv); }  // 不认识→降级+明天复习
-      if (wordCard) wordCard.classList.add('flipped');
-      refs.practiceBox.querySelectorAll('.practice-opt').forEach(function (b) {
-        b.disabled = true;
-        if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
-      });
-      fb.textContent = (s.autoSave ? '已收入生词本，正确答案：' : '正确答案：') + answer;
-      fb.style.color = '#C2410C';
-      addNextButton();
-    });
-    function addNextButton() {
-      var act = refs.practiceBox.querySelector('.practice-actions');
-      var next = el('button', 'btn btn-primary', '下一个');
-      next.addEventListener('click', nextPractice);
-      act.appendChild(next);
-    }
-  }
-  function nextPractice() {
-    if (!practiceSession) return;
-    practiceSession.index++;
-    practiceSession.answered = false;
-    renderPractice();
+  function speakN(text) {
+    if (!text || !('speechSynthesis' in window)) return;
+    var c = pc();
+    cancelSpeak();
+    try { window.speechSynthesis.resume(); } catch (e) {}
+    var doSpeak = function () {
+      var n = 0;
+      var run = function () {
+        if (n++ >= c.repeat) return;
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US'; u.rate = c.rate;
+        try { window.speechSynthesis.speak(u); } catch (e) {}
+        _speakTimers.push(setTimeout(run, c.intervalMs));
+      };
+      run();
+    };
+    try {
+      var vs = window.speechSynthesis.getVoices();
+      if (vs && vs.length) doSpeak();
+      else {
+        var done = false;
+        var onV = function () { if (done) return; done = true; try { window.speechSynthesis.removeEventListener('voiceschanged', onV); } catch (e) {} doSpeak(); };
+        window.speechSynthesis.addEventListener('voiceschanged', onV);
+        setTimeout(function () { if (!done && !_speakTimers.length) { done = true; doSpeak(); } }, 1200);
+      }
+    } catch (e) { doSpeak(); }
   }
 
-  /* ============ 记忆曲线复习：雅思 v4.1 会话引擎（队列锁定/刷新恢复/错词重练） ============ */
-  var vocabSess = null;        // 内存会话 {words[],pos,total,passed,wrong,judged,hold{},wrongCount{},isRetry,startedAt}
+  /* ---------- 词性推断（雅思 inferPos/singlePos，选项标签展示用） ---------- */
+  function inferPos(en) {
+    var w = (en || '').toLowerCase();
+    if (/tion$|sion$|ment$|ness$|ity$|ance$|ence$|ist$|er$|or$|dom$|ship$|th$/.test(w)) return 'n.';
+    if (/ly$/.test(w)) return 'adv.';
+    if (/able$|ible$|al$|ive$|ous$|ful$|less$|ic$|ent$|ant$|y$/.test(w)) return 'adj.';
+    if (/ize$|ise$|ate$|ify$|en$/.test(w)) return 'v.';
+    return '';
+  }
+  function singlePos(pos) { return String(pos || '').split(';')[0].trim(); }
+
+  /* ---------- 会话工具 ---------- */
+  function w2k(v) { return String(v && v.word || '').trim().toLowerCase(); }
+  function getSeenTodayIds() {
+    var st = Store.getVocabSeenToday();
+    return (st && st.date === Store.todayStr()) ? (st.words || []) : [];
+  }
+  // 当日会话快照写入（草稿自动存档；错词重练为临时模式不覆盖）
+  function saveVocabDaySession() {
+    if (!vocabSess || vocabSess.isWrongReview) return;
+    var s = Store.getVocabSession();
+    if (!s || s.date !== Store.todayStr()) return;
+    s.passed = (vocabSess.passed || []).slice();
+    s.queueOrder = vocabSess.queue.map(function (v) { return w2k(v); });
+    s.stats = { known: (vocabSess.stats && vocabSess.stats.known) || 0, unknown: (vocabSess.stats && vocabSess.stats.unknown) || 0 };
+    s.total = vocabSess.total || 0;
+    s.initLen = vocabSess.initLen || 0;
+    s.sessionStart = vocabSess.sessionStart || s.sessionStart || Date.now();
+    var cur = vocabSess.queue[vocabSess.pos];
+    s.currentWord = cur ? w2k(cur) : null;
+    s.lastTouch = Date.now();
+    Store.setVocabSession(s);
+  }
+
+  /* ---------- 复习底座（q 版会话引擎保留：短线衰减/优先级排序/当日去重/错词记录） ---------- */
+  var vocabSess = null;        // 内存会话 {mode,queue[],pos,initLen,correct,revealed,answer,wrongList[],stats,counted{},passed[],total,reholdMap{},shortMode{},attempts{},sessionStart,isWrongReview}
   var MAX_ATTEMPT = 15;        // 单词当日最大尝试次数（防死循环，雅思同款）
   function reconcileShortCount(v) {
     // 短线计数衰减：距上次过词 >24h 清零，>4h 减 1（移植自雅思 reconcileShortCount）
@@ -3676,189 +4116,651 @@
     dw[today] = arr;
     Store.setDailyWrong(dw);
   }
-  function persistVocabSession() {
-    if (!vocabSess) { Store.clearVocabSession(); return; }
-    Store.setVocabSession({
-      date: Store.todayStr(),
-      words: vocabSess.words.map(function (v) { return v.word; }),
-      pos: vocabSess.pos || 0, total: vocabSess.total || 0, passed: vocabSess.passed || 0,
-      wrong: vocabSess.wrong || 0, judged: vocabSess.judged || 0,
-      hold: vocabSess.hold || {}, wrongCount: vocabSess.wrongCount || {},
-      isRetry: !!vocabSess.isRetry, startedAt: vocabSess.startedAt || ''
-    });
-  }
+  // 当日待学队列：到期词（先应用逾期降级）按 5 键优先级排序，排除今日任何一轮已出过的词
   function buildReviewQueue(today) {
     var due = Store.getDueVocab(today).map(function (v) {
       ensureVocabV12(v); applyVocabOverdue(v); reconcileShortCount(v); persistVocab(v);
       return v;
     });
-    // 今日已过词不再复活（雅思 wordSeenToday 跨轮去重）
     var st = Store.getVocabSeenToday();
     var seen = (st && st.date === today) ? st.words : [];
     due = due.filter(function (v) { return seen.indexOf(v.id) < 0; });
     due.sort(vocabDueCmp);
     return due;
   }
+
+  /* ---------- 进入学习（打开即按排程出题；雅思 autoStartSeeWord 同款） ---------- */
   function startReview(forceRebuild) {
     Store.migrateVocab();
-    var today = Store.todayStr();
-    if (forceRebuild) {
-      vocabSess = null; Store.clearVocabSession();
-    } else {
-      // 尝试恢复当日会话（刷新/关页后回到原队列原位置）
-      var saved = Store.getVocabSession();
-      if (saved && saved.date === today && Array.isArray(saved.words) && saved.words.length) {
-        var live = [];
-        saved.words.forEach(function (w) { var v = Store.findVocab(w); if (v) { ensureVocabV12(v); live.push(v); } });
-        if (live.length) {
-          vocabSess = {
-            words: live, pos: Number(saved.pos) || 0, total: saved.total || live.length,
-            passed: saved.passed || 0, wrong: saved.wrong || 0, judged: saved.judged || 0,
-            hold: saved.hold || {}, wrongCount: saved.wrongCount || {},
-            isRetry: !!saved.isRetry, startedAt: saved.startedAt || ''
-          };
-          if (vocabSess.pos >= vocabSess.words.length) { vocabSess = null; Store.clearVocabSession(); }
-          else {
-            refs.reviewHint.textContent = '已恢复上次复习进度（第 ' + (vocabSess.pos + 1) + ' / ' + vocabSess.words.length + ' 个）';
-            renderReview(); return;
-          }
-        } else {
-          vocabSess = null; Store.clearVocabSession();
-        }
-      }
-    }
-    var due = buildReviewQueue(today);
-    if (!due.length) {
-      vocabSess = null; Store.clearVocabSession();
-      var seenSt = Store.getVocabSeenToday();
-      var seenTodayCount = (seenSt && seenSt.date === today) ? seenSt.words.length : 0;
-      refs.reviewHint.textContent = seenTodayCount > 0
-        ? '今天没有新的待复习词（今日已过 ' + seenTodayCount + ' 个）～明天再来'
-        : '今天没有待复习的生词～去背单词或记录生词吧';
-      refs.reviewBox.innerHTML = '<div class="review-done"><div class="big">暂无待复习词</div></div>';
+    cancelSpeak();
+    updateVocabStats();
+    var area = $('practice-area'); if (area) area.hidden = false;
+    var prog1 = $('prog-bar-wrap'); if (prog1) prog1.hidden = true;
+    var body = $('practice-body'); if (!body) return;
+    var vocab = Store.getVocab();
+    if (!vocab.length) {
+      body.innerHTML = '<div class="q-word">生词本为空</div><div class="q-cn">切到「生词」查词记录，或用批量导入 / AI 导入加词后再来学习。</div>';
       return;
     }
-    vocabSess = { words: due, pos: 0, total: due.length, passed: 0, wrong: 0, judged: 0, hold: {}, wrongCount: {}, isRetry: false, startedAt: new Date().toISOString() };
-    persistVocabSession();
-    refs.reviewHint.textContent = '今日待复习 ' + due.length + ' 个生词（按到期日 + 错误率优先推送）';
-    renderReview();
+    if (vocab.length < 2) {
+      body.innerHTML = '<div class="q-word">生词本至少需要 2 个词</div><div class="q-cn">「看词选义」需要选项作干扰项，请先再加至少 2 个词。</div>';
+      return;
+    }
+    var today = Store.todayStr();
+    var session = Store.getVocabSession();
+    // 防污染：本机 session 内 planWords 已被标记 passed 的词 ≥95%，视为本轮已结束，强制开新轮
+    //（跨设备同步把本机未背的词也标成已背时，避免一打开就显示 20/20）
+    if (session && session.date === today && Array.isArray(session.planWords) && session.planWords.length > 0 && !session.finished) {
+      var _planSet = {};
+      session.planWords.forEach(function (w) { _planSet[String(w).trim().toLowerCase()] = 1; });
+      var _passedInPlan = (session.passed || []).filter(function (w) { return _planSet[String(w).trim().toLowerCase()]; }).length;
+      if (_passedInPlan / session.planWords.length >= 0.95) { session.finished = true; Store.setVocabSession(session); }
+    }
+    // 上一轮已做完 → 强制开新一轮；否则续上当天未完成的轮次（不丢进度）
+    var fresh = !session || session.date !== today || !Array.isArray(session.planWords) || session.planWords.length === 0 || session.finished === true;
+    if (forceRebuild) { session = null; fresh = true; }
+    if (fresh) {
+      var c0 = pc();
+      var all = buildReviewQueue(today);
+      var seen = getSeenTodayIds();
+      // 排除「今天任何一轮已经出过的词」，保证新一轮与上一轮完全不重复
+      var unseen = all.filter(function (v) { return seen.indexOf(v.id) < 0; });
+      if (!unseen.length) {
+        body.innerHTML = '<div class="q-word">今天没有待学习的词</div><div class="q-cn">去「生词」加词，或明天再来。复习会按记忆曲线自动排程。</div>';
+        Store.clearVocabSession(); vocabSess = null;
+        return;
+      }
+      var plan = unseen.slice();
+      if (c0.shuffle) shuffle(plan);
+      // 固定题量：题量设置即每轮总题数；buildReviewQueue 已按复习优先级排序，直接截断
+      if (c0.batchSize > 0 && plan.length > c0.batchSize) plan = plan.slice(0, c0.batchSize);
+      plan.forEach(function (v) { markVocabSeenToday(v); });   // 记录本轮已学词，下一轮不再重复
+      session = {
+        date: today,
+        planWords: plan.map(function (v) { return w2k(v); }),
+        passed: [],
+        queueOrder: plan.map(function (v) { return w2k(v); }),
+        currentWord: null,
+        stats: { known: 0, unknown: 0 },
+        total: 0, initLen: plan.length,
+        finished: false,
+        lastTouch: Date.now(),
+        sessionStart: Date.now()
+      };
+      Store.setVocabSession(session);
+    }
+    // 题量收归：设置题量小于已锁定轮次词数时，截断到设定题量（保留已过的词，绝不丢进度）
+    {
+      var _c = pc();
+      var _cap = (_c.batchSize > 0) ? _c.batchSize : session.planWords.length;
+      if (session.planWords.length > _cap) {
+        var _passedSet = {};
+        (session.passed || []).forEach(function (w) { _passedSet[w] = 1; });
+        var _capEff = Math.max(_cap, Object.keys(_passedSet).length);
+        var _order = (session.queueOrder && session.queueOrder.length) ? session.queueOrder : session.planWords;
+        var _kept = _order.filter(function (w) { return _passedSet[w]; });
+        var _rest = _order.filter(function (w) { return !_passedSet[w]; });
+        var _newPlan = _kept.concat(_rest).slice(0, _capEff);
+        session.planWords = _newPlan; session.queueOrder = _newPlan;
+        Store.setVocabSession(session);
+      }
+    }
+    // 重建内存会话：planWords 中未 passed、且仍在词库的，按 queueOrder 顺序
+    var s = session;
+    var passedInPlan = (s.passed || []).filter(function (w) { return (s.planWords || []).indexOf(w) >= 0; });
+    vocabSess = {
+      mode: 'study', queue: [], pos: 0, initLen: s.planWords.length,
+      correct: passedInPlan.length, revealed: false, answer: null, wrongList: [],
+      stats: s.stats || { known: 0, unknown: 0 },
+      counted: {}, passed: passedInPlan.slice(), total: passedInPlan.length,
+      reholdMap: {}, shortMode: {}, attempts: {},
+      sessionStart: s.sessionStart || Date.now(), isWrongReview: false
+    };
+    var order = (s.queueOrder && s.queueOrder.length) ? s.queueOrder : s.planWords;
+    vocabSess.queue = order.map(function (w) { return Store.findVocab(w); })
+      .filter(function (v) { return v && passedInPlan.indexOf(w2k(v)) < 0; });
+    // 续背恢复：把上次没重复满 3 次的词重新标记为 shortMode，继续分散重复
+    vocabSess.queue.forEach(function (v) { ensureVocabV12(v); if ((v.shortCount || 0) > 0) vocabSess.shortMode[w2k(v)] = 1; });
+    var progWrap = $('prog-bar-wrap'); if (progWrap) progWrap.hidden = false;
+    updateVocabStats();
+    if (!vocabSess.queue.length) {
+      s.finished = true; s.currentWord = null; Store.setVocabSession(s);
+      finishVocabRound();
+      return;
+    }
+    // 刷新恢复：若停留在某个词，则直接渲染该题
+    if (s.currentWord) {
+      var cur0 = Store.findVocab(s.currentWord);
+      if (cur0 && vocabSess.queue.some(function (v) { return w2k(v) === w2k(cur0); })) { renderVocabQuestion(cur0); return; }
+    }
+    vocabNext();
   }
+
+  // 「再来一轮」：清空当日 session 并重建（当天内重新锁定一份词表）
+  function restartToday() {
+    cancelSpeak();
+    Store.clearVocabSession();
+    vocabSess = null;
+    startReview();
+  }
+
+  // 已掌握：当场把该词从生词本删除并移出当日计划（雅思 masterWord 同款）
+  function masterCurrentWord(cur) {
+    if (!vocabSess || !cur) return;
+    var k = w2k(cur);
+    Store.removeVocab(cur.id);
+    vocabSess.queue = vocabSess.queue.filter(function (v) { return w2k(v) !== k; });
+    if (!vocabSess.isWrongReview) {
+      var s = Store.getVocabSession();
+      if (s && s.date === Store.todayStr()) {
+        s.planWords = (s.planWords || []).filter(function (w) { return w !== k; });
+        s.queueOrder = (s.queueOrder || []).filter(function (w) { return w !== k; });
+        s.passed = (s.passed || []).filter(function (w) { return w !== k; });
+        vocabSess.initLen = s.planWords.length;
+        Store.setVocabSession(s);
+      }
+    }
+    showToast('已掌握，已从生词本删除', 'ok');
+    vocabNext();
+  }
+
+  function vocabNext() {
+    if (!vocabSess) return;
+    maybeStartVocabTimer();   // 进练习即自动开启「英语」计时（若尚未在计）；不重复开手动计时
+    cancelSpeak();
+    updateVocabProgBar();
+    if (vocabSess.pos >= vocabSess.queue.length) { finishVocabRound(); return; }
+    var cur = vocabSess.queue[vocabSess.pos];
+    if (!cur || cur.word == null || String(cur.word).trim() === '') {
+      vocabSess.queue.splice(vocabSess.pos, 1);          // 脏词直接剔除，避免死循环
+      saveVocabDaySession();
+      vocabNext();
+      return;
+    }
+    saveVocabDaySession();   // 记录当前词，刷新可恢复
+    renderVocabQuestion(cur);
+  }
+
+  function renderVocabQuestion(cur, isRehold) {
+    if (!vocabSess) return;
+    vocabSess.answer = cur;
+    ensureVocabV12(cur);
+    applyVocabOverdue(cur);     // 复习前应用逾期降级
+    persistVocab(cur);
+    var c = pc();
+    var en2cn = c.mode !== 'cn2en';
+    vocabSess.revealed = false;
+    vocabSess._picked = false;
+    var opts = genVocabDistractors(cur, Store.getVocab(), c.optCount);
+
+    var html = '';
+    // ── 顶部区：上一词回顾 ──
+    var top = '';
+    if (vocabSess.pos > 0 && !isRehold) {
+      var last = vocabSess.queue[vocabSess.pos - 1];
+      if (last) top += '<div class="last-word">' +
+        '<span class="lw-en">← ' + escapeHtml(en2cn ? last.word : (last.cn || last.word)) + '</span>' +
+        (en2cn && last.phonetic ? '<span class="lw-ipa">' + escapeHtml(last.phonetic) + '</span>' : '') +
+        '<span class="lw-cn">' + escapeHtml(en2cn ? (last.cn || '') : last.word) + '</span>' +
+        '</div>';
+    }
+    html += '<div class="practice-topzone">' + top + '</div>';
+
+    // ── 主区域：词+音标+中文（中文答后才显示）+ 已掌握按钮 ──
+    var stem = en2cn ? cur.word : (cur.cn || cur.word);
+    var revealTxt = en2cn ? (cur.cn || '（无释义）') : cur.word;
+    html += '<div class="practice-word-area">' +
+      '<button class="mastered-btn" id="mastered-btn" title="已掌握：从生词本删除该词">已掌握</button>' +
+      '<div class="pw-en' + (en2cn ? '' : ' practice-cn') + '">' + escapeHtml(stem) + '</div>' +
+      (en2cn ? '<div class="pw-ipa">' + (cur.phonetic ? '/ ' + escapeHtml(cur.phonetic) + ' /' : '&nbsp;') + '</div>' : '') +
+      '<div class="pw-cn" id="pw-cn" style="visibility:' + (c.showCn ? 'visible' : 'hidden') + '">' + escapeHtml(revealTxt) + '</div>' +
+      '</div>';
+
+    // ── 选项网格（2 列） ──
+    html += '<div class="opts-grid" id="opts"></div>';
+    html += '<div class="answer-btns"><button class="abtn abtn-unknown" id="unknown-btn">不知道</button></div>';
+
+    // ── 底部喇叭大圆按钮 ──
+    html += '<div class="pw-speaker-wrap"><button class="btn tool-btn" id="vocab-speaker" title="再读一遍">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/></svg></button></div>';
+
+    var body = $('practice-body');
+    body.innerHTML = html;
+    $('opts').innerHTML = opts.map(function (o, i) {
+      var key = w2k(o);
+      if (en2cn) {
+        return '<button class="opt-big" data-key="' + escapeHtml(key) + '" data-idx="' + i + '">' +
+          '<span class="opt-big-tag">' + escapeHtml(singlePos(o.pos) || inferPos(o.word) || '') + '</span>' +
+          '<span class="opt-big-cn">' + escapeHtml(o.cn || '') + '</span>' +
+          '</button>';
+      }
+      return '<button class="opt-big opt-big-en" data-key="' + escapeHtml(key) + '" data-idx="' + i + '">' +
+        '<span class="opt-big-cn">' + escapeHtml(o.word) + '</span>' +
+        '</button>';
+    }).join('');
+    // 选项点击 → 立即判定对错（对=认识，错=不认识）；不另设「认识」按钮
+    body.querySelectorAll('#opts .opt-big').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (vocabSess.revealed || vocabSess._picked) return;
+        vocabSess._picked = true;
+        judgeVocab(cur, b.dataset.key, b.dataset.key === w2k(cur), false);
+      });
+    });
+    var left0 = document.getElementById('unknown-btn');
+    if (left0) left0.onclick = function () { judgeVocab(cur, null, false, true); };
+    var mb = document.getElementById('mastered-btn');
+    if (mb) mb.onclick = function () { masterCurrentWord(cur); };
+    var sp = document.getElementById('vocab-speaker');
+    if (sp) sp.addEventListener('click', function () { speakN(cur.word); });
+    // 看词选义：出题即朗读（读的是题干本身，不剧透）；看义选词：答后才朗读
+    if (en2cn && c.autoPlay) setTimeout(function () { speakN(cur.word); }, 300);
+  }
+
+  /* ---------- 统一处理一次作答（4 选 1 直接判 / 点「不知道」） ----------
+     长线由 promote/demote 排程（Leitner）；短线由 shortCount + gapFor 间隔插回队列实现「分散 3 次成功才放行」。
+     从未答错过的词选对直接过关（v5：一直对的词不重复 3 次）。
+     答错 → 当场重考最多 1 次；重考答对 → shortCount=1 走正常 GAP；重考仍错 → 额外惩罚 + 隔 1 个词插回。 */
+  function judgeVocab(cur, pickedKey, correct, isUnknownBtn) {
+    if (!vocabSess || vocabSess.revealed) return;
+    vocabSess.revealed = true;
+    var c = pc();
+    var en2cn = c.mode !== 'cn2en';
+    // 揭示反馈：对=绿框，错=红框+正确也绿框；词性标签旁显示英文
+    document.querySelectorAll('#practice-body .opt-big').forEach(function (x) {
+      var isCorrect = x.dataset.key === w2k(cur);
+      var isWrong = (!correct && pickedKey != null && x.dataset.key === pickedKey);
+      if (en2cn && (isCorrect || isWrong)) {
+        var tagEl = x.querySelector('.opt-big-tag');
+        if (tagEl) {
+          var pos = tagEl.textContent.trim();
+          tagEl.textContent = pos ? (pos + ' ' + x.dataset.key) : x.dataset.key;
+        }
+      }
+      if (isCorrect) x.classList.add('correct');
+      if (isWrong) x.classList.add('wrong');
+      x.style.pointerEvents = 'none';
+    });
+    // 揭示题干释义（答后才显示）
+    var reveal = document.getElementById('pw-cn');
+    if (reveal) {
+      reveal.textContent = en2cn ? (cur.cn || '（无释义）') : cur.word;
+      reveal.style.visibility = 'visible';
+    }
+    var ub = document.getElementById('unknown-btn');
+    if (ub) { ub.style.pointerEvents = 'none'; ub.disabled = true; }
+    if (!en2cn) speakN(cur.word);   // 中选英：答后才朗读，避免剧透
+
+    var k = w2k(cur);
+    if (!correct) {
+      if (!vocabSess.wrongList) vocabSess.wrongList = [];
+      vocabSess.wrongList.push({ word: cur.word, cn: cur.cn || '', user: isUnknownBtn ? '(完全不知道)' : '(选错)' });
+    }
+    var today = Store.todayStr();
+    var cnTxt = cur.cn ? ' · ' + cur.cn : '';
+    var result;
+
+    if (correct) {
+      if (!vocabSess.counted[k]) { vocabSess.counted[k] = 1; vocabSess.total++; }
+      if (!vocabSess.attempts) vocabSess.attempts = {};
+      vocabSess.attempts[k] = (vocabSess.attempts[k] || 0) + 1;
+      if (vocabSess.stats && vocabSess.stats.known != null) vocabSess.stats.known++;
+      // 从未答错过的词 → 选对直接过（v5 核心变更：一直对的词不重复 3 次）
+      var inShort = vocabSess.shortMode && vocabSess.shortMode[k];
+      if (!inShort) {
+        promoteVocabLongTerm(cur, today);
+        persistVocab(cur);
+        vocabSess.queue.splice(vocabSess.pos, 1);
+        vocabSess.correct++;
+        vocabSess.passed.push(k);
+        result = 'pass';
+      } else {
+        // 答错/不知道过的词 → 短线分散重复：需分散答对 SHORT_PASS(3) 次才过关
+        var n = (cur.shortCount || 0) + 1;
+        if (n >= SHORT_PASS) {
+          promoteVocabLongTerm(cur, today);
+          persistVocab(cur);
+          vocabSess.queue.splice(vocabSess.pos, 1);
+          vocabSess.correct++;
+          vocabSess.passed.push(k);
+          delete vocabSess.shortMode[k];
+          result = 'pass';
+          showToast('✓ 已记住：' + cur.word + cnTxt + '（重复 3 遍过关）', 'ok');
+        } else {
+          cur.shortCount = n;
+          cur.lastShortTouch = new Date().toISOString();
+          persistVocab(cur);
+          vocabSess.reholdMap[k] = 0;             // 已在短线模式，不再当场重考
+          vocabSess.queue.splice(vocabSess.pos, 1);
+          var gap = vocabGapFor(cur, n);          // n=1→隔2、n=2→隔5（难词更密）
+          var pos = Math.min(vocabSess.queue.length, vocabSess.pos + gap);
+          if (pos >= vocabSess.queue.length) vocabSess.queue.push(cur);
+          else vocabSess.queue.splice(pos, 0, cur);
+          result = 'requeue';
+          showToast('✓ ' + cur.word + cnTxt + '（' + n + '/3 记住了，隔' + gap + '个词再来）');
+        }
+      }
+    } else {
+      if (!vocabSess.counted[k]) { vocabSess.counted[k] = 1; vocabSess.total++; }
+      if (!vocabSess.attempts) vocabSess.attempts = {};
+      vocabSess.attempts[k] = (vocabSess.attempts[k] || 0) + 1;
+      if (vocabSess.stats && vocabSess.stats.unknown != null) vocabSess.stats.unknown++;
+      var wasRehold = (vocabSess.reholdMap[k] || 0) >= 1;
+      demoteVocabLongTerm(cur, today, !!isUnknownBtn);
+      recordVocabWrong(cur);
+      persistVocab(cur);
+      if (!vocabSess.shortMode) vocabSess.shortMode = {};
+      vocabSess.shortMode[k] = 1;                 // 标记：该词进入短线重复模式
+      if (wasRehold) {
+        // 重考仍错 → 额外记一次错误，插回到「隔 1 个词」的位置，不再当场重考
+        cur.errTotal = (cur.errTotal || 0) + 1;
+        persistVocab(cur);
+        vocabSess.reholdMap[k] = 0;
+        vocabSess.queue.splice(vocabSess.pos, 1);
+        var pos2 = Math.min(vocabSess.queue.length, vocabSess.pos + 1);
+        if (pos2 >= vocabSess.queue.length) vocabSess.queue.push(cur);
+        else vocabSess.queue.splice(pos2, 0, cur);
+        result = 'requeue';
+        showToast('✗ 还是没记住：' + cur.word + cnTxt + '（明天 + 隔 1 个词再来）', 'warn');
+      } else {
+        // 第一次答错 → 展示答案后当场重考同一词（选项重新打乱）
+        vocabSess.reholdMap[k] = 1;
+        result = 'rehold';
+        showToast('✗ 答错：' + cur.word + cnTxt + '（看完答案，马上再考你一次）', 'warn');
+      }
+    }
+
+    // 死循环防护：同一词本轮作答次数过多 → 强制移出队列（保持降级状态，明天再来）
+    if (result !== 'pass' && (vocabSess.attempts[k] || 0) >= MAX_ATTEMPT) {
+      var at = vocabSess.queue.indexOf(cur);
+      if (at >= 0) vocabSess.queue.splice(at, 1);
+      vocabSess.reholdMap[k] = 0;
+      if (vocabSess.shortMode) delete vocabSess.shortMode[k];
+      cur.shortCount = 0;
+      persistVocab(cur);
+      if (!vocabSess.wrongList) vocabSess.wrongList = [];
+      if (!vocabSess.wrongList.some(function (x) { return w2k(x) === k; })) {
+        vocabSess.wrongList.push({ word: cur.word, cn: cur.cn || '', user: '(本轮放弃)' });
+      }
+      result = 'requeue';
+      showToast('⏸ ' + cur.word + ' 本轮先放着，明天再来', 'info');
+    }
+
+    updateVocabProgBar();
+    updateVocabStats();
+    saveVocabDaySession();   // 每次作答后持久化进度（草稿自动存档）
+
+    if (result === 'rehold') {
+      setTimeout(function () { if (vocabSess && vocabSess.revealed) { vocabSess.revealed = false; renderVocabQuestion(cur, true); } }, c.wrongHoldMs);
+    } else {
+      // 注意：cur 已从队列移除并被重新插到 pos 之后，队首已「滑」到 vocabSess.pos，故不递增 pos
+      var delay = correct ? c.autoNextDelay : 1400;
+      setTimeout(function () { if (vocabSess && vocabSess.revealed) vocabNext(); }, delay);
+    }
+  }
+
+  /* ---------- 完成一轮（雅思 finishPractice 同款） ---------- */
+  function formatVocabMs(millis) {
+    var m = Math.floor(millis / 60000);
+    var sec = Math.floor((millis % 60000) / 1000);
+    if (m < 1) return sec + '秒';
+    if (sec === 0) return m + '分钟';
+    return m + '分' + sec + '秒';
+  }
+  function finishVocabRound() {
+    var q = vocabSess;
+    // 本轮「背单词」实际学习时长 = 距上一停留点的增量，只计真实学习、不计轮间空隙
+    var wordMs = 0;
+    if (window.__vocabTimerAuto && window.__vocabSegStart) {
+      wordMs = Math.max(0, Date.now() - window.__vocabSegStart);
+      window.__vocabSegStart = Date.now();
+    }
+    scheduleVocabTimerStop();   // 完成一轮不立刻停止计时：进入 2 分钟宽限
+    var today = Store.todayStr();
+    var judged = q ? (q.total || 0) : 0;
+    var passedN = q ? (q.correct || 0) : 0;
+    var uniqWrong = {};
+    if (q && q.wrongList) q.wrongList.forEach(function (w) { uniqWrong[w2k(w)] = w; });
+    var wrongN = Object.keys(uniqWrong).length;
+    // 累加今日统计：unique 词数覆盖、时长累加、轮次+1
+    var seenSt = Store.getVocabSeenToday();
+    var todayLearned = (seenSt && seenSt.date === today) ? (seenSt.words || []).length : 0;
+    var st = Store.getVocabDayStats();
+    var prev = st[today] || { total: 0, correct: 0, wrong: 0, totalWords: 0, totalMs: 0, sessions: 0 };
+    st[today] = {
+      total: (prev.total || 0) + judged,
+      correct: (prev.correct || 0) + passedN,
+      wrong: (prev.wrong || 0) + wrongN,
+      totalWords: Math.max(0, todayLearned),
+      totalMs: (prev.totalMs || 0) + wordMs,
+      sessions: (prev.sessions || 0) + 1
+    };
+    Store.setVocabDayStats(st);
+    var daySt = st[today];
+    var due = Store.getDueVocab(today).length;
+    var wrong = q ? (q.wrongList || []).filter(function (w) {
+      var first = !uniqWrong[w2k(w)]._c; uniqWrong[w2k(w)]._c = 1; return first;
+    }) : [];
+    var body = $('practice-body'); if (!body) { vocabSess = null; return; }
+    var html = '<div class="q-word">练习完成 🎉</div>' +
+      '<div class="q-done-meta">今日已练 ' + (daySt.totalWords || 0) + ' 个 · 耗时 ' + formatVocabMs(daySt.totalMs || 0) + ' · 剩余待学习 ' + due + ' 个</div>' +
+      '<div class="q-done-meta">今日累计作答 ' + daySt.total + ' 次 · 过关 ' + daySt.correct + ' · 记错 ' + daySt.wrong + '</div>';
+    if (wrong.length) {
+      html += '<div class="q-wrong-card"><h3>没记住的词（' + wrong.length + ' 个）</h3><div>' + wrong.map(function (w) {
+        return '<div class="q-wrong-item"><b>' + escapeHtml(w.word) + '</b>' + (w.cn ? ' <span class="muted">' + escapeHtml(w.cn) + '</span>' : '') + '</div>';
+      }).join('') + '</div></div>';
+    }
+    html += '<div class="q-done-actions">' +
+      (wrong.length ? '<button class="btn" id="btn-wrong-retry">重练错词（' + wrong.length + '）</button>' : '') +
+      '<button class="btn btn-primary" id="btn-round-restart">再来一轮</button></div>';
+    body.innerHTML = html;
+    var progWrap = $('prog-bar-wrap'); if (progWrap) progWrap.hidden = true;
+    updateVocabStats();
+    if (!q || !q.isWrongReview) {
+      var s = Store.getVocabSession();
+      if (s && s.date === today) { s.finished = true; s.currentWord = null; Store.setVocabSession(s); }
+    }
+    vocabSess = null;
+    var rwb = document.getElementById('btn-wrong-retry');
+    if (rwb) rwb.addEventListener('click', function () { startWrongRetry(); });
+    var rb = document.getElementById('btn-round-restart');
+    if (rb) rb.addEventListener('click', restartToday);
+  }
+
+  /* ---------- 错词重练（本轮/当日错词临时队列，不污染正常会话） ---------- */
   function startWrongRetry() {
     var today = Store.todayStr();
     var arr = Store.getDailyWrong()[today] || [];
-    var seen = {}, live = [];
+    var seen = {}; var live = [];
     arr.forEach(function (x) {
-      if (seen[x.word]) return; seen[x.word] = true;
+      if (seen[x.word]) return; seen[x.word] = 1;
       var v = Store.findVocab(x.word);
       if (v) { ensureVocabV12(v); live.push(v); }
     });
     if (!live.length) { showToast('今天暂无错词可重练', 'info'); return; }
+    cancelSpeak();
     shuffle(live);
-    vocabSess = { words: live, pos: 0, total: live.length, passed: 0, wrong: 0, judged: 0, hold: {}, wrongCount: {}, isRetry: true, startedAt: new Date().toISOString() };
-    persistVocabSession();
-    refs.reviewHint.textContent = '错词重练 ' + live.length + ' 个（今天记错的词再来一遍）';
-    renderReview();
-  }
-  function finishReviewSession() {
-    var today = Store.todayStr();
-    var q = vocabSess;
-    var st = Store.getVocabDayStats();
-    var prev = st[today] || { total: 0, correct: 0, wrong: 0 };
-    st[today] = {
-      total: (prev.total || 0) + (q.judged || 0),
-      correct: (prev.correct || 0) + (q.passed || 0),
-      wrong: (prev.wrong || 0) + (q.wrong || 0)
+    vocabSess = {
+      mode: 'study', queue: live.slice(), pos: 0, initLen: live.length,
+      correct: 0, revealed: false, answer: null, wrongList: [],
+      stats: { known: 0, unknown: 0 }, counted: {}, passed: [], total: 0,
+      reholdMap: {}, shortMode: {}, attempts: {},
+      sessionStart: Date.now(), isWrongReview: true
     };
-    Store.setVocabDayStats(st);
-    vocabSess = null;
-    Store.clearVocabSession();
+    var progWrap = $('prog-bar-wrap'); if (progWrap) progWrap.hidden = false;
+    updateVocabStats();
+    updateVocabProgBar();
+    vocabNext();
   }
-  function renderReview() {
-    if (!refs.reviewBox) return;
-    if (!vocabSess) { refs.reviewBox.innerHTML = '<div class="empty-hint">进入本页开始复习</div>'; return; }
-    var q = vocabSess;
-    var today = Store.todayStr();
-    if (q.pos >= q.words.length) {
-      finishReviewSession();
-      var wrongArr = (Store.getDailyWrong()[today] || []);
-      var daySt = Store.getVocabDayStats()[today] || { total: 0, correct: 0, wrong: 0 };
-      var html = '<div class="review-done"><div class="big">' + (q.isRetry ? '错词重练完成 🎉' : '今日复习完成 🎉') + '</div>';
-      html += '<div class="muted" style="margin-top:8px">本轮 ' + (q.judged || 0) + ' 词 · 过关 ' + (q.passed || 0) + ' · 记错 ' + (q.wrong || 0) + '</div>';
-      html += '<div class="muted" style="margin-top:4px">今日累计 ' + daySt.total + ' 次 · 过关 ' + daySt.correct + ' · 记错 ' + daySt.wrong + '</div></div>';
-      if (wrongArr.length) {
-        html += '<div class="practice-actions" style="margin-top:12px"><button class="btn btn-primary" id="btn-wrong-retry">错词重练（' + wrongArr.length + ' 个）</button></div>';
+
+  /* ---------- 背单词自动计时接入「计时」模块（考研单计时器适配） ----------
+     进练习自动开「英语」计时（用户常忘记开计时）；已有任意进行中计时则绝不重复开。
+     完成一轮不立刻停止：2 分钟宽限，期间又开始背单词则保持连续；宽限结束才结算。 */
+  function maybeStartVocabTimer() {
+    if (window.__vocabTimerStopTimer) {
+      clearTimeout(window.__vocabTimerStopTimer);
+      window.__vocabTimerStopTimer = null;
+      window.__vocabSegStart = Date.now();
+    }
+    if (window.__vocabTimerAuto) return;            // 本页已自动开、且仍活跃
+    var t = Store.getTimer();
+    if (t && t.running && t.subjectKey) return;     // 已有手动计时 → 不重复开、不接管
+    startTimerFor('english');                       // 背单词计入英语科目
+    window.__vocabTimerAuto = true;
+    window.__vocabSegStart = Date.now();
+  }
+  function scheduleVocabTimerStop() {
+    if (!window.__vocabTimerAuto) return;
+    if (window.__vocabTimerStopTimer) clearTimeout(window.__vocabTimerStopTimer);
+    window.__vocabTimerStopTimer = setTimeout(function () {
+      window.__vocabTimerStopTimer = null;
+      commitVocabTimer();
+    }, 120000);
+  }
+  function commitVocabTimer() {
+    if (!window.__vocabTimerAuto) return;
+    window.__vocabTimerAuto = false;
+    var t = Store.getTimer();
+    if (t && t.running && t.subjectKey) endTimer();
+  }
+  // 离页兜底：关标签页 / 切走时结算本次计时（防悬挂的进行中计时）
+  if (!window.__vocabTimerLeaveHook) {
+    window.__vocabTimerLeaveHook = true;
+    var _onVocabLeave = function () { try { commitVocabTimer(); } catch (e) {} };
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') _onVocabLeave(); });
+    window.addEventListener('beforeunload', _onVocabLeave);
+  }
+
+  /* ---------- 顶部进度（本轮读到第几个 / 本轮总数） ---------- */
+  function updateVocabStats() {
+    var progress = '0/0';
+    if (vocabSess) {
+      var total = vocabSess.initLen || vocabSess.queue.length || 0;
+      var current = Object.keys(vocabSess.counted || {}).length;
+      if (vocabSess.queue.length > 0) current = Math.min(current + 1, total);
+      progress = current + '/' + total;
+    } else {
+      var s = Store.getVocabSession();
+      var today = Store.todayStr();
+      // 仅「进行中」的当日 session 才当作当前进度（已完成/过期的 session 不再显示，避免重开即显 20/20）
+      if (s && s.date === today && !s.finished) {
+        var t0 = (s.planWords || []).length;
+        var inPlanPassed = (s.passed || []).filter(function (w) { return (s.planWords || []).indexOf(w) >= 0; }).length;
+        progress = Math.min(t0, inPlanPassed) + '/' + t0;
       }
-      refs.reviewBox.innerHTML = html;
-      var retryBtn = $('btn-wrong-retry');
-      if (retryBtn) retryBtn.addEventListener('click', startWrongRetry);
-      return;
     }
-    var v = q.words[q.pos];
-    ensureVocabV12(v);
-    var lvl = v.level || 0;
-    var dueTxt = (v.next <= today) ? '待复习' : ('下次 ' + v.next);
-    var tags = [];
-    if (v.hardWord) tags.push('<span class="vocab-cat-pill hard-pill">难</span>');
-    if (v.keyWord) tags.push('<span class="vocab-cat-pill key-pill">重</span>');
-    var catPill = (v.category && v.category !== '其他') ? '<span class="vocab-cat-pill">' + escapeHtml(v.category) + '</span>' : '';
-    var sc = v.shortCount || 0;
-    var streakHtml = '';
-    if (sc > 0 && sc < SHORT_PASS) {
-      streakHtml = '<div class="streak-bar">已对 <b>' + sc + '</b>/' + SHORT_PASS + ' ' +
-        [0, 1, 2].map(function (i) { return '<span class="sdot' + (i < sc ? ' on' : '') + '"></span>'; }).join('') +
-        ' <span class="streak-tip">（还差 ' + (SHORT_PASS - sc) + ' 次记牢，隔几个词后回考）</span></div>';
-    }
-    var seenSt = Store.getVocabSeenToday();
-    var seenTodayCount = (seenSt && seenSt.date === today) ? seenSt.words.length : 0;
-    var html = '<div class="review-lv">Lv ' + lvl + ' · ' + dueTxt + '</div>' + catPill + tags.join('');
-    html += '<div class="review-word">' + escapeHtml(v.word) + '</div>';
-    html += '<div class="review-cn" id="review-cn" style="visibility:hidden">' + escapeHtml(v.cn || '（无释义）') + '</div>';
-    html += streakHtml;
-    html += '<div class="review-meta-row"><span class="review-stats-chip">第 ' + (q.pos + 1) + ' / ' + q.words.length + '</span><span class="review-stats-chip">今日已过 ' + seenTodayCount + '</span>' + (q.isRetry ? '<span class="review-stats-chip">错词重练</span>' : '') + '</div>';
-    html += '<div class="practice-actions"><button class="btn btn-ghost" id="review-show">显示释义</button></div>';
-    html += '<div class="review-actions" style="margin-top:12px"><button class="btn btn-primary" id="review-know">✅ 认识</button><button class="btn btn-danger" id="review-unknow">❌ 不认识</button></div>';
-    refs.reviewBox.innerHTML = html;
-    $('review-show').addEventListener('click', function () { var c = $('review-cn'); if (c) { c.style.visibility = 'visible'; this.style.display = 'none'; } });
-    function requeueCur(gap) {
-      q.words.splice(q.pos, 1);
-      var pos = Math.min(q.words.length, q.pos + gap);
-      if (pos >= q.words.length) q.words.push(v); else q.words.splice(pos, 0, v);
-    }
-    $('review-know').addEventListener('click', function () {
-      markVocabSeenToday(v);
-      q.judged = (q.judged || 0) + 1;
-      v.shortCount = (v.shortCount || 0) + 1;          // 短线成功 +1
-      v.lastShortTouch = new Date().toISOString();
-      if (v.shortCount >= SHORT_PASS) {
-        promoteVocabLongTerm(v, today);               // 3 次全对→长线升级，移出队列
-        persistVocab(v);
-        q.passed = (q.passed || 0) + 1;
-        q.words.splice(q.pos, 1);
-      } else {
-        persistVocab(v);
-        requeueCur(vocabGapFor(v, v.shortCount));     // 难词走加密 GAP
+    var elc = $('stat-progress'); if (elc) elc.textContent = progress;
+    var bar = $('word-stats'); if (bar) bar.hidden = false;
+  }
+  function updateVocabProgBar() {
+    if (!vocabSess || !vocabSess.initLen) return;
+    var pct = Math.min(100, ((vocabSess.correct || 0) / vocabSess.initLen) * 100);
+    var fill = $('prog-bar-fill'); if (fill) fill.style.width = pct + '%';
+  }
+
+  /* ---------- 全屏沉浸式背单词 ---------- */
+  function setWordFullscreen(on) {
+    if (on) document.body.classList.add('word-fullscreen');
+    else document.body.classList.remove('word-fullscreen');
+    var btn = $('fullscreen-btn');
+    if (btn) btn.textContent = on ? '⤡ 退出' : '⛶ 全屏';
+  }
+  function toggleWordFullscreen() {
+    setWordFullscreen(!document.body.classList.contains('word-fullscreen'));
+  }
+
+  /* ---------- 设置模态弹窗（分组：答题 / 声音 / 显示，雅思 renderCfgModal 同款） ---------- */
+  function renderCfgModal() {
+    var c = pc();
+    var body = document.querySelector('.cfg-modal-body');
+    if (!body) return;
+    var groups = [
+      {
+        name: '答题', items: [
+          { key: 'batchSize', label: '题量', type: 'batch', presets: [{ v: '20', t: '20 题' }, { v: '50', t: '50 题' }, { v: '100', t: '100 题' }, { v: '200', t: '200 题' }, { v: '-1', t: '全部' }] },
+          { key: 'optCount', label: '选项数量', type: 'select', opts: [{ v: '4', t: '4 个' }, { v: '6', t: '6 个' }] },
+          { key: 'mode', label: '出题方向', type: 'select', opts: [{ v: 'en2cn', t: '看词选义' }, { v: 'cn2en', t: '看义选词' }] },
+          { key: 'shuffle', label: '随机乱序', type: 'toggle' },
+          { key: 'wrongHoldMs', label: '答错停留', type: 'range', min: 1000, max: 5000, step: 500, unit: 'ms' },
+          { key: 'autoNext', label: '答对自动下一题', type: 'toggle' },
+          { key: 'autoNextDelay', label: '自动间隔', type: 'range', min: 300, max: 3000, step: 100, unit: 'ms', showIf: 'autoNext' }
+        ]
+      },
+      {
+        name: '声音', items: [
+          { key: 'rate', label: '语速', type: 'range', min: 0.5, max: 1.3, step: 0.05, unit: 'x' },
+          { key: 'repeat', label: '朗读次数', type: 'range', min: 1, max: 5, step: 1, unit: ' 次' },
+          { key: 'intervalMs', label: '朗读间隔', type: 'select', opts: [{ v: '800', t: '0.8s' }, { v: '1200', t: '1.2s' }, { v: '1800', t: '1.8s' }, { v: '2400', t: '2.4s' }, { v: '3200', t: '3.2s' }] },
+          { key: 'autoPlay', label: '自动播下题', type: 'toggle' }
+        ]
+      },
+      {
+        name: '显示', items: [
+          { key: 'showCn', label: '显示释义提示', type: 'toggle' }
+        ]
       }
-      persistVocabSession();
-      renderReview();
+    ];
+    var html = '<div class="cfg-m-cols"><div class="cfg-m-sidebar">';
+    groups.forEach(function (g) { html += '<div class="cfg-m-cat" data-cat="' + g.name + '"><span>' + g.name + '</span></div>'; });
+    html += '</div><div class="cfg-m-main">';
+    groups.forEach(function (g) {
+      html += '<div class="cfg-m-group" data-g="' + g.name + '">';
+      g.items.forEach(function (item) {
+        var val = c[item.key];
+        var hide = item.showIf && !c[item.showIf];
+        html += '<div class="cfg-m-row' + (hide ? ' cfg-m-hidden' : '') + '" data-key="' + item.key + '" data-showif="' + (item.showIf || '') + '">';
+        html += '<div class="cfg-m-label">' + item.label + '</div>';
+        html += '<div class="cfg-m-ctrl">';
+        if (item.type === 'toggle') {
+          html += '<input type="checkbox" ' + (val ? 'checked' : '') + ' class="cfg-toggle" data-key="' + item.key + '"><label></label>';
+        } else if (item.type === 'select') {
+          html += '<select class="cfg-select" data-key="' + item.key + '">';
+          item.opts.forEach(function (o) { html += '<option value="' + o.v + '"' + (String(val) === o.v ? ' selected' : '') + '>' + o.t + '</option>'; });
+          html += '</select>';
+        } else if (item.type === 'range') {
+          html += '<input type="range" class="cfg-range" data-key="' + item.key + '" data-unit="' + escapeHtml(item.unit || '') + '" min="' + item.min + '" max="' + item.max + '" step="' + item.step + '" value="' + val + '">';
+          html += '<span class="cfg-range-val">' + val + (item.unit || '') + '</span>';
+        } else if (item.type === 'batch') {
+          html += '<select class="cfg-batch-select" data-key="' + item.key + '">';
+          (item.presets || []).forEach(function (p) { html += '<option value="' + p.v + '"' + (String(val) === p.v ? ' selected' : '') + '>' + p.t + '</option>'; });
+          html += '</select>';
+        }
+        html += '</div></div>';
+      });
+      html += '</div>';
     });
-    $('review-unknow').addEventListener('click', function () {
-      markVocabSeenToday(v);
-      q.judged = (q.judged || 0) + 1;
-      q.wrong = (q.wrong || 0) + 1;
-      q.wrongCount[v.word] = (q.wrongCount[v.word] || 0) + 1;
-      var firstHold = !q.hold[v.word];
-      q.hold[v.word] = true;
-      demoteVocabLongTerm(v, today, !firstHold);      // 首错正常降级；再错加重惩罚（雅思 rehold）
-      persistVocab(v);
-      recordVocabWrong(v);
-      if (q.wrongCount[v.word] >= MAX_ATTEMPT) {
-        showToast('「' + v.word + '」今天练了 ' + MAX_ATTEMPT + ' 次还没记牢，先跳过，明天再来', 'warn');
-        q.words.splice(q.pos, 1);                     // 防死循环：直接出队（demote 已设明天复习）
-      } else {
-        requeueCur(firstHold ? 1 : vocabGapFor(v, 1)); // 首错隔 1 词回考；再错按 GAP 间隔
-      }
-      persistVocabSession();
-      renderReview();
+    html += '</div></div>';
+    body.innerHTML = html;
+    body.querySelectorAll('.cfg-toggle').forEach(function (elm) {
+      elm.addEventListener('change', function () { pcSave(makeKeyed(elm.dataset.key, elm.checked)); toggleCfgShowIf(); });
+    });
+    body.querySelectorAll('.cfg-select').forEach(function (elm) {
+      elm.addEventListener('change', function () { pcSave(makeKeyed(elm.dataset.key, elm.value)); });
+    });
+    body.querySelectorAll('.cfg-range').forEach(function (elm) {
+      elm.addEventListener('input', function () {
+        var v = parseFloat(elm.value);
+        pcSave(makeKeyed(elm.dataset.key, v));
+        var vs = elm.nextElementSibling; if (vs) vs.textContent = v + (elm.dataset.unit || '');
+      });
+    });
+    body.querySelectorAll('.cfg-batch-select').forEach(function (elm) {
+      elm.addEventListener('change', function () { pcSave(makeKeyed(elm.dataset.key, parseInt(elm.value, 10))); });
+    });
+    body.querySelectorAll('.cfg-m-cat').forEach(function (elm) {
+      elm.addEventListener('click', function () { switchCfgCat(elm.dataset.cat); });
+    });
+    switchCfgCat(groups[0].name);
+  }
+  function makeKeyed(key, val) { var o = {}; o[key] = val; return o; }
+  function switchCfgCat(name) {
+    document.querySelectorAll('.cfg-m-cat').forEach(function (elm) { elm.classList.toggle('active', elm.dataset.cat === name); });
+    document.querySelectorAll('.cfg-m-group').forEach(function (elm) { elm.classList.toggle('active', elm.dataset.g === name); });
+  }
+  function toggleCfgShowIf() {
+    document.querySelectorAll('.cfg-m-row[data-showif]').forEach(function (row) {
+      var depKey = row.dataset.showif;
+      if (!depKey) return;
+      row.classList.toggle('cfg-m-hidden', !pc()[depKey]);
     });
   }
 
@@ -4921,8 +5823,6 @@
       renderData();
       renderMistakeList();
       renderWords();
-      renderPractice();
-      renderReview();
       renderSummary();
       renderHfWords();
       renderWrongBook();
@@ -5015,7 +5915,7 @@
   function renderSubOnDemand(container, sub) {
     if (container === 'vocab') {
       if (sub === 'words') { renderWords(); }
-      else if (sub === 'review') { setReviewMode(reviewMode); }
+      else if (sub === 'review') { startReview(); }
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
       if (sub === 'overview') { renderData(); }
@@ -5248,19 +6148,9 @@
     refs.vocabCount = $('vocab-count');
     refs.vocabList = $('vocab-list');
     refs.vocabSearch = $('vocab-search');
-    refs.practiceBox = $('practice-box');
-    refs.btnPracticeRestart = $('btn-practice-restart');
-    refs.btnPracticeSettings = $('btn-practice-settings');
-    refs.practiceSettings = $('practice-settings');
-    refs.psCount = $('ps-count');
-    refs.psScope = $('ps-scope');
-    refs.psMode = $('ps-mode');
-    refs.psAutoSave = $('ps-autosave');
-    refs.btnPsSave = $('btn-ps-save');
-    refs.btnPsClose = $('btn-ps-close');
-    refs.reviewHint = $('review-hint');
-    refs.reviewBox = $('review-box');
-    refs.btnReviewRestart = $('btn-review-restart');
+    refs.vocabTypeChips = $('vocab-type-chips');
+    refs.vocabLevelChips = $('vocab-level-chips');
+    // （v20260904a 旧练习/复习 refs 已删——新引擎全部经 $() 判空直取，见背单词引擎块）
     refs.navToggle = $('navToggle');
     refs.navBackdrop = $('navBackdrop');
     refs.navCollapse = $('navCollapse');
@@ -5270,6 +6160,8 @@
     refs.btnImportWords = $('btn-import-words');
     refs.importFile = $('import-file');
     refs.importStatus = $('import-status');
+    refs.btnSmartImport = $('btn-smart-import');
+    refs.btnVocabBackfill = $('btn-vocab-backfill');
 
     // 长难句
     refs.sentenceInput = $('sentence-input');
@@ -5469,6 +6361,21 @@
     if ($('btn-plan-today')) $('btn-plan-today').addEventListener('click', function () { planViewDate = Store.todayStr(); renderPlanDaily(); renderPlanHistory(); });
     if ($('btn-plan-daily-add')) $('btn-plan-daily-add').addEventListener('click', onPlanDailyAdd);
     if ($('btn-plan-ai')) $('btn-plan-ai').addEventListener('click', planAiFill);
+    // 每日计划输入框 Ctrl/Cmd+Enter 快捷添加（对齐雅思 planText）
+    var pdText = $('plan-daily-text');
+    if (pdText) pdText.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onPlanDailyAdd(); }
+    });
+    // 多日安排（v20260904a 移植雅思 plans.js）
+    var weekTa = $('week-tasks');
+    if (weekTa) weekTa.value = getWeekTasks();
+    if ($('btn-week-ai')) $('btn-week-ai').addEventListener('click', aiWeekSchedule);
+    if ($('btn-week-noai')) $('btn-week-noai').addEventListener('click', function () {
+      var ta2 = $('week-tasks');
+      var tasks = ta2 ? ta2.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      buildWeekSchedule(tasks);
+      showToast('已按弱项模板生成 ' + (weekSchedule ? weekSchedule.length : 0) + ' 天安排', 'ok');
+    });
 
     // 云同步（手机号账号：注册/登录合一）
     if (refs.btnSyncConfirm) refs.btnSyncConfirm.addEventListener('click', onSyncConfirm);
@@ -5573,37 +6480,31 @@
     });
     refs.btnAiSummarizeWrong = $('btn-ai-summarize-wrong');
     if (refs.btnAiSummarizeWrong) refs.btnAiSummarizeWrong.addEventListener('click', summarizeWrongBook);
-    // 词汇：背单词 / 复习
-    refs.btnPracticeRestart.addEventListener('click', startPractice);
-    refs.btnReviewRestart.addEventListener('click', function () { startReview(true); });
-    // 复习/自测 tab 内的子模式切换
-    document.querySelectorAll('.mode-btn').forEach(function (b) {
-      b.addEventListener('click', function () { setReviewMode(b.getAttribute('data-mode')); });
+    // 词汇：学习引擎（雅思同款——设置弹窗 / 全屏 / 语音解锁）
+    var cfgGear = $('btn-cfg-gear'), cfgModal = $('cfg-modal');
+    if (cfgGear && cfgModal) cfgGear.addEventListener('click', function () { cfgModal.hidden = false; renderCfgModal(); });
+    var cfgClose = $('btn-cfg-close');
+    if (cfgClose && cfgModal) cfgClose.addEventListener('click', function () { cfgModal.hidden = true; });
+    if (cfgModal) cfgModal.addEventListener('click', function (e) { if (e.target === cfgModal) cfgModal.hidden = true; });
+    var fsBtn = $('fullscreen-btn');
+    if (fsBtn) fsBtn.addEventListener('click', toggleWordFullscreen);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && cfgModal && !cfgModal.hidden) cfgModal.hidden = true;
     });
-    // 背单词设置面板
-    function openPracticeSettings() {
-      var ps = Store.getPracticeSettings();
-      refs.psCount.value = ps.count;
-      refs.psScope.value = ps.scope;
-      refs.psMode.value = ps.mode;
-      refs.psAutoSave.checked = ps.autoSave;
-      refs.practiceSettings.hidden = false;
-    }
-    function closePracticeSettings() { refs.practiceSettings.hidden = true; }
-    function savePracticeSettings() {
-      var next = Store.setPracticeSettings({
-        count: Number(refs.psCount.value) || 12,
-        scope: refs.psScope.value,
-        mode: refs.psMode.value,
-        autoSave: refs.psAutoSave.checked
-      });
-      closePracticeSettings();
-      if (typeof showToast === 'function') showToast('已保存练习设置：每批 ' + next.count + ' 词');
-      startPractice();
-    }
-    refs.btnPracticeSettings.addEventListener('click', openPracticeSettings);
-    refs.btnPsSave.addEventListener('click', savePracticeSettings);
-    refs.btnPsClose.addEventListener('click', closePracticeSettings);
+    // 语音解锁（iOS/Safari 需首次用户交互后才允许 TTS；静默发空 utterance 解锁后自移除监听）
+    var _unlockSpeech = function () {
+      try {
+        if ('speechSynthesis' in window) {
+          var u = new SpeechSynthesisUtterance('');
+          window.speechSynthesis.speak(u);
+          window.speechSynthesis.cancel();
+        }
+      } catch (err) {}
+      document.removeEventListener('pointerdown', _unlockSpeech);
+      document.removeEventListener('keydown', _unlockSpeech);
+    };
+    document.addEventListener('pointerdown', _unlockSpeech);
+    document.addEventListener('keydown', _unlockSpeech);
     // 移动端抽屉
     refs.navToggle.addEventListener('click', function () { document.body.classList.toggle('nav-open'); });
     refs.navBackdrop.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
@@ -5639,6 +6540,19 @@
     // 生词批量导入
     refs.btnImportWords.addEventListener('click', onImportWords);
     refs.importFile.addEventListener('change', onImportFile);
+    // AI 导入 / AI 补全 / 词型筛选 chips（v20260904a 移植雅思）
+    if (refs.btnSmartImport) refs.btnSmartImport.addEventListener('click', importSmartWords);
+    if (refs.btnVocabBackfill) refs.btnVocabBackfill.addEventListener('click', backfillVocabCn);
+    if (refs.vocabTypeChips) {
+      Array.prototype.forEach.call(refs.vocabTypeChips.querySelectorAll('.vchip'), function (btn) {
+        btn.addEventListener('click', function () {
+          libTypeFilter = btn.getAttribute('data-type') || 'all';
+          Array.prototype.forEach.call(refs.vocabTypeChips.querySelectorAll('.vchip'), function (b) { b.classList.toggle('active', b === btn); });
+          renderWords();
+        });
+      });
+    }
+    bindDropImport();
     // 长难句分析
     refs.btnAnalyze.addEventListener('click', onAnalyzeSentence);
     refs.btnClearSentence.addEventListener('click', function () { refs.sentenceInput.value = ''; refs.sentenceResult.innerHTML = ''; });

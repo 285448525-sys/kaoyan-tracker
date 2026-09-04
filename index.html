@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903r" />
+  <link rel="stylesheet" href="styles.css?v=20260904a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -521,7 +521,7 @@
 
     <!-- 词汇 -->
     <section id="tab-vocab" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="review">复习自测</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="review">学习</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
       <div id="sub-words" class="sub-panel active">
 <div class="section">
 <div class="card vocab-lookup-card">
@@ -573,8 +573,15 @@
     </div>
     <input type="text" id="vocab-search" class="lib-search" placeholder="搜单词/释义/音标/例句/备注" autocomplete="off" />
   </div>
+  <div class="vchips" id="vocab-type-chips" style="margin-top:var(--sp-2)">
+    <button type="button" class="vchip active" data-type="all">全部词型</button>
+    <button type="button" class="vchip" data-type="word">单词</button>
+    <button type="button" class="vchip" data-type="phrase">词组</button>
+  </div>
+  <div class="vchips" id="vocab-level-chips" style="margin-top:var(--sp-1)"></div>
   <div id="vocab-list" class="mistake-list"></div>
   <div class="btn-row" style="margin-top:10px">
+    <button id="btn-vocab-backfill" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 补全释义</button>
     <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
     <button id="btn-ai-summarize-wrong" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
   </div>
@@ -584,11 +591,12 @@
 <details class="card import-fold">
   <summary class="card-title"><span class="ic-inline" data-icon="import"></span> 批量导入生词</summary>
   <div class="import-body">
-    <textarea id="import-text" rows="4" placeholder="示例：&#10;abandon&#9;放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
+    <textarea id="import-text" rows="4" placeholder="粘贴任意英文内容（段落 / 词表 / 句子），点「AI 智能导入」自动抽词翻译；&#10;或按格式解析导入：&#10;abandon&#9;放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
     <div class="btn-row" style="margin-top:10px">
-      <button id="btn-import-words" class="btn btn-primary">解析并导入</button>
-      <label class="btn btn-ghost" for="import-file">上传 .txt</label>
-      <input type="file" id="import-file" accept=".txt,text/plain" hidden />
+      <button id="btn-smart-import" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 智能导入</button>
+      <button id="btn-import-words" class="btn btn-ghost">解析并导入</button>
+      <label class="btn btn-ghost" for="import-file">上传文件</label>
+      <input type="file" id="import-file" accept=".txt,.md,.csv,.json,text/plain" hidden />
       <span id="import-status" class="import-status"></span>
     </div>
   </div>
@@ -598,58 +606,33 @@
 
 <div id="sub-review" class="sub-panel">
       <div class="section">
-<div class="card">
+<div class="card" id="practice-area">
         <div class="card-head">
-          <h2 class="card-title"><span class="ic-inline" data-icon="refresh"></span> 复习 / 自测</h2>
+          <h2 class="card-title"><span class="ic-inline" data-icon="refresh"></span> 背单词</h2>
           <div class="mode-switch">
-            <button type="button" class="mode-btn active" data-mode="review">记忆曲线复习</button>
-            <button type="button" class="mode-btn" data-mode="practice">测验模式</button>
-            <button type="button" id="btn-practice-settings" class="icon-btn" title="练习设置" aria-label="练习设置">⚙️</button>
+            <button type="button" id="fullscreen-btn" class="icon-btn" title="全屏沉浸式背单词">⛶ 全屏</button>
+            <button type="button" id="btn-cfg-gear" class="icon-btn" title="学习设置" aria-label="学习设置">⚙️</button>
           </div>
         </div>
-        <div id="practice-settings" class="practice-settings" hidden>
-          <div class="field-row">
-            <label>每批题量</label>
-            <input type="number" id="ps-count" min="4" max="50" step="1" value="12">
-            <span class="hint" style="margin:0">每次抽取的词数（4-50）</span>
-          </div>
-          <div class="field-row">
-            <label>出题范围</label>
-            <select id="ps-scope" class="mv-select">
-              <option value="all">全部词库</option>
-              <option value="vocab">仅生词本</option>
-              <option value="wrong">仅查词记录</option>
-            </select>
-            <span class="hint" style="margin:0">从哪个词池抽题</span>
-          </div>
-          <div class="field-row">
-            <label>答题模式</label>
-            <select id="ps-mode" class="mv-select">
-              <option value="en2cn">英选译 · 看英文选中文</option>
-              <option value="cn2en">中选英 · 看中文选英文</option>
-            </select>
-            <span class="hint" style="margin:0">中选英更适合考前自测</span>
-          </div>
-          <div class="field-row">
-            <label>不认识自动</label>
-            <label class="switch"><input type="checkbox" id="ps-autosave" checked><span class="slider"></span></label>
-            <span class="hint" style="margin:0">点「不认识」时自动加入生词本</span>
-          </div>
-          <div class="btn-row" style="margin-top:4px">
-            <button id="btn-ps-save" class="btn btn-primary">保存设置</button>
-            <button id="btn-ps-close" class="btn btn-ghost">收起</button>
-          </div>
+        <div class="practice-headrow">
+          <div id="word-stats" class="word-stats" hidden><span id="stat-progress">0/0</span></div>
+          <div id="prog-bar-wrap" class="prog-bar-wrap" hidden><div class="prog-bar"><i id="prog-bar-fill"></i></div></div>
         </div>
-        <p class="hint" id="review-hint"></p>
-        <div id="review-box" class="review-box"></div>
-        <div id="practice-box" class="practice-box" style="display:none"></div>
-        <div class="btn-row" style="margin-top:14px">
-          <button id="btn-review-restart" class="btn btn-ghost">重新抽取待复习词</button>
-          <button id="btn-practice-restart" class="btn btn-ghost" style="display:none">换一批</button>
-        </div>
+        <div id="practice-body" class="practice-body"></div>
       </div></div>
 
     </div>
+
+<!-- 学习设置弹窗（分组：答题 / 声音 / 显示；v20260904a 移植雅思 renderCfgModal） -->
+<div id="cfg-modal" class="cfg-modal" hidden>
+  <div class="cfg-modal-box">
+    <div class="cfg-modal-head">
+      <h3>学习设置</h3>
+      <button id="btn-cfg-close" class="icon-btn" aria-label="关闭">✕</button>
+    </div>
+    <div class="cfg-modal-body"></div>
+  </div>
+</div>
       <div id="sub-hf" class="sub-panel">    <div class="section">
 <details class="card hfwords-fold">
         <summary class="card-title"><span class="ic-inline" data-icon="book"></span> 考研真题阅读高频词</summary>
@@ -724,6 +707,18 @@
           <div id="plan-history-list" class="plan-history-list"></div>
         </details>
       </div></div>
+
+      <div class="section">
+<div class="card">
+  <h2 class="card-title"><span class="ic-inline" data-icon="calendar"></span> 多日安排</h2>
+  <p class="card-sub" style="margin:0 0 var(--sp-2)">写下接下来几天要做的事（每行一条，支持「政2 / 英1 / 数3 / 408」缩写），AI 分配到具体日期；未配置 AI 则按弱项模板铺开。</p>
+  <textarea id="week-tasks" rows="4" placeholder="例：&#10;政1000题马原错题复盘&#10;英一真题2018阅读&#10;数二第5章习题&#10;408数据结构图论专项&#10;背单词"></textarea>
+  <div class="btn-row" style="margin-top:var(--sp-2)">
+    <button id="btn-week-ai" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 排进日程</button>
+    <button id="btn-week-noai" class="btn btn-ghost">按弱项生成</button>
+  </div>
+  <div id="week-box" class="week-box"></div>
+</div></div>
 
       <div class="section">
 <div class="card">
@@ -1003,14 +998,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903r"></script>
-  <script src="iconset.js?v=20260903r"></script>
-  <script src="words.js?v=20260903r"></script>
-  <script src="store.js?v=20260903r"></script>
-  <script src="charts.js?v=20260903r"></script>
-  <script src="share.js?v=20260903r"></script>
-  <script src="sentences.js?v=20260903r"></script>
-  <script src="app.js?v=20260903r"></script>
-  <script src="workspace.js?v=20260903r"></script>
+  <script src="qrcode.min.js?v=20260904a"></script>
+  <script src="iconset.js?v=20260904a"></script>
+  <script src="words.js?v=20260904a"></script>
+  <script src="store.js?v=20260904a"></script>
+  <script src="charts.js?v=20260904a"></script>
+  <script src="share.js?v=20260904a"></script>
+  <script src="sentences.js?v=20260904a"></script>
+  <script src="app.js?v=20260904a"></script>
+  <script src="workspace.js?v=20260904a"></script>
 </body>
 </html>
