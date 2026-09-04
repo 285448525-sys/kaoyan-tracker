@@ -130,7 +130,7 @@
       var wk = weekRange();
       var days = S.getDays() || {};
       Object.keys(days).forEach(function (ds) {
-        if (ds >= wk[0] && ds <= wk[1]) mins += (S.totalMinutesForDay(ds) || 0);
+        if (ds >= wk[0] && ds <= wk[1]) mins += (S.totalMinutesForDay(days[ds]) || 0);
       });
     }
     setText('#m-stat-week', mins);
