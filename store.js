@@ -738,35 +738,44 @@
       plans: (p.plans && typeof p.plans === 'object') ? p.plans : {},
       mistakes: (p.mistakes && Array.isArray(p.mistakes)) ? p.mistakes : [],
       websites: (p.websites && Array.isArray(p.websites)) ? p.websites : [],
-      vocab: (p.vocab && Array.isArray(p.vocab)) ? p.vocab.map(function (v) {
-        v = v || {};
-        return {
-          id: v.id || ('vb_' + nextSeq()),
-          word: v.word || '',
-          cn: v.cn || '',
-          phonetic: v.phonetic || '',
-          pos: v.pos || '',
-          example: v.example || '',
-          note: v.note || '',
-          category: v.category || '其他',
-          box: v.box || 1,
-          next: v.next || todayStr(),
-          added: v.added || todayStr(),
-          wrong: v.wrong || 0,
-          last: v.last || '',
-          // v1.2 字段（q 版修复：旧导入会丢 SRS 记忆曲线状态）
-          level: (typeof v.level === 'number' && v.level >= 0) ? Math.min(7, v.level) : Math.min(7, Math.max(0, (typeof v.box === 'number' && v.box >= 1 ? v.box - 1 : 0))),
-          errTotal: (typeof v.errTotal === 'number') ? v.errTotal : 0,
-          errStreak: (typeof v.errStreak === 'number') ? v.errStreak : 0,
-          hardWord: v.hardWord === true,
-          okStreak: (typeof v.okStreak === 'number') ? v.okStreak : 0,
-          keyWord: v.keyWord === true,
-          cleared: v.cleared === true,
-          shortCount: (typeof v.shortCount === 'number') ? v.shortCount : 0,
-          lastShortTouch: (typeof v.lastShortTouch === 'string') ? v.lastShortTouch : null,
-          cleanRounds: (typeof v.cleanRounds === 'number') ? v.cleanRounds : 0
-        };
-      }) : [],
+      vocab: (p.vocab && Array.isArray(p.vocab)) ? (function () {
+        // Bug g 修复：导入 JSON 时按词条名去重（trim + 忽略大小写，保留首条），
+        // 防止备份文件里同词多条以不同 id 共存、背词队列里重复出现；word 为空的条目不参与去重
+        var seen = {}, out = [];
+        p.vocab.forEach(function (v) {
+          v = v || {};
+          var normKey = String(v.word || '').trim().toLowerCase();
+          if (normKey && seen[normKey]) return;
+          if (normKey) seen[normKey] = 1;
+          out.push({
+            id: v.id || ('vb_' + nextSeq()),
+            word: v.word || '',
+            cn: v.cn || '',
+            phonetic: v.phonetic || '',
+            pos: v.pos || '',
+            example: v.example || '',
+            note: v.note || '',
+            category: v.category || '其他',
+            box: v.box || 1,
+            next: v.next || todayStr(),
+            added: v.added || todayStr(),
+            wrong: v.wrong || 0,
+            last: v.last || '',
+            // v1.2 字段（q 版修复：旧导入会丢 SRS 记忆曲线状态）
+            level: (typeof v.level === 'number' && v.level >= 0) ? Math.min(7, v.level) : Math.min(7, Math.max(0, (typeof v.box === 'number' && v.box >= 1 ? v.box - 1 : 0))),
+            errTotal: (typeof v.errTotal === 'number') ? v.errTotal : 0,
+            errStreak: (typeof v.errStreak === 'number') ? v.errStreak : 0,
+            hardWord: v.hardWord === true,
+            okStreak: (typeof v.okStreak === 'number') ? v.okStreak : 0,
+            keyWord: v.keyWord === true,
+            cleared: v.cleared === true,
+            shortCount: (typeof v.shortCount === 'number') ? v.shortCount : 0,
+            lastShortTouch: (typeof v.lastShortTouch === 'string') ? v.lastShortTouch : null,
+            cleanRounds: (typeof v.cleanRounds === 'number') ? v.cleanRounds : 0
+          });
+        });
+        return out;
+      })() : [],
       aiConfig: (p.aiConfig && typeof p.aiConfig === 'object') ? { baseUrl: String(p.aiConfig.baseUrl || ''), model: String(p.aiConfig.model || ''), key: String(p.aiConfig.key || '') } : { baseUrl: '', model: '', key: '' },
       visionConfig: (p.visionConfig && typeof p.visionConfig === 'object') ? normalizeVisionConfig(p.visionConfig) : { provider: '', baseUrl: '', model: '', key: '' },
       practiceCfg: (p.practiceCfg && typeof p.practiceCfg === 'object')

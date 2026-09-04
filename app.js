@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260904a';
+  var APP_VERSION = '20260904b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -488,15 +488,6 @@
   }
   function renderTimerMods() { renderSubjectPills(document.getElementById('timer-mods')); }
 
-
-  /* ============ 首页计时卡片（复用四科 pill） + 今日学习记录 ============ */
-  // 首页计时卡片：复用四科 pill，渲染到 #home-timer-rows
-  function renderHomeTimer() {
-    var b = document.getElementById('home-timer-rows');
-    if (b) b.className = 'home-timer-mods';
-    renderSubjectPills(b);
-  }
-
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
@@ -623,34 +614,10 @@
     if (ctaText) ctaText.textContent = (t.running && t.subjectKey) ? '继续学习' : '开始计时';
   }
 
-  function renderHomeQuick() {
-    var box = document.getElementById('home-quick');
-    if (!box) return;
-    box.innerHTML = '';
-    var today = Store.todayStr();
-    var vocabCount = (Store.getVocab() || []).length;
-    var mistakeCount = (Store.getMistakes() || []).length;
-    var plan = Store.getPlan(today) || [];
-    var entries = [
-      { tab: 'vocab', icon: 'vocab', label: '背词', sub: vocabCount ? ('共 ' + vocabCount + ' 词') : '复习生词' },
-      { tab: 'timer', icon: 'timer', label: '计时', sub: '专注训练' },
-      { tab: 'mistakes', icon: 'mistakes', label: '错题本', sub: mistakeCount ? (mistakeCount + ' 道待复盘') : '整理错题' },
-      { tab: 'home', icon: 'check', label: '计划', sub: plan.length ? ('今日 ' + plan.length + ' 项') : '制定计划' }
-    ];
-    entries.forEach(function (e) {
-      var card = el('button', 'quick-entry mod-card', '');
-      card.setAttribute('type', 'button');
-      card.setAttribute('aria-label', e.label);
-      card.innerHTML = '<span class="qe-ic" data-icon="' + e.icon + '"></span>' +
-        '<span class="qe-text"><span class="qe-label">' + escapeHtml(e.label) + '</span>' +
-        '<span class="qe-sub">' + escapeHtml(e.sub) + '</span></span>';
-      card.addEventListener('click', function () { switchTab(e.tab); });
-      box.appendChild(card);
-    });
-    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
-  }
-
   function renderHomeTodo() {
+    // ⚠️ 存量互调标记（本次质量整改未改动）：这里刻意复用 renderPlan() 渲染首页待办列表
+    // （首页待办与计划页共用同一容器渲染逻辑），属唯一一处渲染→渲染调用；
+    // 若未来拆分需先理清 plan 容器复用关系，避免盲改破坏首页待办刷新。
     renderPlan();
     var ds = Store.todayStr();
     var plan = Store.getPlan(ds) || [];
@@ -1566,117 +1533,6 @@
     ctx.fillText('考研学习记录 · ' + (window.location.origin || ''), W / 2, H - 90);
     return canvas;
   }
-  /* ============ A3：基于刷题正确率的薄弱点分析报告 ============ */
-  var WEAK_THRESHOLD = 0.6;   // 正确率 < 60% 视为薄弱
-  var WARN_THRESHOLD = 0.75;  // 60%~75% 视为待加强
-  var MIN_SAMPLES = 3;        // 样本数 < 3 不判定薄弱，避免偶然偏差
-  // 数学分支 → 章节前缀（把薄弱分支映射到具体章节）
-  var MATH_CAT_CHAPTERS = { '高等数学': '高数 ·', '线性代数': '线代 ·', '概率统计': '概率 ·' };
-
-  function renderWeaknessReport() {
-    var box = refs.weaknessReport;
-    if (!box) return;
-    box.innerHTML = '';
-    var mathStats = Store.getMathStats();
-    var csStats = Store.get408Stats();
-    var mathKeys = Object.keys(mathStats);
-    var csKeys = Object.keys(csStats);
-    if (!mathKeys.length && !csKeys.length) {
-      Charts.chartEmptyState(box, { ill: Charts.ILL_WEAK, title: '还没有薄弱分析', hint: '做几道分类选择题，自动算出最该补的章节', ctaLabel: '去刷 5 道题生成薄弱分析', ctaFn: function () { switchTab('cs408'); } });
-      return;
-    }
-    function rateOf(s) { return s.total ? s.correct / s.total : 0; }
-    function statusOf(s) {
-      if (s.total < MIN_SAMPLES) return { cls: 'wk-tip', label: '样本 ' + s.total + ' 题·不足' };
-      var r = rateOf(s);
-      if (r < WEAK_THRESHOLD) return { cls: 'wk-weak', label: '薄弱 ' + Math.round(r * 100) + '%' };
-      if (r < WARN_THRESHOLD) return { cls: 'wk-warn', label: '待加强 ' + Math.round(r * 100) + '%' };
-      return { cls: 'wk-ok', label: '良好 ' + Math.round(r * 100) + '%' };
-    }
-    function catRow(name, s) {
-      var wrap = el('div', 'wk-row');
-      var head = el('div', 'wk-head');
-      head.appendChild(el('span', 'wk-name', name));
-      var st = statusOf(s);
-      head.appendChild(el('span', 'wk-status ' + st.cls, st.label));
-      head.appendChild(el('span', 'wk-total', s.correct + '/' + s.total + ' 题'));
-      wrap.appendChild(head);
-      var barWrap = el('div', 'wk-bar');
-      var fill = el('div', 'wk-fill ' + st.cls);
-      fill.style.width = Math.round(rateOf(s) * 100) + '%';
-      barWrap.appendChild(fill);
-      wrap.appendChild(barWrap);
-      return wrap;
-    }
-    // 数学分支
-    if (mathKeys.length) {
-      box.appendChild(el('div', 'wk-section-title', '📐 数学（按分支）'));
-      mathKeys.forEach(function (k) { box.appendChild(catRow(k, mathStats[k])); });
-    }
-    // 408 四书
-    if (csKeys.length) {
-      box.appendChild(el('div', 'wk-section-title', '💻 408（按四本书）'));
-      csKeys.forEach(function (k) { box.appendChild(catRow(k, csStats[k])); });
-    }
-    // 优先复习清单：合并数学+408，按正确率升序，取薄弱/待加强
-    var all = [];
-    mathKeys.forEach(function (k) { all.push({ name: k, s: mathStats[k] }); });
-    csKeys.forEach(function (k) { all.push({ name: k, s: csStats[k] }); });
-    var weakList = all.filter(function (it) { return it.s.total >= MIN_SAMPLES && rateOf(it.s) < WARN_THRESHOLD; })
-      .sort(function (a, b) { return rateOf(a.s) - rateOf(b.s); });
-    if (weakList.length) {
-      box.appendChild(el('div', 'wk-section-title', '📌 优先复习清单（最弱在前）'));
-      weakList.forEach(function (it) {
-        var li = el('div', 'wk-priority');
-        li.appendChild(el('div', 'wk-pname', it.name + ' · 正确率 ' + Math.round(rateOf(it.s) * 100) + '%（' + it.s.correct + '/' + it.s.total + '）'));
-        var hint;
-        var prefix = MATH_CAT_CHAPTERS[it.name];
-        if (prefix) {
-          var chs = Store.getMathChapters().filter(function (c) { return c.indexOf(prefix) === 0; });
-          hint = chs.length ? ('建议复习章节：' + chs.join('、')) : '（该分支暂无章节数据）';
-        } else {
-          hint = '建议：重做该分类错题与速查卡，针对性补练。';
-        }
-        li.appendChild(el('div', 'wk-chapters', hint));
-        box.appendChild(li);
-      });
-    } else {
-      box.appendChild(el('div', 'wk-note', '🎉 当前各分类正确率均 ≥ 75%，继续保持刷题节奏即可。'));
-    }
-  }
-  function renderGoalProgress() {
-    refs.goalProgress.innerHTML = '';
-    var subs = Store.getSubjects();
-    var exams = Store.getExams();
-    if (!subs.length) { Charts.chartEmptyState(refs.goalProgress, { ill: Charts.ILL_GOAL, title: '还没设目标', hint: '配置考试科目与目标分，随时看差距', ctaLabel: '去设置科目目标', ctaFn: function () { switchTab('settings'); showSub('settings', 'base'); } }); return; }
-    var totalCur = 0;
-    subs.forEach(function (s) {
-      var cur = latestScoreIn(exams, s.key);
-      var tgt = Number(s.target) || 0;
-      var row = el('div', 'goal-row');
-      if (cur != null && tgt > 0 && cur < tgt) row.classList.add('subject-line-miss');
-      row.appendChild(el('div', 'goal-name', s.name));
-      var barWrap = el('div', 'goal-bar');
-      var fill = el('div', 'goal-fill');
-      var pct = (cur != null && tgt > 0) ? Math.min(100, cur / tgt * 100) : 0;
-      fill.style.width = pct + '%'; fill.style.background = s.color;
-      barWrap.appendChild(fill); row.appendChild(barWrap);
-      var status = el('div', 'goal-status');
-      if (cur == null) { status.textContent = '目标 ' + tgt + ' · 未考'; status.className = 'goal-status pending'; }
-      else if (tgt - cur <= 0) { status.textContent = '目标 ' + tgt + ' · 模考 ' + cur + ' · 已达标'; status.className = 'goal-status ok'; }
-      else { status.textContent = '目标 ' + tgt + ' · 模考 ' + cur + ' · 差' + (tgt - cur) + '分'; status.className = 'goal-status gap'; }
-      row.appendChild(status);
-      refs.goalProgress.appendChild(row);
-      if (cur != null) totalCur += cur;
-    });
-    var ttotal = Number(Store.getConfig().targetTotal) || 0;
-    var totalRow = el('div', 'goal-total');
-    var line = '总分目标：' + ttotal;
-    if (totalCur > 0) { var gap = ttotal - totalCur; line += '　当前模考总分：' + totalCur + '　差距：' + gap + (gap <= 0 ? '（已达标）' : ''); }
-    else line += '　（录入模考后显示当前总分）';
-    totalRow.textContent = line;
-    refs.goalProgress.appendChild(totalRow);
-  }
   function renderSubjectStats() {
     var subs = Store.getSubjects();
     var days = Store.getDays();
@@ -1714,17 +1570,6 @@
       card.appendChild(el('div', 'stat-sub', '累计 ' + total + ' 分钟 · ' + daysCount + ' 天 · 日均 ' + avg + ' 分'));
       refs.subjectStats.appendChild(card);
     });
-  }
-
-  /* ============ D3：今日时长饼图包装 ============ */
-  function renderTodayPieCard() {
-    if (!refs.todayPie) return;
-    var subs = Store.getSubjects();
-    var today = Store.getDay(Store.todayStr()) || {};
-    var items = subs.map(function (s) {
-      return { name: s.name, color: s.color, min: (today.durations && today.durations[s.key]) || 0 };
-    }).filter(function (x) { return x.min > 0; });
-    Charts.renderTodayPie(refs.todayPie, items);
   }
 
   /* ============ D3：掌握度雷达图包装 ============ */
@@ -4930,34 +4775,6 @@
     Charts.renderScoreBars(refs.scoreBars, items);
   }
 
-  function renderBadgesCard() {
-    if (!refs.badgesGrid) return;
-    var stats = getStudyStats();
-    var lvl = computeLevel(stats);
-    refs.badgesLevel.innerHTML =
-      '<div class="lv-head"><span class="lv-badge">Lv.' + lvl.level + '</span>' +
-      '<span class="lv-title">' + escapeHtml(lvl.title) + '</span>' +
-      '<span class="lv-sub">累计 ' + Math.floor(stats.hours) + ' 小时 · 连续 ' + stats.streak + ' 天</span></div>' +
-      '<div class="lv-bar"><div class="lv-fill" style="width:' + lvl.pct + '%"></div></div>' +
-      '<div class="lv-tip">再学 ' + (10 - Math.floor(stats.hours) % 10 || 10) + ' 小时升到下一级</div>';
-    var badges = computeBadges(stats);
-    var earned = 0;
-    var html = '';
-    badges.forEach(function (b) {
-      if (b.earned) earned++;
-      var ic = (window.Icon && Icon.paths[b.icon]) ? Icon.svg(b.icon) : escapeHtml(b.icon);
-      html += '<div class="badge-tile' + (b.earned ? ' earned' : '') + '">' +
-        '<div class="badge-icon">' + ic + '</div>' +
-        '<div class="badge-name">' + escapeHtml(b.name) + '</div>' +
-        '<div class="badge-desc">' + escapeHtml(b.desc) + '</div>' +
-        '<div class="badge-prog">' + (b.earned ? '✅ 已达成' : '进度 ' + escapeHtml(b.prog)) + '</div>' +
-        '</div>';
-    });
-    refs.badgesGrid.innerHTML = html;
-    var head = refs.badgesGrid.previousElementSibling;
-    if (head && head.classList.contains('badges-count')) head.textContent = '已点亮 ' + earned + ' / ' + badges.length + ' 枚徽章';
-  }
-
   /* ============ 今日聚合 + 主题 + 键盘快捷键 ============ */
   // YYYY.MM.DD 星期X（如「2026.08.14 星期五」）
   function fmtTodayWithWeekday(dateStr) {
@@ -4974,60 +4791,6 @@
     var el = document.querySelector('.today-stats ' + selector);
     if (!el) return;
     if (Number(val) === 0) el.classList.add('is-zero'); else el.classList.remove('is-zero');
-  }
-
-
-
-  /* ============ 快捷入口网格（方案 29 · Block 5）============ */
-  // 从侧栏 .tab-btn 派生，保证导航文案/图标与侧栏一致；点击直接 switchTab
-  function renderQuickEntries() {
-    var box = document.getElementById('home-quick');
-    if (!box) return;
-    var btns = document.querySelectorAll('#sideNav .tab-btn');
-    box.innerHTML = '';
-    btns.forEach(function (b) {
-      var tab = b.getAttribute('data-tab');
-      var icEl = b.querySelector('.tab-ic');
-      var icon = icEl ? icEl.getAttribute('data-icon') : '';
-      var labelEl = b.querySelector('.tab-label');
-      var label = labelEl ? labelEl.textContent.trim() : (tab || '');
-      var card = el('button', 'quick-entry', '');
-      card.setAttribute('type', 'button');
-      card.setAttribute('aria-label', label);
-      var sub = '';
-      if (tab === 'data') sub = '时长/成绩';
-      else if (tab === 'mistakes') sub = '薄弱复盘';
-      card.innerHTML = '<span class="qe-ic" data-icon="' + icon + '"></span>' +
-        '<span class="qe-text"><span class="qe-label">' + label + '</span>' +
-        (sub ? '<span class="qe-sub">' + sub + '</span>' : '') + '</span>';
-      card.addEventListener('click', function () { switchTab(tab); });
-      box.appendChild(card);
-    });
-    // 政治 / 英语 学科头卡（无独立 panel，挂首页快捷区，与数学/408 对齐）；配色统一走暖橙 4 档刻度
-    [['politics', 'flag', '政治'], ['english', 'book', '英语']].forEach(function (s) {
-      var sb = el('button', 'quick-entry subj-head', '');
-      sb.setAttribute('type', 'button');
-      sb.setAttribute('data-go', s[0]);
-      sb.setAttribute('aria-label', s[2]);
-      sb.style.setProperty('--accent', subjectColorClass(s[0], s[2]));
-      sb.innerHTML = '<span class="subj-ic" data-icon="' + s[1] + '"></span>' +
-        '<span class="subj-meta"><b>' + s[2] + '</b>' +
-        '<i id="home-' + s[0] + '-today">今日 0min</i></span>';
-      sb.addEventListener('click', function () { switchTab('timer'); });
-      box.appendChild(sb);
-    });
-    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
-    renderHomeSubjToday();
-  }
-
-  function renderHomeSubjToday() {
-    ['politics', 'english'].forEach(function (k) {
-      var node = document.getElementById('home-' + k + '-today');
-      if (!node) return;
-      var day = Store.getDay(Store.todayStr()) || { durations: {} };
-      var sec = (day.durations && day.durations[k]) || 0;
-      node.textContent = '今日 ' + fmtMinShort(sec);
-    });
   }
 
   function renderTodayAggregate() {
@@ -5663,9 +5426,9 @@
   }
   function enableAutoSyncAfterLogin(phone) {
     autoSyncEnabled = true;
-    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync', '1'); } catch (e) {}
+    lsSet('kaoyan_tracker_v1:auto_sync', '1');
     lastPushAt = Date.now();
-    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+    lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
     startAutoSyncPolling();
   }
   function localHasData() {
@@ -5700,6 +5463,9 @@
   var autoSyncTimer = null;
   var autoPushTimer = null;
   var isApplyingRemote = false;
+  /* 同步时间戳等附属 key 的容错写入（localStorage 满/隐私模式下静默降级），
+     收敛原先 8 处重复的 try{setItem}catch 样板 */
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function loadAutoSyncPref() {
     try { autoSyncEnabled = localStorage.getItem('kaoyan_tracker_v1:auto_sync') === '1'; } catch (e) { autoSyncEnabled = false; }
     var p = '0';
@@ -5715,7 +5481,7 @@
     var code = (refs.syncCode ? refs.syncCode.value.trim().toUpperCase() : '') || '';
     if (!code) return;
     lastLocalEditAt = Date.now();
-    try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt)); } catch (e) {}
+    lsSet('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt));
     if (autoPushTimer) clearTimeout(autoPushTimer);
     autoPushTimer = setTimeout(function () { doAutoPush(code); }, 2000);
   }
@@ -5728,8 +5494,8 @@
       .then(function () {
         lastPushAt = Date.now();
         lastLocalEditAt = lastPushAt; // 推送成功后本地无未同步改动
-        try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
-        try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt)); } catch (e) {}
+        lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
+        lsSet('kaoyan_tracker_v1:auto_sync_edit_at', String(lastLocalEditAt));
       })
       .catch(function (err) {
         // 409 冲突：云端已被其他设备修改（版本不一致）。征询用户：强制覆盖云端 or 拉取云端覆盖本机
@@ -5745,11 +5511,23 @@
                 isApplyingRemote = false;
                 if (res.version) lastSyncVersion = res.version;
                 lastPushAt = (res.meta && res.meta.updatedAt) ? new Date(res.meta.updatedAt).getTime() : Date.now();
-                try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+                lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
                 if (typeof renderAll === 'function') renderAll();
               }
-            }).catch(function () {});
+            }).catch(function (pullErr) {
+              // Bug b 修复：冲突后改选拉取云端，若拉取也失败不再静默吞掉
+              syncSetStatus('❌ 拉取云端数据失败：' + (pullErr && pullErr.message || pullErr || '网络异常') + '，稍后自动重试', 'error');
+              if (autoPushTimer) clearTimeout(autoPushTimer);
+              autoPushTimer = setTimeout(function () { doAutoPullCheck(); }, 60000);
+            });
           }
+        } else if (!(err && /no sync code/i.test(err.message || ''))) {
+          // Bug b/c 修复：非冲突失败（断网瞬间/服务异常/超时）不再"发出即不管"——
+          // 明确提示 + 60s 后重试；此时 lastLocalEditAt 仍大于 lastPushAt，
+          // doAutoPullCheck 的补传分支（见下）也会兜底补推，本地未同步数据不会丢
+          syncSetStatus('⚠️ 自动同步失败（' + (err && err.message || err || '网络异常') + '），稍后自动重试', 'error');
+          if (autoPushTimer) clearTimeout(autoPushTimer);
+          autoPushTimer = setTimeout(function () { doAutoPush(code); }, 60000);
         }
       });
   }
@@ -5785,7 +5563,7 @@
           var proceed = confirm('云端数据已于 ' + new Date(cloudUpdated).toLocaleString() + ' 更新，但本机也有未保存的改动。\n确定用云端覆盖本机吗？（本机未保存改动将丢失）\n点「取消」保留本机改动、稍后手动同步。');
           if (!proceed) {
             lastPushAt = cloudUpdated; // 标记为已阅，避免每次轮询反复弹窗
-            try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+            lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
             return;
           }
         }
@@ -5794,13 +5572,22 @@
         isApplyingRemote = false;
         if (ok) {
           lastPushAt = cloudUpdated;
-          try { localStorage.setItem('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt)); } catch (e) {}
+          lsSet('kaoyan_tracker_v1:auto_sync_push_at', String(lastPushAt));
           if (typeof renderAll === 'function') renderAll();
         }
       } else if (lastPushAt === 0) {
         doAutoPush(code);
+      } else if (lastLocalEditAt > lastPushAt) {
+        // Bug b 补传：上次推送失败（或编辑后的 2s 防抖推送没成功）时，
+        // lastLocalEditAt > lastPushAt 表示本机仍有未同步改动——趁本轮轮询自动补推；
+        // 推送成功后两值相等（见 doAutoPush 的 then），不会造成循环重推
+        doAutoPush(code);
       }
-    }).catch(function () {});
+    }).catch(function (pullErr) {
+      // Bug b 修复：轮询拉取失败不再完全静默——状态行轻提示（不弹 toast，避免弱网下每 30s 打扰）；
+      // 本机数据不受影响，下一轮轮询自然重试
+      syncSetStatus('⚠️ 云端同步检查失败（' + (pullErr && pullErr.message || pullErr || '网络异常') + '），下轮自动重试', 'error');
+    });
   }
 
   function renderAll() {
@@ -5925,7 +5712,6 @@
       else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
     }
   }
-  function renderDashboardDigest() { renderTodayAggregate(); }
   function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       // 统一走 switchTab，确保地址栏 hash 与底部 tabbar 同步更新
@@ -6531,8 +6317,21 @@
       r.readAsText(f);
     });
     // 清空全部：改用 K12 长按确认（按住进度条满才执行，避免误触）
+    // Bug a 修复：主 key 之外还残留同步附属 key（:auto_sync/:auto_sync_push_at/:auto_sync_edit_at/:last_sync_code/:device_id），
+    // 只删主 key 会让 reload 后自动同步轮询把云端旧数据整包灌回（数据"复活"）——
+    // 故遍历删除所有 kaoyan_tracker_v1* 本机 key（先收集再删，避免遍历时索引错位）；
+    // 云端账号数据保留（重新登录可找回，其他设备不受影响），workspace.js 的 ky_ws_* 独立前缀不受影响。
     if (refs.btnResetAll) bindHoldButton(refs.btnResetAll, function () {
-      localStorage.removeItem('kaoyan_tracker_v1'); location.reload();
+      try {
+        var doomed = [];
+        for (var li = 0; li < localStorage.length; li++) {
+          var lk = localStorage.key(li);
+          if (lk && lk.indexOf('kaoyan_tracker_v1') === 0) doomed.push(lk);
+        }
+        doomed.forEach(function (k) { localStorage.removeItem(k); });
+      } catch (eWipe) {}
+      try { showToast('已清空本机数据（云端备份保留，重新登录可找回）'); } catch (eToast) {}
+      location.reload();
     }, { duration: 900 });
 
     // 侧边栏折叠
