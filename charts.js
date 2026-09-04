@@ -273,12 +273,12 @@
       var val = Math.max(0, Math.min(1, items[k].value || 0));
       dataPts.push((cx + R * val * Math.cos(aaa)).toFixed(2) + ',' + (cy + R * val * Math.sin(aaa)).toFixed(2));
     }
-    svg += '<polygon points="' + dataPts.join(' ') + '" fill="rgba(91,159,201,.25)" stroke="#5B9FC9" stroke-width="2"/>';
+    svg += '<polygon points="' + dataPts.join(' ') + '" fill="rgba(234,88,12,.22)" stroke="#EA580C" stroke-width="2"/>';
     // 数据点
     for (var m = 0; m < n; m++) {
       var a4 = -Math.PI / 2 + m * Math.PI * 2 / n;
       var v4 = Math.max(0, Math.min(1, items[m].value || 0));
-      svg += '<circle cx="' + (cx + R * v4 * Math.cos(a4)).toFixed(2) + '" cy="' + (cy + R * v4 * Math.sin(a4)).toFixed(2) + '" r="4" fill="#5B9FC9"/>';
+      svg += '<circle cx="' + (cx + R * v4 * Math.cos(a4)).toFixed(2) + '" cy="' + (cy + R * v4 * Math.sin(a4)).toFixed(2) + '" r="4" fill="#EA580C"/>';
     }
     // 标签
     for (var p = 0; p < n; p++) {
@@ -299,7 +299,7 @@
   /* ---------- 近 N 天学习得分柱状图（纯 DIV，主题友好） ---------- */
   function scoreColor(s) {
     if (s >= 90) return '#10b981';
-    if (s >= 70) return '#5B9FC9';
+    if (s >= 70) return '#EA580C';
     if (s >= 40) return '#f59e0b';
     return '#94a3b8';
   }

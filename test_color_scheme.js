@@ -25,7 +25,7 @@ window.HTMLCanvasElement.prototype.toDataURL = function () { return 'data:image/
 window.HTMLCanvasElement.prototype.toBlob = function (cb) { if (cb) cb({}); };
 try { window.localStorage.setItem('kaoyan_tour_done', '1'); } catch (e) {}
 
-const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
 let loadErr = null;
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');

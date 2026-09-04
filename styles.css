@@ -279,7 +279,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-row.wrap { margin-top: 14px; }
 .btn-row .btn { flex: 1; min-width: 110px; text-align: center; }
-.mini-btn { background: #eef2f7; border: none; border-radius: var(--radius-sm); padding: 5px 10px; min-height: 44px; font-size: 13px; cursor: pointer; color: var(--ink); touch-action: manipulation; }
+.mini-btn { background: var(--surface-2); border: none; border-radius: var(--radius-sm); padding: 5px 10px; min-height: 44px; font-size: 13px; cursor: pointer; color: var(--ink); touch-action: manipulation; }
 .mini-btn:hover { background: #e2e8f0; }
 
 /* Switch */
@@ -487,7 +487,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .goal { display: grid; gap: var(--sp-3); }
 .goal-row { display: grid; grid-template-columns: 70px 1fr 70px; align-items: center; gap: 10px; }
 .goal-name { font-size: 14px; font-weight: 600; }
-.goal-bar { background: #eef2f7; border-radius: var(--radius-sm); height: 12px; overflow: hidden; }
+.goal-bar { background: var(--surface-2); border-radius: var(--radius-sm); height: 12px; overflow: hidden; }
 .goal-fill { height: 100%; border-radius: var(--radius-sm); transition: width .4s ease; }
 .goal-status { font-size: 12px; text-align: right; font-weight: 600; }
 .goal-status.ok { color: var(--ok); }
@@ -517,7 +517,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 /* Trend */
 .trend-wrap { width: 100%; overflow-x: auto; }
 .trend-svg { width: 100%; height: auto; display: block; }
-.grid-line { stroke: #eef2f7; stroke-width: 1; }
+.grid-line { stroke: #E8E1D4; stroke-width: 1; }
 .axis-label { fill: var(--muted); font-size: 11px; }
 .target-line { stroke: #ef4444; stroke-width: 1.5; stroke-dasharray: 5 4; }
 .target-label { fill: #ef4444; font-size: 11px; font-weight: 600; }
@@ -1188,7 +1188,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   color: var(--accent);
 }
 .subj-head[data-go="politics"] { --accent: #f97316; }
-.subj-head[data-go="english"] { --accent: #3b82f6; }
+.subj-head[data-go="english"] { --accent: #3DA5FF; }
 .subj-head .subj-ic svg { width: 20px; height: 20px; }
 .subj-head .subj-meta { display: flex; flex-direction: column; line-height: 1.25; }
 .subj-head .subj-meta b { font-size: 15px; color: var(--ink); }
@@ -1286,7 +1286,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .mistake-group:first-child .mistake-group-head { margin-top: 0; }
 .subj-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .subj-dot[data-k="math"] { background: var(--c-math); }
-.subj-dot[data-k="cs408"] { background: #7FA8C4; }
+.subj-dot[data-k="cs408"] { background: var(--c-green); }
 .subj-dot[data-k="general"] { background: var(--muted); }
 
 /* AI 整理结果结构化 chip */
@@ -1353,7 +1353,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .wk-status.wk-ok { background: var(--ok); }
 .wk-status.wk-tip { background: var(--muted); }
 .wk-total { font-size: 12px; color: var(--muted); margin-left: auto; }
-.wk-bar { height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+.wk-bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
 .wk-fill { height: 100%; border-radius: 999px; }
 .wk-fill.wk-weak { background: #dc2626; }
 .wk-fill.wk-warn { background: #d97706; }
@@ -1534,7 +1534,7 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 :root[data-theme="dark"] .chapter-item.current { background: var(--surface-2); }
 :root[data-theme="dark"] .chapter-bar,
 :root[data-theme="dark"] .yr-bar { background: #313548; }
-:root[data-theme="dark"] .goal-bar { background: #313548; }
+:root[data-theme="dark"] .goal-bar { background: var(--surface-2); }
 :root[data-theme="dark"] .practice-opt { background: #272a3d; border-color: var(--line); color: var(--ink); }
 :root[data-theme="dark"] .practice-opt.correct { background: #1c3a2e; border-color: var(--ok); color: #6ee7b7; }
 :root[data-theme="dark"] .practice-opt.wrong { background: #3a2226; border-color: var(--danger); color: #fca5a5; }
@@ -1711,7 +1711,7 @@ h3.card-sub { font-size: 15px; font-weight: 700; color: var(--ink); margin: 2px 
 /* ============ 倒计时分阶段（今日聚合卡） ============ */
 .agg-phase { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed var(--line); }
 .phase-badge { font-weight: 800; font-size: 13px; padding: 3px var(--sp-3); border-radius: 999px; color: #fff; }
-.phase-badge.基础 { background: #3b82f6; }
+.phase-badge.基础 { background: #3DA5FF; }
 .phase-badge.强化 { background: #f59e0b; }
 .phase-badge.冲刺 { background: #f43f5e; }
 
@@ -1901,7 +1901,7 @@ input:focus, select:focus, textarea:focus {
 .phase-text b { color: var(--ink); }
 .phase-bar { flex: 1; min-width: 120px; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
 .phase-fill { height: 100%; border-radius: 999px; }
-.phase-fill.基础 { background: #3b82f6; }
+.phase-fill.基础 { background: #3DA5FF; }
 .phase-fill.强化 { background: #f59e0b; }
 .phase-fill.冲刺 { background: #ef4444; }
 
@@ -3502,3 +3502,23 @@ input:focus,select:focus,textarea:focus{
 :root[data-theme="dark"] .plan-edit-input{background:var(--surface-2);color:var(--ink)}
 :root[data-theme="dark"] .hist-plan{background:var(--surface-2)}
 :root[data-theme="dark"] .review-stats-chip{background:rgba(234,88,12,.22);color:#FDBA74}
+
+/* ============================================================
+   ★ v20260903r 进度条统一 Memphis 皮肤
+   （奶油轨道 + 墨线描边 + 硬阴影 + 橙渐变填充）
+   覆盖：目标进度/章节进度/年份进度/薄弱点/今日专注/每日计划/学科hero
+   ============================================================ */
+.goal-bar,.chapter-bar,.yr-bar,.wk-bar,.hhc-bar,.plan-progress,.subject-progress{
+  height:14px;
+  background:var(--surface-2);
+  border:var(--bw-thin) solid var(--line-strong);
+  border-radius:999px;
+  box-shadow:var(--shadow-hard-xs);
+  overflow:hidden;
+}
+.goal-fill,.chapter-fill,.yr-fill,.wk-fill,.hhc-bar>i,.plan-progress>i,.subject-progress-bar{
+  border-radius:999px;
+}
+.hhc-bar>i,.plan-progress>i,.subject-progress-bar{
+  background:linear-gradient(90deg,var(--primary-bright),var(--primary-strong));
+}

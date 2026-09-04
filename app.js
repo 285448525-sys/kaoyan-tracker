@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260903q';
+  var APP_VERSION = '20260903r';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -129,7 +129,7 @@
     { category: '概率统计', q: '掷一枚均匀硬币两次，至少出现一次正面的概率是？', options: ['1/4', '1/2', '3/4', '1'], answer: 2, explain: '总 4 种等可能，仅「反反」无正面，故 3/4。' },
     { category: '概率统计', q: '若 X ~ N(0,1)（标准正态分布），则 E(X) = ？', options: ['0', '1', '-1', '0.5'], answer: 0, explain: '标准正态均值为 0。' }
   ];
-  var GROUP_COLORS = { '高数': '#5B9FC9', '线代': '#10b981', '概率': '#f59e0b', '其他': '#9ca3af' };
+  var GROUP_COLORS = { '高数': '#3DA5FF', '线代': '#10b981', '概率': '#f59e0b', '其他': '#9ca3af' };
 
   /* ============ 408 专业课模块：常量 ============ */
   // 408 计算机学科专业基础全套章节（按四科分组，预填充）
@@ -158,7 +158,7 @@
     '计算机网络 · 传输层',
     '计算机网络 · 应用层'
   ];
-  var CS408_GROUP_COLORS = { '数据结构': '#3b82f6', '计算机组成原理': '#8b5cf6', '操作系统': '#10b981', '计算机网络': '#f59e0b', '其他': '#9ca3af' };
+  var CS408_GROUP_COLORS = { '数据结构': '#3DA5FF', '计算机组成原理': '#8b5cf6', '操作系统': '#10b981', '计算机网络': '#f59e0b', '其他': '#9ca3af' };
   var CS408_MISTAKE_CATS = ['概念不清', '计算错误', '思路错误', '代码实现', '易混淆', '综合大题', '其他'];
   // 408 内置示例选择题
   var CS408_BUILTIN_Q = [
@@ -3624,7 +3624,7 @@
         if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
       });
       fb.textContent = (s.autoSave ? '已收入生词本，正确答案：' : '正确答案：') + answer;
-      fb.style.color = '#5B9FC9';
+      fb.style.color = '#C2410C';
       addNextButton();
     });
     function addNextButton() {

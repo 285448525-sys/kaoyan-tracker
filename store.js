@@ -6,12 +6,12 @@
 
   var COLOR_MAP = {
     politics: '#ef4444',
-    english: '#3b82f6',
+    english: '#3DA5FF',
     math: '#10b981',
     major: '#8b5cf6',
     other: '#f59e0b'
   };
-  var FALLBACK_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+  var FALLBACK_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3DA5FF', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
   /* 数学三套卷种章节模板（按「分组 · 章节名」存储，与现有 parseChapter 一致）。
      数二不含概率统计；数三高数偏经济应用（用「微积分的经济应用」替换空间解析几何）。 */

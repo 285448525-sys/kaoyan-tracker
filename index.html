@@ -30,8 +30,8 @@
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="favicon.svg" />
-  <meta name="theme-color" content="#3E9BE8" />
-  <meta name="theme-color" content="#1F6FB8" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#EA580C" />
+  <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Open Graph / 社交分享卡片（发群邀请时显示预览图与标题） -->
   <meta property="og:type" content="website" />
@@ -46,27 +46,27 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260903q" />
+  <link rel="stylesheet" href="styles.css?v=20260903r" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;background:#F5F9FC;
+    align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
     transition:opacity .4s ease}
   .loader-c.is-hidden{opacity:0;pointer-events:none}
   .wrapper{width:200px;height:60px;position:relative;z-index:1;margin-bottom:26px}
-  .circle{width:20px;height:20px;position:absolute;border-radius:50%;background:#3E9BE8;left:15%;top:60px;transform-origin:50%;animation:lc-ball .5s alternate infinite ease}
+  .circle{width:20px;height:20px;position:absolute;border-radius:50%;background:#EA580C;left:15%;top:60px;transform-origin:50%;animation:lc-ball .5s alternate infinite ease}
   @keyframes lc-ball{0%{top:60px;height:5px;border-radius:50px 50px 25px 25px;transform:scaleX(1.7)}40%{height:20px;border-radius:50%;transform:scaleX(1)}100%{top:0%}}
-  .circle:nth-child(2){left:45%;background:#6FB6EA;animation-delay:.2s}
-  .circle:nth-child(3){left:auto;right:15%;background:#1F6FB8;animation-delay:.3s}
+  .circle:nth-child(2){left:45%;background:#F97316;animation-delay:.2s}
+  .circle:nth-child(3){left:auto;right:15%;background:#C2410C;animation-delay:.3s}
   .shadow{width:20px;height:4px;border-radius:50%;background:rgba(0,0,0,.2);position:absolute;top:62px;transform-origin:50%;z-index:-1;left:15%;filter:blur(1px);animation:lc-shadow .5s alternate infinite ease}
   @keyframes lc-shadow{0%{transform:scaleX(1.5)}40%{transform:scaleX(1);opacity:.7}100%{transform:scaleX(.2);opacity:.4}}
   .shadow:nth-child(4){left:45%;animation-delay:.2s}
   .shadow:nth-child(5){left:auto;right:15%;animation-delay:.3s}
   .loader-c__brand{font-size:20px;font-weight:800;letter-spacing:3px;
-    background:linear-gradient(100deg,#1F6FB2 30%,#A7CEEC 50%,#1F6FB2 70%);
+    background:linear-gradient(100deg,#C2410C 30%,#FF9F45 50%,#C2410C 70%);
     background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
     animation:lc-shine 2.2s linear infinite}
   @keyframes lc-shine{to{background-position:200% center}}
-  .loader-c__tip{font-size:12px;color:#6B7C8C;margin-top:12px;letter-spacing:1px}
+  .loader-c__tip{font-size:12px;color:#8C6D50;margin-top:12px;letter-spacing:1px}
   </style>
 </head>
 <body>
@@ -830,9 +830,9 @@
         <div class="field-row">
           <label>背景配色</label>
           <div class="chip-row" id="color-scheme-group" role="radiogroup" aria-label="背景配色">
-            <button type="button" class="chip" data-scheme="mist" role="radio" aria-checked="true"><span class="scheme-dot" style="background:linear-gradient(135deg,#F5F9FC,#3E9BE8)"></span>清新蓝</button>
+            <button type="button" class="chip" data-scheme="mist" role="radio" aria-checked="true"><span class="scheme-dot" style="background:linear-gradient(135deg,#FCEFD8,#EA580C)"></span>暖橙奶油</button>
           </div>
-          <span class="hint">清新蓝为考研站唯一主色，已锁定；深色模式由主题切换控制。</span>
+          <span class="hint">暖橙奶油为考研站唯一主色，已锁定；深色模式由主题切换控制。</span>
         </div>
       </div></div>
 
@@ -1003,14 +1003,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260903q"></script>
-  <script src="iconset.js?v=20260903q"></script>
-  <script src="words.js?v=20260903q"></script>
-  <script src="store.js?v=20260903q"></script>
-  <script src="charts.js?v=20260903q"></script>
-  <script src="share.js?v=20260903q"></script>
-  <script src="sentences.js?v=20260903q"></script>
-  <script src="app.js?v=20260903q"></script>
-  <script src="workspace.js?v=20260903q"></script>
+  <script src="qrcode.min.js?v=20260903r"></script>
+  <script src="iconset.js?v=20260903r"></script>
+  <script src="words.js?v=20260903r"></script>
+  <script src="store.js?v=20260903r"></script>
+  <script src="charts.js?v=20260903r"></script>
+  <script src="share.js?v=20260903r"></script>
+  <script src="sentences.js?v=20260903r"></script>
+  <script src="app.js?v=20260903r"></script>
+  <script src="workspace.js?v=20260903r"></script>
 </body>
 </html>
