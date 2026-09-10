@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260910a" />
+  <link rel="stylesheet" href="styles.css?v=20260910b" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -763,10 +763,11 @@
     <section id="tab-settings" class="tab-panel">
       <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="base">基础</button><button class="sub-tab-btn" data-sub="help">帮助</button></div>
       <div id="sub-base" class="sub-panel active">
-      <!-- ① 基础设置（首屏唯一主卡） -->
+      <!-- ① 备考核心（必填 · 置顶 · 轻高亮） -->
       <div class="section">
-<div class="card">
-        <h2 class="card-title">基础设置</h2>
+<div class="card core-card">
+        <div class="card-eyebrow">必填 · 驱动首页与计时</div>
+        <h2 class="card-title">备考核心</h2>
         <div class="field-row">
           <label>考研日期 <span class="req">必填</span></label>
           <input type="date" id="exam-date" />
@@ -776,23 +777,15 @@
         </div>
         <div id="toggles" class="toggles"></div>
         <div id="subject-detail" class="subject-detail"></div>
+      </div></div>
+
+      <!-- ② 我的目标（选填） -->
+      <div class="section">
+<div class="card">
+        <h2 class="card-title">我的目标</h2>
         <div class="field-row">
           <label>你的昵称 <span class="opt">选填</span></label>
           <input type="text" id="nickname-input" placeholder="用于打卡卡展示（如：小明同学）" />
-        </div>
-        <div class="field-row">
-          <label>报考专业 <span class="opt">选填</span></label>
-          <select id="major-select">
-            <option value="">请选择 / 自定义</option>
-            <option value="408 计算机学科专业基础">408 计算机学科专业基础</option>
-            <option value="心理学">心理学</option>
-            <option value="教育学">教育学</option>
-            <option value="金融">金融</option>
-            <option value="法律（非法学）">法律（非法学）</option>
-            <option value="新闻与传播">新闻与传播</option>
-            <option value="电子信息">电子信息</option>
-            <option value="其他">其他（手动输入）</option>
-          </select>
         </div>
         <div class="field-row">
           <label>目标总分 <span class="opt">选填</span></label>
@@ -801,13 +794,14 @@
         <div class="field-row">
           <label>目标累计时长(h) <span class="opt">选填</span></label>
           <input type="number" id="goal-hours" min="0" step="10" placeholder="如 700" />
-          <button id="est-by-score" class="btn btn-ghost" type="button" title="按目标分缺口估算所需累计时长">用目标分估算</button>
+          <span class="hint">手动填写你计划累计学习的小时数</span>
         </div>
-        <div class="field-row">
-          <label>经验系数(h/分)</label>
-          <input type="number" id="estimator-k" min="1" step="1" value="6" />
-          <span class="hint">分数缺口每差 1 分约需几小时（可调）</span>
-        </div>
+      </div></div>
+
+      <!-- ③ 外观 -->
+      <div class="section">
+<div class="card">
+        <h2 class="card-title">外观</h2>
         <div class="field-row">
           <label>主题模式</label>
           <div class="theme-switch-wrap">
@@ -822,23 +816,15 @@
             </label>
           </div>
         </div>
-        <div class="field-row">
-          <label>背景配色</label>
-          <div class="chip-row" id="color-scheme-group" role="radiogroup" aria-label="背景配色">
-            <button type="button" class="chip" data-scheme="mist" role="radio" aria-checked="true"><span class="scheme-dot" style="background:linear-gradient(135deg,#FCEFD8,#EA580C)"></span>暖橙奶油</button>
-          </div>
-          <span class="hint">暖橙奶油为考研站唯一主色，已锁定；深色模式由主题切换控制。</span>
-        </div>
       </div></div>
 
 
-      <!-- ② 数据备份（固定第 2 张卡） -->
+      <!-- ④ 数据备份 -->
       <div class="section">
 <div class="card">
         <h2 class="card-title">数据备份</h2>
         <div class="btn-row">
           <button id="btn-export" class="btn btn-ghost">导出 JSON 备份</button>
-          <button id="btn-export-md" class="btn btn-ghost">导出 Markdown 报告</button>
           <label class="btn btn-ghost" for="file-import">导入 JSON 备份</label>
           <input type="file" id="file-import" accept="application/json" hidden />
           <button id="btn-reset-all" class="btn btn-danger hold-btn" type="button">
@@ -966,14 +952,7 @@
         <div id="manual-list" class="manual-list"></div>
       </div></div>
 
-      <div class="section">
-<div id="today-onboarding" class="card onboarding-card" hidden>
-        <h2 class="card-title"><span class="ic-inline" data-icon="rocket"></span> 30 秒快速开始</h2>
-        <div id="onboarding-steps" class="onboarding-steps"></div>
-        <div class="onboarding-foot">
-          <button id="btn-start-tour" class="btn btn-primary"><span class="ic-inline" data-icon="book"></span> 完整功能引导（带你过一遍所有功能）</button>
-        </div>
-      </div></div>
+      <!-- 30 秒快速开始死卡（默认 hidden）已删除 -->
 
 </div>
     </section>
@@ -1003,14 +982,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260910a"></script>
-  <script src="iconset.js?v=20260910a"></script>
-  <script src="words.js?v=20260910a"></script>
-  <script src="store.js?v=20260910a"></script>
-  <script src="charts.js?v=20260910a"></script>
-  <script src="share.js?v=20260910a"></script>
-  <script src="sentences.js?v=20260910a"></script>
-  <script src="app.js?v=20260910a"></script>
-  <script src="workspace.js?v=20260910a"></script>
+  <script src="qrcode.min.js?v=20260910b"></script>
+  <script src="iconset.js?v=20260910b"></script>
+  <script src="words.js?v=20260910b"></script>
+  <script src="store.js?v=20260910b"></script>
+  <script src="charts.js?v=20260910b"></script>
+  <script src="share.js?v=20260910b"></script>
+  <script src="sentences.js?v=20260910b"></script>
+  <script src="app.js?v=20260910b"></script>
+  <script src="workspace.js?v=20260910b"></script>
 </body>
 </html>

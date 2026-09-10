@@ -107,6 +107,17 @@ body {
 .card:hover {
   box-shadow: var(--shadow-hover);
 }
+/* 设置页：备考核心轻高亮（复用 --primary token，不引入新色） */
+.core-card {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, .18), var(--shadow-sm);
+}
+.core-card .card-eyebrow {
+  display: inline-block;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  color: #fff; background: var(--primary);
+  padding: 2px 10px; border-radius: 999px; margin-bottom: 10px;
+}
 /* 可选：轻上移（仅非列表型大卡用 .card--lift） */
 .card--lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
 

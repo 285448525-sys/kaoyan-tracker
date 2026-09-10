@@ -129,7 +129,7 @@ ok(oldRoute('sites', 'settings', 'sites'), 'switchTab("sites") → settings / su
 ok(oldRoute('translate', 'vocab', 'words'), 'switchTab("translate") → vocab / sub-words');
 
 // ---- 9) 内部关键 id 未丢失 ----
-const keepIds = ['math-chapters', 'cs408-practice', 'vocab-list', 'review-box', 'practice-box', 'summary-edit', 'plan-items', 'exam-list', 'exam-name', 'exam-scores', 'day-list', 'curated-sites', 'manual-list', 'mistake-list', 'today-onboarding', 'hf-search', 'manual-date', 'btn-save-exam'];
+const keepIds = ['math-chapters', 'cs408-practice', 'vocab-list', 'review-box', 'practice-box', 'summary-edit', 'plan-items', 'exam-list', 'exam-name', 'exam-scores', 'day-list', 'curated-sites', 'manual-list', 'mistake-list', 'hf-search', 'manual-date', 'btn-save-exam'];
 keepIds.forEach(function (id) { ok(!!document.getElementById(id), '内部 id 保留：#' + id); });
 
 // ---- 10) 模考已拆出到 tab-mock（且不在 data 的 sub-records）----

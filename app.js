@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260910a';
+  var APP_VERSION = '20260910b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -191,13 +191,11 @@
 
   function renderConfig() {
     var cfg = Store.getConfig();
-    refs.majorSelect.value = cfg.major || '';
-    refs.nicknameInput.value = cfg.nickname || '';
-    refs.examDate.value = cfg.examDate || '';
-    refs.targetTotal.value = cfg.targetTotal || '';
-    refs.goalHours.value = cfg.goalHours || '';
-    refs.estimatorK.value = cfg.estimatorK || 6;
-    refs.autoPlan.checked = !!cfg.autoPlan;
+    if (refs.nicknameInput) refs.nicknameInput.value = cfg.nickname || '';
+    if (refs.examDate) refs.examDate.value = cfg.examDate || '';
+    if (refs.targetTotal) refs.targetTotal.value = cfg.targetTotal || '';
+    if (refs.goalHours) refs.goalHours.value = cfg.goalHours || '';
+    if (refs.autoPlan) refs.autoPlan.checked = !!cfg.autoPlan;
 
     refs.toggles.innerHTML = '';
     SUBJECT_PRESETS.forEach(function (p) {
@@ -4920,8 +4918,6 @@
     renderAggSubjectProgress();
     // 今日学习分布卡（截图标配）
     renderTodayDistribution();
-    // H3：快速开始引导卡
-    renderTodayOnboarding();
   }
 
   /* ============ H1：科目进度聚合条（今日页 KPI 卡下方）——用语义色 ============ */
@@ -5001,43 +4997,7 @@
     return (h > 0 ? h + 'h ' : '') + m + 'm';
   }
 
-  /* ============ H3：快速开始引导卡（新用户 4 步引导） ============ */
-  function renderTodayOnboarding() {
-    if (!refs.todayOnboarding || !refs.onboardingSteps) return;
-    var cfg = Store.getConfig();
-    var subs = Store.getSubjects();
-    var plan = Store.getPlan(Store.todayStr()) || [];
-    var today = Store.getDay(Store.todayStr()) || {};
-    var hasMin = Store.totalMinutesForDay(today) > 0;
-
-    var step1Done = !!(cfg.nickname || cfg.examDate || cfg.targetTotal);
-    var step2Done = subs.length > 0;
-    var step3Done = plan.length > 0;
-    var step4Done = hasMin;
-    var allDone = step1Done && step2Done && step3Done && step4Done;
-
-    if (allDone) {
-      // 全部完成时默认隐藏引导卡，但保留在 DOM 中
-      refs.todayOnboarding.hidden = true;
-      return;
-    }
-    refs.todayOnboarding.hidden = false;
-
-    function stepCard(idx, icon, title, sub, done, tabKey) {
-      return '<div class="ob-step' + (done ? ' done' : '') + '" onclick="window.__switchTab(\'' + (tabKey || 'config') + '\')">' +
-               '<div class="ob-step-num">' + (done ? '✓' : idx) + '</div>' +
-               '<div class="ob-step-icon">' + icon + '</div>' +
-               '<div class="ob-step-title">' + title + '</div>' +
-               '<div class="ob-step-sub">' + sub + '</div>' +
-               (idx < 4 ? '<div class="ob-step-arr">›</div>' : '') +
-             '</div>';
-    }
-    refs.onboardingSteps.innerHTML =
-      stepCard(1, '⚙️', '基础配置', '设置昵称·考试日期·目标分', step1Done, 'config') +
-      stepCard(2, '📚', '勾选科目', '勾选你要考的科目和卷种', step2Done, 'config') +
-      stepCard(3, '🧭', '制定计划', '自动或手动安排今日学习计划', step3Done, 'today') +
-      stepCard(4, '⏱️', '开始计时', '按模块计时或手动记录学习', step4Done, 'record');
-  }
+  // [20260910b] 快速开始引导卡（#today-onboarding）已移除，相关函数 / 绑定 / refs 一并清理
 
   /* ============ 说明书模块（UI 散落说明集中处，分组卡片式） ============ */
   var MANUAL_GROUPS = [
@@ -5282,34 +5242,6 @@
       applyTheme();
     });
     updateThemeChips(Store.getTheme());
-  }
-
-  /* 背景配色（低饱和度多套，浅色生效；data-scheme 独立于 data-theme） */
-  function applyColorScheme() {
-    var s = Store.getColorScheme();
-    document.documentElement.setAttribute('data-scheme', s);
-    updateColorSchemeChips(s);
-  }
-  function updateColorSchemeChips(scheme) {
-    var group = document.getElementById('color-scheme-group');
-    if (!group) return;
-    Array.from(group.querySelectorAll('.chip')).forEach(function (chip) {
-      if (chip.getAttribute('data-scheme') === scheme) chip.classList.add('active');
-      else chip.classList.remove('active');
-    });
-  }
-  function initColorSchemeSetting() {
-    var group = document.getElementById('color-scheme-group');
-    if (!group) return;
-    group.addEventListener('click', function (e) {
-      var chip = e.target.closest('.chip');
-      if (!chip) return;
-      var s = chip.getAttribute('data-scheme');
-      if (!s) return;
-      Store.setColorScheme(s);
-      applyColorScheme();
-    });
-    updateColorSchemeChips(Store.getColorScheme());
   }
 
   function initKeyboardShortcuts() {
@@ -5734,7 +5666,7 @@
       else if (sub === 'review') { renderSubjectChapters(); renderPlanItems(); renderSummary(); ensurePlanCarry(); renderPlanDaily(); renderPlanHistory(); }
     } else if (container === 'settings') {
       if (sub === 'base') { renderAiConfig(); renderVisionConfig(); }
-      else if (sub === 'help') { renderHelpManual(); renderTodayOnboarding(); }
+      else if (sub === 'help') { renderHelpManual(); }
     }
   }
   function initTabs() {
@@ -5811,13 +5743,10 @@
     // （避免某个模块渲染异常导致整页导航失效、点不动）
     initTabs();
 
-    refs.majorSelect = $('major-select');
     refs.nicknameInput = $('nickname-input');
     refs.examDate = $('exam-date');
     refs.targetTotal = $('target-total');
     refs.goalHours = $('goal-hours');
-    refs.estimatorK = $('estimator-k');
-    refs.estByScore = $('est-by-score');
     refs.autoPlan = $('auto-plan');
     refs.toggles = $('toggles');
     refs.detail = $('subject-detail');
@@ -5887,9 +5816,7 @@
     refs.planText = $('plan-text');
     refs.planMin = $('plan-min');
     refs.btnAddPlan = $('btn-add-plan');
-    refs.todayOnboarding = $('today-onboarding');
-    refs.onboardingSteps = $('onboarding-steps');
-    refs.btnStartTour = $('btn-start-tour');
+    // [20260910b] 引导卡 refs 已移除（btn-restart-tour 保留）
     refs.btnRestartTour = $('btn-restart-tour');
     refs.aggSubjectProgress = $('agg-subject-progress');
     refs.tdRows = $('td-rows');
@@ -6096,22 +6023,10 @@
     refs.btnClearWrong = $('btn-clear-wrong');
 
     // 配置
-    refs.majorSelect.addEventListener('change', function () { Store.setConfig({ major: refs.majorSelect.value }); update408TabVisibility(); renderTodayAggregate(); });
     refs.nicknameInput.addEventListener('change', function () { Store.setConfig({ nickname: refs.nicknameInput.value.trim() }); });
     refs.examDate.addEventListener('change', function () { Store.setConfig({ examDate: refs.examDate.value }); renderData(); });
     refs.targetTotal.addEventListener('change', function () { Store.setConfig({ targetTotal: Number(refs.targetTotal.value) || 0 }); renderData(); });
     refs.goalHours.addEventListener('change', function () { Store.setConfig({ goalHours: Number(refs.goalHours.value) || 0 }); renderTodayAggregate(); });
-    refs.estimatorK.addEventListener('change', function () { Store.setConfig({ estimatorK: Number(refs.estimatorK.value) || 6 }); });
-    refs.estByScore.addEventListener('click', function () {
-      var cfg = Store.getConfig();
-      var exams = Store.getExams ? Store.getExams() : [];
-      var latest = exams.length ? exams[exams.length - 1].total : 0;
-      if (!cfg.targetTotal || !latest) { showToast('需先填写目标总分并有至少一次模考成绩', 'warn'); return; }
-      var gap = Math.max(0, Number(cfg.targetTotal) - Number(latest));
-      var suggested = Math.round((Store.totalMinutesForDay && 0) + gap * (Number(cfg.estimatorK) || 6));
-      refs.goalHours.value = suggested; Store.setConfig({ goalHours: suggested }); renderTodayAggregate();
-      showToast('已按缺口估算并填入 ' + suggested + 'h，可手动调整', 'ok');
-    });
     refs.autoPlan.addEventListener('change', function () { Store.setConfig({ autoPlan: refs.autoPlan.checked }); renderPlan(); });
 
     // 得分权重配置（A4）
@@ -6193,7 +6108,7 @@
     if (refs.syncCode) refs.syncCode.addEventListener('change', function () { Store.setLastSyncCode((refs.syncCode.value || '').replace(/\D/g, '')); });
     // 自动同步（默认开启，确定后自动启动）
     loadAutoSyncPref();
-    if (refs.btnStartTour) refs.btnStartTour.addEventListener('click', startTour);
+    // [20260910b] btn-start-tour 绑定已移除（btn-restart-tour 保留）
     if (refs.btnRestartTour) refs.btnRestartTour.addEventListener('click', startTour);
 
     // 数据（热力图卡已移除，保留守卫避免空引用）
@@ -6326,15 +6241,7 @@
       var a = document.createElement('a'); a.download = '考研学习数据备份.json';
       a.href = URL.createObjectURL(blob); a.click();
     });
-    refs.btnExportMd = $('btn-export-md');
-    if (refs.btnExportMd) refs.btnExportMd.addEventListener('click', function () {
-      var md = buildMarkdownReport();
-      var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-      var a = document.createElement('a');
-      a.download = '考研学习报告_' + Store.todayStr() + '.md';
-      a.href = URL.createObjectURL(blob); a.click();
-      showToast('Markdown 报告已生成 📝');
-    });
+    // [20260910b] 导出 Markdown 报告按钮（#btn-export-md）已移除
     refs.fileImport.addEventListener('change', function (e) {
       var f = e.target.files[0]; if (!f) return;
       var r = new FileReader();
@@ -6448,8 +6355,7 @@
     try {
     initThemeSetting();
     applyTheme();
-    initColorSchemeSetting();
-    applyColorScheme();
+    // [20260910b] 背景配色选择器（data-scheme / color-scheme-group）已移除
     initKeyboardShortcuts();
 
     // 注意：initTabs() 已在 init 开头调用，确保导航优先可用
@@ -6487,7 +6393,7 @@
     // 主题设置暴露（供 test_theme_setting.js 验证）
     window.applyTheme = applyTheme;
     window.toggleTheme = toggleTheme;
-    window.applyColorScheme = applyColorScheme;
+    // [20260910b] applyColorScheme 暴露已移除（背景配色选择器已删）
     // 智能计划纯函数暴露（供 test_smart_plan.js 单测反推模型，不影响生产行为）
     // 暴露 XSS 防护助手给回归测试（test_mount_safe.js），不影响业务
     window.__xss = { el: el, setText: setText, mountSafe: mountSafe };
