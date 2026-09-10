@@ -271,6 +271,42 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
   transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
 }
 .btn-primary:hover { filter: brightness(1.05); box-shadow: 0 8px 22px -6px rgba(194, 65, 12,.55), inset 0 1px 0 rgba(255,255,255,.32); transform: translateY(-1px); }
+
+/* 登录键（#btn-sync-confirm）：Uiverse 风暖橙重做 + 作用域隔离，避免裸 button 选择器污染全站 */
+.login-btn {
+  font-family: inherit;
+  font-size: 15px;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.72em 1.4em;
+  padding-left: 1.15em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  border-radius: 14px;
+  font-weight: 800;
+  box-shadow: 0 6px 16px -6px rgba(194, 65, 12, .55), inset 0 1px 0 rgba(255, 255, 255, .28);
+  transition: background .2s ease, transform .08s ease, box-shadow .2s ease;
+  touch-action: manipulation;
+}
+.login-btn .svg-wrapper { display: inline-flex; transition: transform .35s ease-in-out; }
+.login-btn svg {
+  display: block; width: 20px; height: 20px;
+  fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  transform-origin: center center; transition: transform .35s ease-in-out;
+}
+.login-btn span.label {
+  display: block; margin-left: 0.5em;
+  transition: opacity .35s ease-in-out, margin-left .35s ease-in-out;
+}
+.login-btn:hover { background: var(--primary-strong); }
+.login-btn:hover .svg-wrapper { transform: scale(1.25); transition: .5s linear; }
+.login-btn:hover svg { transform: translateX(0.55em) scale(1.1); }
+.login-btn:hover span.label { opacity: 0; margin-left: -0.45em; }
+.login-btn:active { transform: scale(0.95); }
+.login-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn-ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
 .btn-ghost:hover { border-color: var(--primary); background: var(--surface-2); }
 .btn-danger { background: var(--danger-weak); color: var(--danger); }

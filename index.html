@@ -46,7 +46,7 @@
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png" />
-  <link rel="stylesheet" href="styles.css?v=20260904c" />
+  <link rel="stylesheet" href="styles.css?v=20260910a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -899,7 +899,12 @@
             </div>
             <p class="sync-hint">💡 手机号即账号，无需密码。不填也能正常使用，仅本机保存。换设备登录时输入同一手机号即可访问你的数据。</p>
             <div class="btn-row">
-              <button id="btn-sync-confirm" class="btn btn-primary"><span class="ic-inline">📱</span> 注册 / 登录</button>
+              <button id="btn-sync-confirm" class="login-btn" type="button">
+                <span class="svg-wrapper">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </span>
+                <span class="label">注册 / 登录</span>
+              </button>
             </div>
             <div id="sync-status" class="import-status"></div>
           </div>
@@ -998,14 +1003,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260904c"></script>
-  <script src="iconset.js?v=20260904c"></script>
-  <script src="words.js?v=20260904c"></script>
-  <script src="store.js?v=20260904c"></script>
-  <script src="charts.js?v=20260904c"></script>
-  <script src="share.js?v=20260904c"></script>
-  <script src="sentences.js?v=20260904c"></script>
-  <script src="app.js?v=20260904c"></script>
-  <script src="workspace.js?v=20260904c"></script>
+  <script src="qrcode.min.js?v=20260910a"></script>
+  <script src="iconset.js?v=20260910a"></script>
+  <script src="words.js?v=20260910a"></script>
+  <script src="store.js?v=20260910a"></script>
+  <script src="charts.js?v=20260910a"></script>
+  <script src="share.js?v=20260910a"></script>
+  <script src="sentences.js?v=20260910a"></script>
+  <script src="app.js?v=20260910a"></script>
+  <script src="workspace.js?v=20260910a"></script>
 </body>
 </html>
