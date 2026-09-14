@@ -10,6 +10,6 @@
   "background_color": "#FAF6F0",
   "theme_color": "#EA580C",
   "icons": [
-    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "./app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

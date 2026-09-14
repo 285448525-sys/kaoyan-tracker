@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="考研学习记录">
+  <title>考研学习记录 · 学位帽 + 打卡对勾</title>
+  <defs>
+    <linearGradient id="kyBoard" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FB923C"/>
+      <stop offset="1" stop-color="#C2410C"/>
+    </linearGradient>
+    <linearGradient id="kyBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C2410C"/>
+      <stop offset="1" stop-color="#9A3412"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="7" y="7" width="54" height="54" rx="14" fill="#1F1A14"/>
+  <rect x="3" y="3" width="54" height="54" rx="14" fill="#FAF6F0" stroke="#1F1A14" stroke-width="3.5"/>
+
+  <circle cx="11" cy="14" r="1.9" fill="#1F1A14" opacity="0.14"/>
+  <circle cx="18" cy="10.5" r="1.4" fill="#1F1A14" opacity="0.14"/>
+  <circle cx="11" cy="46" r="1.7" fill="#1F1A14" opacity="0.14"/>
+
+  <path d="M16 31 H38 L33 47 H21 Z" fill="url(#kyBase)" stroke="#1F1A14" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M8 27 L27 17 L46 27 L27 37 Z" fill="url(#kyBoard)" stroke="#1F1A14" stroke-width="3.5" stroke-linejoin="round"/>
+
+  <circle cx="44" cy="45" r="10" fill="#3DD68C" stroke="#1F1A14" stroke-width="3.5"/>
+  <path d="M39 45.5 L42.5 49 L49 40.5" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
