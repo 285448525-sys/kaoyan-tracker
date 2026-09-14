@@ -1889,7 +1889,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--shadow);
 }
 :root[data-theme="dark"] .side-nav .brand-logo {
-  background: var(--primary-soft);
+  background: transparent;
   color: var(--primary-bright);
 }
 :root[data-theme="dark"] .side-nav h1 { color: var(--ink); }
@@ -3260,12 +3260,12 @@ input:focus,select:focus,textarea:focus{
 .side-nav h1{ color:var(--ink); font-weight:var(--fw-black); font-size:18px; }
 .side-nav .brand-sub{ color:#7a5a00; font-weight:var(--fw-bold); opacity:1; font-size:11px; }
 .side-nav .brand-logo{
-  background:#fff; color:var(--ink);
-  border:var(--bw) solid var(--ink-line);
-  border-radius:var(--radius-xs);
-  box-shadow:var(--shadow-hard-xs);
+  background:transparent; color:var(--ink);
+  border:none; border-radius:0;
+  box-shadow:none;
   font-weight:var(--fw-black);
 }
+.side-nav .brand-logo svg{ display:block; }
 .side-menu .tab-btn{
   background:#fff;
   border:var(--bw) solid var(--ink-line);
