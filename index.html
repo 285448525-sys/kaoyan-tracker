@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260914a" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260914a" />
+  <link rel="icon" href="app-icon.svg?v=20260922a" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922a" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260914a" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922a" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260914a" />
-  <link rel="stylesheet" href="styles.css?v=20260914a" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922a" />
+  <link rel="stylesheet" href="styles.css?v=20260922a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -149,15 +149,7 @@
         </button>
       </header>
 
-      <!-- Memphis 统计组（借鉴工作台看板：数字优先，一屏看完关键指标） -->
-      <div class="m-grid m-g4">
-        <div class="m-stat red"><div class="num" id="m-stat-cd">--</div><div class="lbl">距考研（天）</div></div>
-        <div class="m-stat blue"><div class="num" id="m-stat-todo">0</div><div class="lbl">今日待办</div></div>
-        <div class="m-stat green"><div class="num" id="m-stat-week">0</div><div class="lbl">本周专注（分）</div></div>
-        <div class="m-stat purple"><div class="num" id="m-stat-streak">0</div><div class="lbl">连续学习（天）</div></div>
-      </div>
-
-      <!-- Hero 轻卡 -->
+      <!-- Hero 轻卡（首屏第一优先：今天专注了多少 + 一键开计时） -->
       <div class="home-hero-card" id="home-hero-card">
         <div class="hhc-row">
           <span class="hhc-label">今日专注</span>
@@ -176,19 +168,21 @@
         </button>
       </div>
 
-      <!-- 今日概览（借鉴 K12 学习台「今日要处理」：把分散待办聚合到首页一眼可见） -->
-      <div class="card home-overview" id="home-overview"></div>
+      <!-- Memphis 统计组（真实数据：本周专注 / 连续学习 / 今日待办；距考研见顶栏胶囊，不重复） -->
+      <div class="m-grid m-g3">
+        <div class="m-stat blue"><div class="num" id="m-stat-todo">0</div><div class="lbl">今日待办</div></div>
+        <div class="m-stat green"><div class="num" id="m-stat-week">0</div><div class="lbl">本周专注（分）</div></div>
+        <div class="m-stat purple"><div class="num" id="m-stat-streak">0</div><div class="lbl">连续学习（天）</div></div>
+      </div>
 
-      <!-- 近 7 天专注时长（借鉴四六级备考台「近 7 天复习量」周柱状图） -->
-      <div class="card home-week" id="home-week"></div>
-
-      <!-- 今日待办 -->
+      <!-- 今日要做的事（系统待处理项置顶 + 自定计划，一屏给出「今天干嘛」的答案） -->
       <div class="home-todo-section">
         <div class="section-title-row">
-          <span class="section-title">今日待办</span>
+          <span class="section-title">今天要做的事</span>
           <span class="todo-count" id="home-todo-sub">0/0 完成</span>
         </div>
         <div class="card home-todo-card">
+          <div id="home-sys-tasks" class="home-sys-tasks"></div>
           <div id="plan-empty-hint" class="plan-empty-hint">
             <span class="ic-inline" data-icon="sparkles"></span>
             今天还没有计划，点下面让 AI 帮你拆任务。
@@ -991,14 +985,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260914a"></script>
-  <script src="iconset.js?v=20260914a"></script>
-  <script src="words.js?v=20260914a"></script>
-  <script src="store.js?v=20260914a"></script>
-  <script src="charts.js?v=20260914a"></script>
-  <script src="share.js?v=20260914a"></script>
-  <script src="sentences.js?v=20260914a"></script>
-  <script src="app.js?v=20260914a"></script>
-  <script src="workspace.js?v=20260914a"></script>
+  <script src="qrcode.min.js?v=20260922a"></script>
+  <script src="iconset.js?v=20260922a"></script>
+  <script src="words.js?v=20260922a"></script>
+  <script src="store.js?v=20260922a"></script>
+  <script src="charts.js?v=20260922a"></script>
+  <script src="share.js?v=20260922a"></script>
+  <script src="sentences.js?v=20260922a"></script>
+  <script src="app.js?v=20260922a"></script>
+  <script src="workspace.js?v=20260922a"></script>
 </body>
 </html>

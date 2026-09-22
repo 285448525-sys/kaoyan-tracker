@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260914a';
+  var APP_VERSION = '20260922a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -489,91 +489,58 @@
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
-    renderHomeOverview();
-    renderHomeWeek();
+    renderHomeStats();
+    renderHomeSysTasks();
     renderHomeTodo();
   }
 
-  /* 今日待处理聚合卡（借鉴 K12 学习台「今日要处理」：把分散待办聚合到首页一眼可见） */
-  function renderHomeOverview() {
-    var box = document.getElementById('home-overview');
+  /* 首页 Memphis 统计组：接真实数据（此前 4 格无任何赋值，恒为 0/-- 的死卡片） */
+  function renderHomeStats() {
+    var ds = Store.todayStr();
+    var plan = Store.getPlan(ds) || [];
+    var done = plan.filter(function (i) { return i.done; }).length;
+    var todoEl = document.getElementById('m-stat-todo');
+    if (todoEl) todoEl.textContent = plan.length ? (done + '/' + plan.length) : '0';
+    var weekMin = 0;
+    for (var i = 0; i < 7; i++) {
+      var d = Store.dateStr(Store.addDays(new Date(ds + 'T00:00:00'), -i));
+      weekMin += Store.totalMinutesForDay(Store.getDay(d) || {});
+    }
+    var weekEl = document.getElementById('m-stat-week');
+    if (weekEl) weekEl.textContent = String(Math.round(weekMin));
+    var streakEl = document.getElementById('m-stat-streak');
+    if (streakEl) streakEl.textContent = String(Store.consecutiveStreak());
+  }
+
+  /* 系统待处理项（生词 / 数学错题 / 408 错题）置顶于「今天要做的事」，点行直达 */
+  function renderHomeSysTasks() {
+    var box = document.getElementById('home-sys-tasks');
     if (!box) return;
     var ds = Store.todayStr();
-    var vocabDue = Store.getDueVocab(ds).length;
-    var mathDue = Store.getMathDueMistakes(ds).length;
-    var csDue = Store.get408DueMistakes(ds).length;
-    var plan = Store.getPlan(ds) || [];
-    var planDone = plan.filter(function (i) { return i.done; }).length;
-    var planTotal = plan.length;
-
-    if (vocabDue === 0 && mathDue === 0 && csDue === 0 && planTotal === 0) {
-      box.innerHTML = '<div class="ov-empty"><span class="ov-empty-emoji">🌿</span><span>今日清清爽爽，去背几个词或定个计划吧</span></div>';
-      return;
-    }
-
     var items = [
-      { tab: 'vocab', icon: 'vocab', label: '待复习生词', count: vocabDue, unit: '个' },
-      { tab: 'mistakes', icon: 'mistakes', label: '数学待复盘', count: mathDue, unit: '道', scope: 'math' },
-      { tab: 'mistakes', icon: 'chip', label: '408 待复盘', count: csDue, unit: '道', scope: 'cs408' },
-      { tab: 'home', icon: 'check', label: '今日计划', isPlan: true, done: planDone, total: planTotal }
-    ];
+      { tab: 'vocab', icon: 'vocab', label: '待复习生词', count: Store.getDueVocab(ds).length, unit: '个' },
+      { tab: 'mistakes', icon: 'mistakes', label: '数学待复盘', count: Store.getMathDueMistakes(ds).length, unit: '道' },
+      { tab: 'mistakes', icon: 'chip', label: '408 待复盘', count: Store.get408DueMistakes(ds).length, unit: '道' }
+    ].filter(function (it) { return it.count > 0; });
 
-    var html = '<div class="ov-head"><span class="ov-title">今日待处理</span></div>';
-    items.forEach(function (it) {
-      if (!it.isPlan && it.count === 0) return; // 已完成的不显形，避免干扰
-      if (it.isPlan && it.total === 0) return;
-      var urgent = !it.isPlan && it.count > 0;
-      var cls = 'ov-row' + (urgent ? ' urgent' : '') + (it.isPlan ? ' is-plan' : '');
-      var right;
-      if (it.isPlan) {
-        var pct = it.total ? Math.round(it.done / it.total * 100) : 0;
-        right = '<span class="ov-plan"><span class="ov-plan-bar"><i style="width:' + pct + '%"></i></span>' +
-          '<span class="ov-plan-num">' + it.done + '/' + it.total + '</span></span>';
-      } else {
-        right = '<span class="ov-count ' + (urgent ? 'on' : 'off') + '">' + it.count + '<i>' + it.unit + '</i></span>';
-      }
-      html += '<button type="button" class="' + cls + '" data-goto="' + it.tab + '">' +
-        '<span class="ov-ic" data-icon="' + it.icon + '"></span>' +
-        '<span class="ov-label">' + escapeHtml(it.label) + '</span>' +
-        right +
-        '</button>';
-    });
-    box.innerHTML = html;
-    // 容器级委托（innerHTML 重建，onclick 只挂一个）
+    // 容器级委托（innerHTML 重建，onclick 只挂一个）——先绑定，空态→有项切换也生效
     box.onclick = function (e) {
       var b = e.target.closest('[data-goto]');
       if (b) switchTab(b.getAttribute('data-goto'));
     };
-    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
-  }
 
-  /* 近 7 天专注时长柱状图（借鉴四六级备考台「近 7 天复习量」周柱状图） */
-  function renderHomeWeek() {
-    var box = document.getElementById('home-week');
-    if (!box) return;
-    var t = Store.todayStr();
-    var arr = [], max = 1;
-    for (var i = 6; i >= 0; i--) {
-      var d = Store.dateStr(Store.addDays(new Date(t + 'T00:00:00'), -i));
-      var day = Store.getDay(d) || {};
-      var min = Store.totalMinutesForDay(day);
-      if (min > max) max = min;
-      arr.push({ d: d, min: min });
-    }
-    var wd = ['日', '一', '二', '三', '四', '五', '六'];
-    var html = '<div class="hw-head"><span class="hw-title">近 7 天专注时长</span><span class="hw-unit">分钟</span></div><div class="hw-bars">';
-    arr.forEach(function (o, idx) {
-      var dt = new Date(o.d + 'T00:00:00');
-      var isToday = idx === arr.length - 1;
-      var h = o.min > 0 ? Math.max(8, Math.round(o.min / max * 100)) : 3;
-      var label = isToday ? '今' : wd[dt.getDay()];
-      html += '<div class="hw-col' + (o.min > 0 ? ' hot' : '') + (isToday ? ' today' : '') + '" title="' + o.d + '：' + o.min + ' 分钟">' +
-        '<div class="hw-num">' + (o.min > 0 ? o.min : '') + '</div>' +
-        '<div class="hw-bar" style="height:' + h + '%"></div>' +
-        '<div class="hw-lab">' + label + '</div></div>';
+    if (!items.length) { box.innerHTML = ''; return; }
+
+    var html = '';
+    items.forEach(function (it) {
+      html += '<button type="button" class="ov-row urgent" data-goto="' + it.tab + '">' +
+        '<span class="ov-ic" data-icon="' + it.icon + '"></span>' +
+        '<span class="ov-label">' + escapeHtml(it.label) + '</span>' +
+        '<span class="ov-count on">' + it.count + '<i>' + it.unit + '</i></span>' +
+        '</button>';
     });
-    html += '</div>';
     box.innerHTML = html;
+    if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
 
   function renderHomeHero() {

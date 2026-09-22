@@ -2598,14 +2598,12 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
   .home-redesign .m-stat .lbl { font-size: 11px; }
   .home-hero-card { padding: 14px; gap: 10px; }
   .hhc-num { font-size: 26px; }
-  .home-overview { margin: 0; }
-  .home-week { margin: 0; }
-  .hw-bars { height: 76px; }
+  .home-sys-tasks:not(:empty) { margin-bottom: 6px; }
   .home-todo-section { gap: 8px; }
   .home-todo-card .plan-list { max-height: 150px; }
 }
 @media (max-width: 600px) {
-  .home-redesign .m-grid.m-g4 { grid-template-columns: 1fr 1fr; }
+  .home-redesign .m-grid.m-g3 { grid-template-columns: 1fr 1fr 1fr; }
   .hh-eyebrow { font-size: 11px; }
   .hh-name { font-size: 17px; }
   .hhc-label, .hhc-goal { font-size: 12px; }
@@ -2685,12 +2683,12 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
   .todo-add-btn, .todo-ai-btn { flex: 1 1 auto; }
 }
 
-/* 今日待处理聚合卡（借鉴 K12 学习台「今日要处理」） */
-.home-overview { margin: 0; padding: 4px 12px; display: flex; flex-direction: column; gap: 2px; }
-.ov-empty { display: flex; align-items: center; gap: 10px; padding: 12px 8px; font-size: 13px; color: var(--muted); }
-.ov-empty-emoji { font-size: 18px; }
-.ov-head { padding: 8px 4px 4px; }
-.ov-title { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+/* 系统待处理项（置顶于「今天要做的事」卡内，无项时整块隐藏） */
+.home-sys-tasks:empty { display: none; }
+.home-sys-tasks:not(:empty) {
+  margin: 0 0 8px; padding: 4px 4px 6px; display: flex; flex-direction: column; gap: 2px;
+  border-bottom: 1px dashed var(--line);
+}
 .ov-row {
   display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer;
   padding: 9px 8px; border: 0; background: transparent; font: inherit; color: var(--ink); text-align: left;
@@ -2728,20 +2726,6 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .home-redesign .qe-text { align-items: flex-start; }
 .home-redesign .qe-label { font-size: 15px; color: var(--ink); }
 .home-redesign .qe-sub { font-size: 12px; }
-
-/* 近 7 天专注时长柱状图（借鉴四六级备考台 .week 周柱状图） */
-.home-week { margin: 0; }
-.hw-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.hw-title { font-size: 15px; font-weight: 700; color: var(--ink); }
-.hw-unit { font-size: 12px; color: var(--muted); }
-.hw-bars { display: flex; align-items: flex-end; gap: 8px; height: 76px; }
-.hw-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
-.hw-num { font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; min-height: 13px; }
-.hw-bar { width: 56%; max-width: 30px; border-radius: 8px 8px 4px 4px; background: color-mix(in srgb, var(--primary) 22%, #fff); transition: height .4s ease; }
-.hw-col.hot .hw-bar { background: linear-gradient(180deg, var(--primary-bright), var(--primary)); }
-.hw-col.today .hw-bar { background: linear-gradient(180deg, var(--primary), var(--primary-deep)); }
-.hw-lab { font-size: 11px; color: var(--muted); }
-.hw-col.today .hw-lab { color: var(--primary-strong); font-weight: 700; }
 
 /* ============ 词汇页重设计（v20260825d）：查词记词 / 我的词库 / 批量导入折叠 ============ */
 .vocab-lookup-card .look-row { display: flex; gap: 10px; align-items: stretch; }
