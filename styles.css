@@ -2653,7 +2653,9 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 
 .home-hero-card {
   margin: 0; border-radius: 16px; padding: 14px;
-  background: var(--card); border: 1px solid var(--line);
+  /* P4：暖橙渐染，让首屏「今日专注」成为视觉主角（仍以 --card 为底，不抢主色） */
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 12%, var(--card)), var(--card) 62%);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow-sm); color: var(--ink);
   display: flex; flex-direction: column; gap: 10px;
 }
@@ -3712,3 +3714,36 @@ body.word-fullscreen .practice-body { flex: 1; display: flex; flex-direction: co
 :root[data-theme="dark"] .q-word, :root[data-theme="dark"] .cfg-modal-head h3 { color: var(--ink); }
 :root[data-theme="dark"] .cfg-toggle { background: var(--surface-2); }
 :root[data-theme="dark"] .cfg-toggle:checked { background: var(--primary); }
+
+/* ============ P4 视觉氛围（v20260922d）：暖橙光晕 + Memphis 波点纹理 ============
+   纯背景层，不新增任何 DOM 元素；主色仍是 --primary 暖橙，不引入新色系。 */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(rgba(31, 26, 20, .055) 1px, transparent 1px),
+    radial-gradient(1100px 520px at 88% -8%, rgba(234, 88, 12, .07), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(251, 146, 60, .06), transparent 60%);
+  background-size: 22px 22px, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
+}
+:root[data-theme="dark"] body {
+  background-image:
+    radial-gradient(rgba(230, 238, 244, .05) 1px, transparent 1px),
+    radial-gradient(1100px 520px at 88% -8%, rgba(251, 146, 60, .10), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(234, 88, 12, .07), transparent 60%);
+  background-size: 22px 22px, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
+}
+/* 移动端省一层光晕，降低滚动合成开销 */
+@media (max-width: 600px) {
+  body {
+    background-image:
+      radial-gradient(rgba(31, 26, 20, .05) 1px, transparent 1px),
+      radial-gradient(760px 380px at 92% -6%, rgba(234, 88, 12, .07), transparent 62%);
+    background-size: 22px 22px, auto;
+    background-repeat: repeat, no-repeat;
+    background-attachment: fixed, fixed;
+  }
+}
