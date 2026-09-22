@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260922g" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922g" />
+  <link rel="icon" href="app-icon.svg?v=20260922h" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922h" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922g" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922h" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922g" />
-  <link rel="stylesheet" href="styles.css?v=20260922g" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922h" />
+  <link rel="stylesheet" href="styles.css?v=20260922h" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -509,7 +509,6 @@
     <div class="vchips" id="vocab-chips">
       <button type="button" class="vchip active" data-filter="all">全部</button>
       <button type="button" class="vchip" data-filter="vocab">生词本</button>
-      <button type="button" class="vchip" data-filter="wrong">查词记录</button>
       <button type="button" class="vchip" data-filter="due">待复习</button>
       <button type="button" class="vchip" data-filter="cat:数据结构">数据结构</button>
       <button type="button" class="vchip" data-filter="cat:计算机组成">计算机组成</button>
@@ -528,7 +527,6 @@
   <div id="vocab-list" class="mistake-list"></div>
   <div class="btn-row" style="margin-top:10px">
     <button id="btn-vocab-backfill" class="btn btn-ghost" data-ai><span class="ic-inline" data-icon="robot"></span> AI 补全释义</button>
-    <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
     <button id="btn-ai-summarize-wrong" class="btn btn-ghost" data-ai><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
   </div>
   <div id="wrong-ai-summary" class="ai-summary-box"></div>
@@ -776,11 +774,6 @@
           <label>目标总分 <span class="opt">选填</span></label>
           <input type="number" id="target-total" min="0" placeholder="例如 380" />
         </div>
-        <div class="field-row">
-          <label>目标累计时长(h) <span class="opt">选填</span></label>
-          <input type="number" id="goal-hours" min="0" step="10" placeholder="如 700" />
-          <span class="hint">手动填写你计划累计学习的小时数</span>
-        </div>
       </div></div>
 
       <!-- ③ 外观 -->
@@ -824,6 +817,11 @@
       <details class="config-fold">
         <summary class="fold-summary">高级：得分计算与计划</summary>
         <div class="fold-content">
+          <div class="field-row">
+            <label>目标累计时长(h) <span class="opt">选填</span></label>
+            <input type="number" id="goal-hours" min="0" step="10" placeholder="如 700" />
+            <span class="hint">手动填写你计划累计学习的小时数</span>
+          </div>
           <h3 class="card-sub"><span class="ic-inline" data-icon="target"></span> 得分权重配置</h3>
           <p class="card-hint">近 30 天每日得分按以下权重实时重算。默认 时长50 / 计划20 / 生词15 / 错题15；不考英语词汇的 408 考生可把「生词复习」调低或归零。</p>
           <div class="weight-row">
@@ -972,14 +970,14 @@
   <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
   <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20260922g"></script>
-  <script src="iconset.js?v=20260922g"></script>
-  <script src="words.js?v=20260922g"></script>
-  <script src="store.js?v=20260922g"></script>
-  <script src="charts.js?v=20260922g"></script>
-  <script src="share.js?v=20260922g"></script>
-  <script src="sentences.js?v=20260922g"></script>
-  <script src="app.js?v=20260922g"></script>
-  <script src="workspace.js?v=20260922g"></script>
+  <script src="qrcode.min.js?v=20260922h"></script>
+  <script src="iconset.js?v=20260922h"></script>
+  <script src="words.js?v=20260922h"></script>
+  <script src="store.js?v=20260922h"></script>
+  <script src="charts.js?v=20260922h"></script>
+  <script src="share.js?v=20260922h"></script>
+  <script src="sentences.js?v=20260922h"></script>
+  <script src="app.js?v=20260922h"></script>
+  <script src="workspace.js?v=20260922h"></script>
 </body>
 </html>

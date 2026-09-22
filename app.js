@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922g';
+  var APP_VERSION = '20260922h';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -6061,7 +6061,7 @@
     // 我的词库（合并生词本 + 查词记录）筛选 chip
     refs.vocabChips = $('vocab-chips');
     refs.wrongAiSummary = $('wrong-ai-summary');
-    refs.btnClearWrong = $('btn-clear-wrong');
+    refs.btnClearWrong = $('btn-clear-wrong');   // P1-5：已移除，保留引用以防旧缓存
 
     // 配置
     refs.nicknameInput.addEventListener('change', function () { Store.setConfig({ nickname: refs.nicknameInput.value.trim() }); });
@@ -6238,7 +6238,7 @@
     if (refs.visionProvider) refs.visionProvider.addEventListener('change', onVisionProviderChange);
     if (refs.linkOpenVision) refs.linkOpenVision.addEventListener('click', function (e) { e.preventDefault(); switchTab('settings'); showSub('settings', 'base'); openVisionConfig(); });
     // 番茄钟（P4c 已从 UI 移除该模块，元素可能不存在，必须空值守卫，否则 init 崩溃导致首屏不渲染）
-    refs.btnClearWrong.addEventListener('click', function () {
+    if (refs.btnClearWrong) refs.btnClearWrong.addEventListener('click', function () {   // P1-5：查词记录已砍
       if (!Store.getWrongWords().length) { showToast('查词记录已是空的', 'info'); return; }
       confirmDelete('确定清空查词记录？所有查词将被永久删除，无法恢复。', function () {
         Store.clearWrongWords(); renderWords();
