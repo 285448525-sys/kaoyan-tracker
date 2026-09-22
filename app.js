@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922e';
+  var APP_VERSION = '20260922f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2672,6 +2672,63 @@
     renderMathPractice();
   }
 
+  /* ---------- P0-1 真题年份打卡（数学 / 408 共用，取代自定义题库录入） ----------
+     结构：Store.exams 项 { id, name:'2024 真题', date, total:得分, minutes:用时, wrong:错题数, subj } */
+  var PUNCH_SUBJ = { math: { p: 'mp', label: '数学' }, cs408: { p: 'cp', label: '408' } };
+  function punchYears() {
+    var y = new Date().getFullYear(), arr = [];
+    for (var i = y; i >= y - 12; i--) arr.push(i);
+    return arr;
+  }
+  function renderExamPunch(subj) {
+    var cfg = PUNCH_SUBJ[subj]; if (!cfg) return;
+    var p = cfg.p;
+    var yearSel = $(p + '-year'); if (!yearSel) return;
+    if (!yearSel.options.length) {
+      punchYears().forEach(function (y) {
+        var o = document.createElement('option'); o.value = String(y); o.textContent = y + ' 年'; yearSel.appendChild(o);
+      });
+    }
+    var list = (Store.getExams ? Store.getExams() : []).filter(function (e) { return e.subj === subj; })
+      .sort(function (a, b) { return (b.name || '') < (a.name || '') ? -1 : 1; });
+    var box = $(p + '-list'); if (!box) return;
+    box.innerHTML = '';
+    if (!list.length) { box.appendChild(el('div', 'empty-hint', '还没有真题记录，选年份填一次试试')); return; }
+    list.forEach(function (e) {
+      var row = el('div', 'punch-item');
+      row.appendChild(el('span', 'punch-y', (e.name || '').replace(' 真题', '')));
+      row.appendChild(el('span', 'punch-v', (e.total != null && e.total !== '') ? (e.total + ' 分') : '—'));
+      row.appendChild(el('span', 'punch-v', (e.minutes ? e.minutes + ' 分钟' : '—')));
+      row.appendChild(el('span', 'punch-v', (e.wrong != null && e.wrong !== '') ? (e.wrong + ' 错题') : '—'));
+      var del = el('button', 'punch-del', '删除');
+      del.addEventListener('click', function () { Store.removeExam(e.id); renderExamPunch(subj); renderData && renderData(); });
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+  function bindExamPunch() {
+    Object.keys(PUNCH_SUBJ).forEach(function (subj) {
+      var p = PUNCH_SUBJ[subj].p;
+      var btn = $( 'btn-' + p + '-add'); if (!btn) return;
+      btn.addEventListener('click', function () {
+        var year = $(p + '-year').value;
+        var score = $(p + '-score').value.trim();
+        var min = $(p + '-min').value.trim();
+        var wrong = $(p + '-wrong').value.trim();
+        if (!year) { showToast('先选年份', 'warn'); return; }
+        Store.addExam({
+          name: year + ' 真题', date: Store.todayStr(), subj: subj,
+          total: score === '' ? null : Number(score),
+          minutes: min === '' ? null : Number(min),
+          wrong: wrong === '' ? null : Number(wrong)
+        });
+        $(p + '-score').value = ''; $(p + '-min').value = ''; $(p + '-wrong').value = '';
+        renderExamPunch(subj);
+        showToast('已记录 ' + year + ' 年真题 ✅', 'ok');
+      });
+    });
+  }
+
   function renderMathPractice() {
     var box = refs.mathPractice;
     if (!mathPractice) { box.innerHTML = '<div class="empty-hint">选择分类后点「开始刷题」</div>'; return; }
@@ -2787,6 +2844,7 @@
 
   function render408Practice() {
     var box = refs.cs408Practice;
+    if (!box) return;   // P0-1：分类刷题卡已移除
     if (!cs408Practice) { box.innerHTML = '<div class="empty-hint">选择分类后点「开始刷题」</div>'; return; }
     var s = cs408Practice;
     if (s.index >= s.items.length) {
@@ -5538,10 +5596,8 @@
       renderPlanDaily();
       renderPlanHistory();
       renderMathChapters();
-      renderMathQuestionList();
-      renderMathPractice();
       render408Chapters();
-      render408Practice();
+      renderExamPunch('math'); renderExamPunch('cs408');
     }, 0);
   }
   function showTab(target) {
@@ -5549,8 +5605,8 @@
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
     if (target === 'home') { renderHome(); }
     if (target === 'timer') { renderTimerState(); }
-    if (target === 'math') { renderMathChapters(); renderMathQuestionList(); renderMathPractice(); }
-    if (target === 'cs408') { render408Chapters(); render408Practice(); }
+    if (target === 'math') { renderMathChapters(); renderExamPunch('math'); }
+    if (target === 'cs408') { render408Chapters(); renderExamPunch('cs408'); }
     if (target === 'mistakes') { showSub('mistakes', 'mistakes'); renderMistakeList(); renderAiSolvedList(); }
     if (target === 'vocab') { showSub('vocab', 'words'); renderWords(); }
     if (target === 'data') { showSub('data', 'overview'); renderData(); }
@@ -6283,7 +6339,8 @@
     // 数学：分类刷题
     refs.btnMathPracticeStart.addEventListener('click', onMathPracticeStart);
     // 数学：自定义题库
-    refs.btnAddMq.addEventListener('click', onAddMathQuestion);
+    if (refs.btnAddMq) refs.btnAddMq.addEventListener('click', onAddMathQuestion);   // P0-1：题库录入已砍
+    bindExamPunch();   // P0-1 真题年份打卡
 
     // 408 错题录入已合并进「错题本」tab（见 btn-add-mistake 的范围路由）
     // 408：分类刷题

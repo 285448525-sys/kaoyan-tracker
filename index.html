@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260922e" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922e" />
+  <link rel="icon" href="app-icon.svg?v=20260922f" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922f" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922e" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922f" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922e" />
-  <link rel="stylesheet" href="styles.css?v=20260922e" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922f" />
+  <link rel="stylesheet" href="styles.css?v=20260922f" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -276,33 +276,19 @@
         </div>
       </div></div>
 
-      <!-- 我的题库（独立卡） -->
+      <!-- 真题年份打卡（P0-1：取代「手抄题干+4选项+答案+解析」的自定义题库录入） -->
       <div class="section">
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 我的题库</h2>
-        <div id="math-question-list" class="mistake-list"></div>
-        <div class="entry-form">
-          <h4>添加题目</h4>
-          <div class="entry-row"><label>分类</label><input type="text" id="mq-cat" placeholder="分类，如 高等数学" /></div>
-          <div class="entry-row full"><label>题干</label><input type="text" id="mq-q" placeholder="题干" /></div>
-          <div class="entry-opts">
-            <div class="opt"><label>选项 A</label><input type="text" id="mq-opt0" placeholder="选项 A" /></div>
-            <div class="opt"><label>选项 B</label><input type="text" id="mq-opt1" placeholder="选项 B" /></div>
-            <div class="opt"><label>选项 C</label><input type="text" id="mq-opt2" placeholder="选项 C" /></div>
-            <div class="opt"><label>选项 D</label><input type="text" id="mq-opt3" placeholder="选项 D" /></div>
-          </div>
-          <div class="entry-row"><label>正确答案</label>
-            <select id="mq-answer">
-              <option value="">请选择</option>
-              <option value="0">0 · A</option>
-              <option value="1">1 · B</option>
-              <option value="2">2 · C</option>
-              <option value="3">3 · D</option>
-            </select>
-          </div>
-          <div class="entry-row full"><label>解析（可选）</label><input type="text" id="mq-explain" placeholder="解析（可选）" /></div>
-          <div class="entry-actions"><button id="btn-add-mq" class="btn btn-primary">+ 添加到题库</button></div>
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 数学真题打卡</h2>
+        <p class="card-sub">选年份 → 填得分 / 用时 / 错题数，一条 10 秒，随手就能记。</p>
+        <div class="punch-form">
+          <select id="mp-year" class="punch-year"></select>
+          <input type="number" id="mp-score" class="punch-num" placeholder="得分" inputmode="numeric" />
+          <input type="number" id="mp-min" class="punch-num" placeholder="用时(分)" inputmode="numeric" />
+          <input type="number" id="mp-wrong" class="punch-num" placeholder="错题数" inputmode="numeric" />
+          <button id="btn-mp-add" class="btn btn-primary punch-btn">记录</button>
         </div>
+        <div id="mp-list" class="punch-list"></div>
       </div></div>
 
     </section>
@@ -330,24 +316,19 @@
       </div></div>
 
 
-      <!-- 分类刷题（独立卡） -->
+      <!-- 真题年份打卡（P0-1：与数学页同一套，取代 408 分类刷题） -->
       <div class="section">
 <div class="card">
-        <h2 class="card-title"><span class="ic-inline" data-icon="brain"></span> 408 分类刷题</h2>
-        <div class="field-row">
-          <label>分类</label>
-          <select id="cs408-practice-cat">
-            <option value="全部">全部</option>
-            <option value="数据结构">数据结构</option>
-            <option value="计算机组成原理">计算机组成原理</option>
-            <option value="操作系统">操作系统</option>
-            <option value="计算机网络">计算机网络</option>
-          </select>
+        <h2 class="card-title"><span class="ic-inline" data-icon="book"></span> 408 真题打卡</h2>
+        <p class="card-sub">选年份 → 填得分 / 用时 / 错题数，一条 10 秒。</p>
+        <div class="punch-form">
+          <select id="cp-year" class="punch-year"></select>
+          <input type="number" id="cp-score" class="punch-num" placeholder="得分" inputmode="numeric" />
+          <input type="number" id="cp-min" class="punch-num" placeholder="用时(分)" inputmode="numeric" />
+          <input type="number" id="cp-wrong" class="punch-num" placeholder="错题数" inputmode="numeric" />
+          <button id="btn-cp-add" class="btn btn-primary punch-btn">记录</button>
         </div>
-        <div id="cs408-practice" class="practice-box"></div>
-        <div class="btn-row" style="margin-top:12px">
-          <button id="btn-cs408-practice-start" class="btn btn-primary">开始刷题</button>
-        </div>
+        <div id="cp-list" class="punch-list"></div>
       </div></div>
 
     </section>
@@ -985,14 +966,14 @@
   <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
   <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
 
-  <script src="qrcode.min.js?v=20260922e"></script>
-  <script src="iconset.js?v=20260922e"></script>
-  <script src="words.js?v=20260922e"></script>
-  <script src="store.js?v=20260922e"></script>
-  <script src="charts.js?v=20260922e"></script>
-  <script src="share.js?v=20260922e"></script>
-  <script src="sentences.js?v=20260922e"></script>
-  <script src="app.js?v=20260922e"></script>
-  <script src="workspace.js?v=20260922e"></script>
+  <script src="qrcode.min.js?v=20260922f"></script>
+  <script src="iconset.js?v=20260922f"></script>
+  <script src="words.js?v=20260922f"></script>
+  <script src="store.js?v=20260922f"></script>
+  <script src="charts.js?v=20260922f"></script>
+  <script src="share.js?v=20260922f"></script>
+  <script src="sentences.js?v=20260922f"></script>
+  <script src="app.js?v=20260922f"></script>
+  <script src="workspace.js?v=20260922f"></script>
 </body>
 </html>
