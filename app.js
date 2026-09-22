@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922k';
+  var APP_VERSION = '20260923a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2082,13 +2082,13 @@
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
-    // roadmap / routine 已于 v20260922c 降级为数据页子标签，旧入口自动落到 data
+    // 备考时间轴 / 每日作息 已于 v20260922l 彻底删除（含数据），旧入口一律落回数据总览
     var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', roadmap:'data', routine:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
-    var dataSub = { record:'review', plan:'review', summary:'review', roadmap:'roadmap', routine:'routine' };
+    var dataSub = { record:'review', plan:'review', summary:'review' };
     var real = map[target] || target;
     showTab(real);
     if (real === 'data') { showSub('data', dataSub[target] || 'overview'); }
-    else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
+    else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'vreview' : 'words'); }
     else if (real === 'settings') { showSub('settings', (target === 'manual' || target === 'guide' || target === 'sites') ? 'help' : 'base'); }
     else if (real === 'mistakes') { showSub('mistakes', target === 'sentences' ? 'sentences' : 'mistakes'); }
     // 同步地址栏 hash，让各模块拥有独立 URL
@@ -2732,10 +2732,23 @@
   /* ---------- P0-2 AI 实验室总开关：未开启 → 站内不显示任何 AI 入口 ---------- */
   function applyAiVisibility() {
     var cfg = (typeof Store.getConfig === 'function') ? (Store.getConfig() || {}) : {};
-    document.body.classList.toggle('ai-on', !!cfg.aiEnabled);
+    // 用户没手动拨过开关时：配了 Key 就自动显示 AI 入口，没配就隐藏
+    var hasKey = !!((typeof Store.getAiConfig === 'function') ? (Store.getAiConfig() || {}).key : '');
+    var on = (cfg.aiEnabled === undefined || cfg.aiEnabled === null) ? hasKey : !!cfg.aiEnabled;
+    document.body.classList.toggle('ai-on', on);
     var box = document.getElementById('cfg-ai-enabled');
     if (box) box.checked = !!cfg.aiEnabled;
   }
+  /* ---------- 已下线功能的数据清理（一次性） ---------- */
+  function purgeLegacyData() {
+    var FLAG = 'ky_purged_20260923';
+    try { if (localStorage.getItem(FLAG)) return; } catch (e) { return; }
+    ['ky_ws_roadmap_done', 'ky_ws_routine', 'ky_roadmap_done', 'ky_routine'].forEach(function (k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    try { localStorage.setItem(FLAG, '1'); } catch (e) {}
+  }
+
   function bindAiLab() {
     var box = document.getElementById('cfg-ai-enabled');
     if (box) {
@@ -3371,6 +3384,7 @@
       var key = (refs.aiKey.value || '').trim();
       // 内置 DeepSeek 默认值，用户只需填 key
       var c = Store.setAiConfig({ baseUrl: AI_DEFAULT_BASE, model: AI_DEFAULT_MODEL, key: key });
+      applyAiVisibility();   // 配了 Key → 自动显形 AI 入口
       refs.aiStatus.textContent = key ? '✓ 已保存（Key 仅存本机，经服务器中转）' : '✓ 已清空';
       refs.aiStatus.className = 'import-status ai-status ok';
       safeToast(key ? 'AI 配置已保存' : 'AI 配置已清空', 'ok');
@@ -5699,7 +5713,7 @@
   function renderSubOnDemand(container, sub) {
     if (container === 'vocab') {
       if (sub === 'words') { renderWords(); }
-      else if (sub === 'review') { startReview(); }
+      else if (sub === 'vreview') { startReview(); }   // P2-9：原名 review，与数据页复盘重名
       else if (sub === 'hf') { renderHfWords(); }
     } else if (container === 'data') {
       if (sub === 'overview') { renderData(); }
@@ -6364,6 +6378,7 @@
     if (refs.btnAddMq) refs.btnAddMq.addEventListener('click', onAddMathQuestion);   // P0-1：题库录入已砍
     bindExamPunch();   // P0-1 真题年份打卡
     bindAiLab();       // P0-2 AI 实验室总开关
+    purgeLegacyData(); // P2-9+ 时间轴/作息页面已删，清掉本机残留数据
 
     // 408 错题录入已合并进「错题本」tab（见 btn-add-mistake 的范围路由）
     // 408：分类刷题

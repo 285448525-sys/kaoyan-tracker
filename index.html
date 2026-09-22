@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260922k" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922k" />
+  <link rel="icon" href="app-icon.svg?v=20260923a" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260923a" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922k" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923a" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922k" />
-  <link rel="stylesheet" href="styles.css?v=20260922k" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923a" />
+  <link rel="stylesheet" href="styles.css?v=20260923a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -470,7 +470,7 @@
 
     <!-- 词汇 -->
     <section id="tab-vocab" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="review">学习</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="words">生词</button><button class="sub-tab-btn" data-sub="vreview">学习</button><button class="sub-tab-btn" data-sub="hf">高频词</button></div>
       <div id="sub-words" class="sub-panel active">
 <div class="section">
 <div class="card vocab-lookup-card">
@@ -551,7 +551,7 @@
 
       </div>
 
-<div id="sub-review" class="sub-panel">
+<div id="sub-vreview" class="sub-panel">
       <div class="section">
 <div class="card" id="practice-area">
         <div class="card-head">
@@ -593,7 +593,7 @@
 
         <!-- 数据复盘 -->
     <section id="tab-data" class="tab-panel">
-      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">总览</button><button class="sub-tab-btn" data-sub="review">复盘</button><button class="sub-tab-btn" data-sub="roadmap">时间轴</button><button class="sub-tab-btn" data-sub="routine">作息</button></div>
+      <div class="sub-tabs"><button class="sub-tab-btn active" data-sub="overview">总览</button><button class="sub-tab-btn" data-sub="review">复盘</button></div>
       <div id="sub-overview" class="sub-panel active">
       <div class="section">
 <div class="card">
@@ -711,39 +711,6 @@
 
     </div>
 
-      <!-- 备考阶段时间轴（原独立一级页，P3 降级为数据页子标签；数据仍存本机） -->
-      <div id="sub-roadmap" class="sub-panel">
-        <div class="m-topbar">
-          <h1 class="m-page-title">备考阶段时间轴</h1>
-          <div class="m-pill"><span class="m-dot"></span><span id="roadmap-progress">0/12 已完成</span></div>
-        </div>
-        <div class="card">
-          <h2 class="card-title">🪜 12 个考研里程碑</h2>
-          <p style="margin:-6px 0 14px;color:var(--muted);font-size:13px;font-weight:600">
-            从基础启动到初试当天的完整节奏，点「标记完成」记录进度（数据存本机浏览器）。
-          </p>
-          <div class="m-timeline" id="roadmap-list"></div>
-        </div>
-      </div>
-
-      <!-- 每日作息打卡（原独立一级页，P3 降级为数据页子标签） -->
-      <div id="sub-routine" class="sub-panel">
-        <div class="m-topbar">
-          <h1 class="m-page-title">每日作息打卡</h1>
-          <div class="m-pill"><span class="m-dot"></span><span id="routine-progress">0/0 已打卡</span></div>
-        </div>
-        <div class="card">
-          <h2 class="card-title">⏰ 今日作息清单</h2>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;max-width:440px">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:800;margin:0 0 4px">打卡日期</label>
-              <input type="date" id="routine-date" />
-            </div>
-            <button class="btn btn-ghost" id="routine-seed" style="padding:11px 14px">填充今日默认时段</button>
-          </div>
-          <div id="routine-list" style="margin-top:14px"></div>
-        </div>
-      </div>
     </section>
 
     <!-- 设置 -->
@@ -979,14 +946,14 @@
   <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
   <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20260922k"></script>
-  <script src="iconset.js?v=20260922k"></script>
-  <script src="words.js?v=20260922k"></script>
-  <script src="store.js?v=20260922k"></script>
-  <script src="charts.js?v=20260922k"></script>
-  <script src="share.js?v=20260922k"></script>
-  <script src="sentences.js?v=20260922k"></script>
-  <script src="app.js?v=20260922k"></script>
-  <script src="workspace.js?v=20260922k"></script>
+  <script src="qrcode.min.js?v=20260923a"></script>
+  <script src="iconset.js?v=20260923a"></script>
+  <script src="words.js?v=20260923a"></script>
+  <script src="store.js?v=20260923a"></script>
+  <script src="charts.js?v=20260923a"></script>
+  <script src="share.js?v=20260923a"></script>
+  <script src="sentences.js?v=20260923a"></script>
+  <script src="app.js?v=20260923a"></script>
+  <script src="workspace.js?v=20260923a"></script>
 </body>
 </html>

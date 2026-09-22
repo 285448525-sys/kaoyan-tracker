@@ -4,9 +4,7 @@
    模块：
      ① 首页统计组（倒计时 / 今日待办 / 本周专注 / 连续天数）
      ② 每日语录（随机鼓励，可自定义）
-     ③ 备考阶段时间轴（12 个考研里程碑，可标记完成）
-     ④ 每日作息打卡（7 个默认时段，按日期打卡）
-     ⑤ 表单草稿缓存（刷新不丢输入）
+     ③ 表单草稿缓存（刷新不丢输入）
    存储：独立 localStorage（ky_ws_*），不读写 Store 业务表，零业务破坏
    规范：=== 严格相等；用户文本进 DOM 必 esc()；querySelector 结果判空
    ============================================================ */
@@ -16,9 +14,6 @@
 
   var KEY = {
     quote: 'ky_ws_quotes',
-    roadmap: 'ky_ws_roadmap_done',
-    routine: 'ky_ws_routine',
-    draft: 'ky_ws_draft_'
   };
 
   /* 默认语录（用户可在 index 的设置里扩展；此处为兜底） */
@@ -29,33 +24,6 @@
     '你不需要很厉害才能开始，但要开始才会很厉害。',
     '专注的每一分钟，都在为初试加分。',
     '累了就休息，但别放弃。'
-  ];
-
-  /* 考研 12 个阶段里程碑（借鉴看板 MILESTONES） */
-  var MILESTONES = [
-    ['基础启动期', '2026-03', '确定目标院校与专业，收集参考书目与真题'],
-    ['一轮基础', '2026-04', '过完各科教材，建立知识框架'],
-    ['一轮强化', '2026-06', '配合网课精读，整理笔记'],
-    ['暑假集训', '2026-07', '全天备考，开始真题训练'],
-    ['二轮强化', '2026-08', '专题突破，查漏补缺'],
-    ['真题一轮', '2026-09', '近 10 年真题逐套精做'],
-    ['错题攻坚', '2026-10', '集中刷错题，巩固薄弱点'],
-    ['三轮冲刺', '2026-11', '模拟考试，训练答题节奏'],
-    ['时政背诵', '2026-11', '政治时政与押题背诵'],
-    ['考前聚焦', '2026-12', '回归基础，调整作息'],
-    ['准考证', '2026-12', '打印准考证，订酒店、看考场'],
-    ['初试', '2026-12-19', '全国硕士研究生招生考试']
-  ];
-
-  /* 默认作息时段（借鉴看板 ROUTINE_DEFAULT，7 段） */
-  var ROUTINE_DEFAULT = [
-    ['06:30-07:00', '晨读 / 背单词'],
-    ['07:30-08:30', '数学复习'],
-    ['09:00-11:30', '专业课'],
-    ['14:00-16:00', '英语真题'],
-    ['16:30-18:00', '政治'],
-    ['19:30-21:30', '错题复盘'],
-    ['21:30-22:30', '当日总结']
   ];
 
   /* ---------------- 工具 ---------------- */
@@ -140,112 +108,6 @@
     setText('#m-quote', '「' + q + '」');
   }
 
-  /* ---------------- ③ 备考阶段时间轴 ---------------- */
-  function renderRoadmap() {
-    var box = $('#roadmap-list');
-    if (!box) return;
-    var done = lsGet(KEY.roadmap, {}) || {};
-
-    box.innerHTML = MILESTONES.map(function (m, i) {
-      var id = 'ms' + i;
-      var isDone = !!done[id];
-      return '<div class="m-tl-item' + (isDone ? ' done' : '') + '">' +
-        '<div class="node"></div>' +
-        '<div class="m-tl-card">' +
-          '<div class="ph">' + esc(m[0]) + '</div>' +
-          '<div class="dt">' + esc(m[1]) + '</div>' +
-          '<div class="ds">' + esc(m[2]) + '</div>' +
-          '<div style="margin-top:9px">' +
-            '<button class="btn ' + (isDone ? 'btn-ghost' : 'btn-primary') + '" data-ms="' + id + '"' +
-              ' style="padding:7px 13px;font-size:13px">' +
-              (isDone ? '↩ 取消完成' : '✓ 标记完成') +
-            '</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    var n = MILESTONES.filter(function (m, i) { return done['ms' + i]; }).length;
-    setText('#roadmap-progress', n + '/' + MILESTONES.length + ' 已完成');
-
-    var btns = box.querySelectorAll('[data-ms]');
-    Array.prototype.forEach.call(btns, function (b) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-ms');
-        var d = lsGet(KEY.roadmap, {}) || {};
-        d[id] = !d[id];
-        lsSet(KEY.roadmap, d);
-        renderRoadmap();
-        toast(d[id] ? '已标记完成 🎉' : '已取消完成');
-      });
-    });
-  }
-
-  /* ---------------- ④ 每日作息打卡 ---------------- */
-  function routineDate() {
-    var el = $('#routine-date');
-    return (el && el.value) ? el.value : todayStr();
-  }
-  function renderRoutine() {
-    var box = $('#routine-list');
-    if (!box) return;
-    var ds = routineDate();
-    var all = lsGet(KEY.routine, {}) || {};
-    var rows = all[ds] || [];
-
-    if (!rows.length) {
-      box.innerHTML = '<div class="m-empty">点击「填充今日默认时段」开始打卡</div>';
-      setText('#routine-progress', '0/0');
-      return;
-    }
-
-    box.innerHTML = rows.map(function (r, i) {
-      return '<div class="m-item' + (r.done ? ' done' : '') + '">' +
-        '<div class="body">' +
-          '<div class="ttl">' + esc(r.t) + ' · ' + esc(r.s) + '</div>' +
-          '<div class="meta"><span class="chip ' + (r.done ? 'green' : 'yellow') + '">' +
-            (r.done ? '已打卡' : '未打卡') + '</span></div>' +
-        '</div>' +
-        '<button class="btn ' + (r.done ? 'btn-ghost' : 'btn-primary') + '" data-i="' + i + '"' +
-          ' style="padding:8px 14px;font-size:13px">' + (r.done ? '撤销' : '打卡') + '</button>' +
-      '</div>';
-    }).join('');
-
-    var n = rows.filter(function (r) { return r.done; }).length;
-    setText('#routine-progress', n + '/' + rows.length + ' 已打卡');
-
-    var btns = box.querySelectorAll('[data-i]');
-    Array.prototype.forEach.call(btns, function (b) {
-      b.addEventListener('click', function () {
-        var i = parseInt(b.getAttribute('data-i'), 10);
-        var a = lsGet(KEY.routine, {}) || {};
-        var list = a[ds] || [];
-        if (list[i]) {
-          list[i].done = !list[i].done;
-          a[ds] = list;
-          lsSet(KEY.routine, a);
-          renderRoutine();
-          toast(list[i].done ? '打卡成功 ✅' : '已撤销');
-        }
-      });
-    });
-  }
-  function seedRoutine() {
-    var ds = routineDate();
-    var a = lsGet(KEY.routine, {}) || {};
-    if (a[ds] && a[ds].length) {
-      toast('该日期已有打卡记录');
-      renderRoutine();
-      return;
-    }
-    a[ds] = ROUTINE_DEFAULT.map(function (r) {
-      return { t: r[0], s: r[1], done: false };
-    });
-    lsSet(KEY.routine, a);
-    renderRoutine();
-    toast('已填充 ' + ROUTINE_DEFAULT.length + ' 个时段');
-  }
-
   /* ---------------- ⑤ 表单草稿缓存 ---------------- */
   function bindDraft(prefix, ids) {
     function save() {
@@ -283,19 +145,14 @@
   function refreshAll() {
     renderStats();
     renderQuote();
-    renderRoadmap();
-    renderRoutine();
   }
 
   function init() {
-    // 日期选择器默认值
-    var rd = $('#routine-date');
-    if (rd) {
-      rd.value = todayStr();
-      rd.addEventListener('change', renderRoutine);
-    }
-    var seedBtn = $('#routine-seed');
-    if (seedBtn) seedBtn.addEventListener('click', seedRoutine);
+    // 一次性清理：备考时间轴 / 每日作息 已删除（v20260922l），旧数据随之清除
+    try {
+      localStorage.removeItem('ky_ws_roadmap_done');
+      localStorage.removeItem('ky_ws_routine');
+    } catch (e) {}
 
     // 表单草稿：首页计划 / 错题录入 / 长难句
     bindDraft('plan', ['plan-text', 'plan-subject']);
