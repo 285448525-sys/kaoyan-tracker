@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922f';
+  var APP_VERSION = '20260922g';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -2727,6 +2727,27 @@
         showToast('已记录 ' + year + ' 年真题 ✅', 'ok');
       });
     });
+  }
+
+  /* ---------- P0-2 AI 实验室总开关：未开启 → 站内不显示任何 AI 入口 ---------- */
+  function applyAiVisibility() {
+    var cfg = (typeof Store.getConfig === 'function') ? (Store.getConfig() || {}) : {};
+    document.body.classList.toggle('ai-on', !!cfg.aiEnabled);
+    var box = document.getElementById('cfg-ai-enabled');
+    if (box) box.checked = !!cfg.aiEnabled;
+  }
+  function bindAiLab() {
+    var box = document.getElementById('cfg-ai-enabled');
+    if (box) {
+      box.addEventListener('change', function () {
+        var cfg = (typeof Store.getConfig === 'function') ? (Store.getConfig() || {}) : {};
+        cfg.aiEnabled = !!box.checked;
+        if (typeof Store.setConfig === 'function') Store.setConfig(cfg);
+        applyAiVisibility();
+        showToast(box.checked ? 'AI 入口已显示' : 'AI 入口已收起', 'ok');
+      });
+    }
+    applyAiVisibility();
   }
 
   function renderMathPractice() {
@@ -5728,13 +5749,14 @@
     var fab = document.getElementById('fabAction');
     if (fab) {
       fab.addEventListener('click', function () {
-        // 先跳到「错题」页的拍题卡片，预览/求解 UI 才可见
+        // P0-2：FAB 由「拍题」改为「添加错题」——直接进录入框，不依赖视觉模型 key
         var activeBtn = document.querySelector('.tab-btn.active');
         var onMistakes = activeBtn && activeBtn.getAttribute('data-tab') === 'mistakes';
         if (!onMistakes) switchTab('mistakes');
-        // 拉起相机/相册（与错题页「拍照」按钮同逻辑，复用已有 capture 流程）
-        var camBtn = document.getElementById('btn-capture-cam');
-        if (camBtn) camBtn.click();
+        setTimeout(function () {
+          var ta = document.getElementById('mistake-content');
+          if (ta) { ta.scrollIntoView({ block: 'center' }); ta.focus(); }
+        }, onMistakes ? 0 : 120);
       });
     }
 
@@ -6341,6 +6363,7 @@
     // 数学：自定义题库
     if (refs.btnAddMq) refs.btnAddMq.addEventListener('click', onAddMathQuestion);   // P0-1：题库录入已砍
     bindExamPunch();   // P0-1 真题年份打卡
+    bindAiLab();       // P0-2 AI 实验室总开关
 
     // 408 错题录入已合并进「错题本」tab（见 btn-add-mistake 的范围路由）
     // 408：分类刷题

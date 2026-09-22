@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260922f" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922f" />
+  <link rel="icon" href="app-icon.svg?v=20260922g" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260922g" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922f" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922g" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922f" />
-  <link rel="stylesheet" href="styles.css?v=20260922f" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260922g" />
+  <link rel="stylesheet" href="styles.css?v=20260922g" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -188,7 +188,7 @@
             <input type="text" id="plan-text" class="todo-add-input" placeholder="添加计划项，如：复盘英语阅读错题" />
             <select id="plan-subject" class="todo-subject"><option value="">科目</option></select>
             <button id="btn-add-plan" class="btn btn-ghost todo-add-btn">＋ 添加</button>
-            <button id="btn-auto-plan" class="btn btn-ghost todo-ai-btn">AI 帮我拆</button>
+            <button id="btn-auto-plan" class="btn btn-ghost todo-ai-btn" data-ai>AI 帮我拆</button>
           </div>
         </div>
       </div>
@@ -350,19 +350,20 @@
       <div class="mb-grid">
         <div class="card">
           <h2 class="card-title"><span class="ic-inline" data-icon="mistakes"></span> 错题 / 感悟整理</h2>
-          <p class="card-sub">把题目 / 感悟直接粘贴到下面，三步搞定：智能整理 / 存为感悟 / 手动归档。</p>
+          <p class="card-sub">把题目 / 感悟直接粘贴到下面，点「保存」就行；分类、科目、备注存完再改。</p>
           <div class="field">
             <label>内容（粘贴题目 / 感悟）</label>
             <textarea id="mistake-content" rows="4" placeholder="直接复制粘贴上来，例如：一道高数二重积分题 + 我的错法……"></textarea>
           </div>
           <div class="btn-row" style="margin-top:10px">
-            <button id="btn-smart-organize" class="btn btn-primary" type="button"><span class="ic-inline" data-icon="wand"></span> 智能整理</button>
-            <button id="btn-save-direct" class="btn btn-ghost" type="button">直接存为感悟</button>
-            <button id="btn-manual-organize" class="btn btn-ghost" type="button">手动归档 ▾</button>
+            <button id="btn-save-direct" class="btn btn-primary" type="button">保存错题</button>
           </div>
           <div id="mistake-smart-status" class="ai-status" style="margin-top:8px"></div>
           <details id="mistake-manual-details" class="vocab-extra" style="margin-top:12px">
-            <summary class="card-sub">手动归档（选范围 / 分类 / 备注后点保存）</summary>
+            <summary class="card-sub">更多：AI 归类 / 手动归档</summary>
+            <div class="btn-row" style="margin-top:10px">
+              <button id="btn-smart-organize" class="btn btn-ghost" type="button" data-ai><span class="ic-inline" data-icon="wand"></span> AI 归类</button>
+            </div>
             <div class="field-row" style="margin-top:10px">
               <label>范围</label>
               <select id="mistake-scope">
@@ -398,7 +399,7 @@
           </details>
         </div>
 
-        <div class="card" id="ai-solve-card">
+        <div class="card" id="ai-solve-card" data-ai>
           <h2 class="card-title"><span class="ic-inline" data-icon="camera"></span> 拍题解答 <span class="card-sub">拍/选一道题，AI 自动解答并存本地</span></h2>
           <details class="vocab-extra" style="margin:0 0 12px">
             <summary class="card-sub">查看视觉模型设置说明</summary>
@@ -526,9 +527,9 @@
   <div class="vchips" id="vocab-level-chips" style="margin-top:var(--sp-1)"></div>
   <div id="vocab-list" class="mistake-list"></div>
   <div class="btn-row" style="margin-top:10px">
-    <button id="btn-vocab-backfill" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 补全释义</button>
+    <button id="btn-vocab-backfill" class="btn btn-ghost" data-ai><span class="ic-inline" data-icon="robot"></span> AI 补全释义</button>
     <button id="btn-clear-wrong" class="btn btn-danger">清空查词记录</button>
-    <button id="btn-ai-summarize-wrong" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
+    <button id="btn-ai-summarize-wrong" class="btn btn-ghost" data-ai><span class="ic-inline" data-icon="robot"></span> AI 归纳全书查词</button>
   </div>
   <div id="wrong-ai-summary" class="ai-summary-box"></div>
 </div></div>
@@ -538,7 +539,7 @@
   <div class="import-body">
     <textarea id="import-text" rows="4" placeholder="粘贴任意英文内容（段落 / 词表 / 句子），点「AI 智能导入」自动抽词翻译；&#10;或按格式解析导入：&#10;abandon&#9;放弃；抛弃&#10;hypothesis：假设&#10;adequate - 足够的&#10;cognitive 认知的&#10;TCP|传输控制协议|/tiː siː piː/|abbr.|可靠面向连接协议|计算机网络"></textarea>
     <div class="btn-row" style="margin-top:10px">
-      <button id="btn-smart-import" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 智能导入</button>
+      <button id="btn-smart-import" class="btn btn-primary" data-ai><span class="ic-inline" data-icon="robot"></span> AI 智能导入</button>
       <button id="btn-import-words" class="btn btn-ghost">解析并导入</button>
       <label class="btn btn-ghost" for="import-file">上传文件</label>
       <input type="file" id="import-file" accept=".txt,.md,.csv,.json,text/plain" hidden />
@@ -644,7 +645,7 @@
           <div class="plan-daily-add-row">
             <select id="plan-daily-subject" class="todo-subject"><option value="">不指定科目</option></select>
             <button id="btn-plan-daily-add" class="btn btn-ghost">＋ 添加</button>
-            <button id="btn-plan-ai" class="btn btn-primary">🤖 AI 安排这天</button>
+            <button id="btn-plan-ai" class="btn btn-primary" data-ai>🤖 AI 安排这天</button>
           </div>
         </div>
         <details id="plan-history" class="plan-history-fold">
@@ -659,7 +660,7 @@
   <p class="card-sub" style="margin:0 0 var(--sp-2)">写下接下来几天要做的事（每行一条，支持「政2 / 英1 / 数3 / 408」缩写），AI 分配到具体日期；未配置 AI 则按弱项模板铺开。</p>
   <textarea id="week-tasks" rows="4" placeholder="例：&#10;政1000题马原错题复盘&#10;英一真题2018阅读&#10;数二第5章习题&#10;408数据结构图论专项&#10;背单词"></textarea>
   <div class="btn-row" style="margin-top:var(--sp-2)">
-    <button id="btn-week-ai" class="btn btn-primary"><span class="ic-inline" data-icon="robot"></span> AI 排进日程</button>
+    <button id="btn-week-ai" class="btn btn-primary" data-ai><span class="ic-inline" data-icon="robot"></span> AI 排进日程</button>
     <button id="btn-week-noai" class="btn btn-ghost">按弱项生成</button>
   </div>
   <div id="week-box" class="week-box"></div>
@@ -696,7 +697,7 @@
         </div>
         <div class="btn-row" style="margin-top:8px">
           <button id="btn-share-summary" class="btn btn-primary"><span class="ic-inline" data-icon="upload"></span> 分享今日卡片</button>
-          <button id="btn-ai-summary" class="btn btn-ghost"><span class="ic-inline" data-icon="robot"></span> AI 生成学习总结</button>
+          <button id="btn-ai-summary" class="btn btn-ghost" data-ai><span class="ic-inline" data-icon="robot"></span> AI 生成学习总结</button>
         </div>
         <div id="ai-summary-out" class="ai-summary-out"></div>
       </div></div>
@@ -879,8 +880,13 @@
             <div id="sync-status" class="import-status"></div>
           </div>
           <div class="sub-card ai-card">
-            <h3 class="card-sub"><span class="ic-inline">🤖</span> AI 能力（可选）</h3>
-            <p class="hint">粘贴你的 <strong>DeepSeek API Key</strong>，即可使用全部 AI 功能。Key 仅存本机浏览器、经服务器中转，不会暴露到网络上。</p>
+            <h3 class="card-sub"><span class="ic-inline">🤖</span> AI 实验室（可选 · 默认关闭）</h3>
+            <p class="hint">不配 Key 也能正常用这个站。打开下面的开关后，站内才会出现「AI 归类 / AI 排计划 / 拍题解答」等入口。</p>
+            <div class="field-row">
+              <label>启用 AI 功能</label>
+              <input type="checkbox" id="cfg-ai-enabled" />
+              <div class="field-hint">未配置 Key 时即便打开，功能也会提示「请先配置」。</div>
+            </div>
             <div class="field-row">
               <label>DeepSeek API Key</label>
               <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
@@ -963,17 +969,17 @@
     <button class="btb-btn" data-tab="vocab"><span class="tab-ic" data-icon="vocab"></span><span>词汇</span></button>
     <button class="btb-btn" data-tab="settings"><span class="tab-ic" data-icon="settings"></span><span>我的</span></button>
   </nav>
-  <!-- 移动端 FAB 悬浮操作按钮：拍题（高频功能，置右下角拇指易达区） -->
-  <button class="fab-action" id="fabAction" aria-label="拍题 / 拍照识别" title="拍题"><span class="tab-ic" data-icon="camera"></span></button>
+  <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
+  <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20260922f"></script>
-  <script src="iconset.js?v=20260922f"></script>
-  <script src="words.js?v=20260922f"></script>
-  <script src="store.js?v=20260922f"></script>
-  <script src="charts.js?v=20260922f"></script>
-  <script src="share.js?v=20260922f"></script>
-  <script src="sentences.js?v=20260922f"></script>
-  <script src="app.js?v=20260922f"></script>
-  <script src="workspace.js?v=20260922f"></script>
+  <script src="qrcode.min.js?v=20260922g"></script>
+  <script src="iconset.js?v=20260922g"></script>
+  <script src="words.js?v=20260922g"></script>
+  <script src="store.js?v=20260922g"></script>
+  <script src="charts.js?v=20260922g"></script>
+  <script src="share.js?v=20260922g"></script>
+  <script src="sentences.js?v=20260922g"></script>
+  <script src="app.js?v=20260922g"></script>
+  <script src="workspace.js?v=20260922g"></script>
 </body>
 </html>

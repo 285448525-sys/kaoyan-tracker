@@ -3715,6 +3715,9 @@ body.word-fullscreen .practice-body { flex: 1; display: flex; flex-direction: co
 :root[data-theme="dark"] .cfg-toggle { background: var(--surface-2); }
 :root[data-theme="dark"] .cfg-toggle:checked { background: var(--primary); }
 
+/* ============ P0-2 AI 实验室：未开启时所有 AI 入口不出现在主流程 ============ */
+body:not(.ai-on) [data-ai] { display: none !important; }
+
 /* ============ P0-1 真题年份打卡（数学 / 408 共用，取代自定义题库录入） ============ */
 .punch-form { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin: var(--sp-2) 0 var(--sp-3); }
 .punch-year, .punch-num {
