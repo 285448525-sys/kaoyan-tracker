@@ -24,7 +24,7 @@ function boot(seedStr) {
   window.HTMLCanvasElement.prototype.getContext = () => new Proxy({}, { get: () => () => ({}), set: () => true });
   window.fetch = () => Promise.reject(new Error('disabled'));
   if (seedStr) { try { window.localStorage.setItem(KEY, seedStr); } catch (e) {} }
-  const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+  const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
   for (const f of order) window.eval(fs.readFileSync(path.join(ROOT, f), 'utf8'));
   if (typeof window.__switchTab !== 'function') window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
   return { window, errs };

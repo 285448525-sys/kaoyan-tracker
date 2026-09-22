@@ -12,7 +12,7 @@ window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() 
 window.HTMLElement.prototype.scrollIntoView = function () {};
 window.history.replaceState = function () {}; // jsdom 不支持，mock 掉
 
-const scripts = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'md5.js', 'sentences.js', 'app.js'];
+const scripts = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
 scripts.forEach(s => { try { window.eval(fs.readFileSync(path + s, 'utf8')); } catch (e) { console.error('ERR', s, e.message); } });
 
 const doc = window.document;

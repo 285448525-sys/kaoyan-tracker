@@ -19,7 +19,7 @@ window.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,';
 window.HTMLCanvasElement.prototype.toBlob = cb => cb && cb({});
 
 // 先写入本地真实数据
-const order = ['qrcode.min.js','words.js','store.js','charts.js','share.js','md5.js','sentences.js','app.js'];
+const order = ['qrcode.min.js','words.js','store.js','charts.js','share.js','sentences.js','app.js'];
 for (const f of order) window.eval(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 if (typeof window.__switchTab !== 'function') document.dispatchEvent(new window.Event('DOMContentLoaded'));
 const Store = window.Store;
