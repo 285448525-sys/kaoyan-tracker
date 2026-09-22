@@ -93,10 +93,11 @@ function activeTabBtn() { const b = document.querySelector('.tab-btn.active'); r
 
 ok(activePanel() === 'tab-home', '初始激活面板 = tab-home（实际 ' + activePanel() + '）');
 
-const mathBtn = document.querySelector('.tab-btn[data-tab="math"]');
-ok(!!mathBtn, '侧栏存在 data-tab="math" 按钮');
+window.__switchTab('timer');
+const mathBtn = document.querySelector('#tab-timer .me-quick-btn[data-goto="math"]');
+ok(!!mathBtn, '计时页存在「数学章节进度」入口');
 try { mathBtn.click(); } catch (e) { ok(false, '点击 math 抛错：' + e.message); }
-ok(activePanel() === 'tab-math', '点击侧栏 math → 激活 tab-math（实际 ' + activePanel() + '）');
+ok(activePanel() === 'tab-math', '点击数学入口 → 激活 tab-math（实际 ' + activePanel() + '）');
 
 const btbVocab = document.querySelector('.bottom-tabbar .btb-btn[data-tab="vocab"]');
 ok(!!btbVocab, '底栏存在 data-tab="vocab" 按钮');
@@ -110,9 +111,10 @@ ok(!document.body.classList.contains('nav-open'), '初始 body 无 nav-open');
 try { navToggle.click(); } catch (e) { ok(false, '点击 navToggle 抛错：' + e.message); }
 ok(document.body.classList.contains('nav-open'), '点击 navToggle → body.nav-open（抽屉展开）');
 // 抽屉展开后点击侧栏应切换且关闭抽屉（移动端 showTab 会移除 nav-open）
-const csBtn = document.querySelector('.tab-btn[data-tab="cs408"]');
+window.__switchTab('timer');
+const csBtn = document.querySelector('#tab-timer .me-quick-btn[data-goto="cs408"]');
 try { csBtn.click(); } catch (e) { ok(false, '展开态点击 cs408 抛错：' + e.message); }
-ok(activePanel() === 'tab-cs408', '展开态点击 cs408 → 激活 tab-cs408（实际 ' + activePanel() + '）');
+ok(activePanel() === 'tab-cs408', '点击 408 入口 → 激活 tab-cs408（实际 ' + activePanel() + '）');
 ok(!document.body.classList.contains('nav-open'), '切换后移动端自动关闭抽屉（无 nav-open）');
 try { backdrop.click(); } catch (e) { ok(false, '点击 backdrop 抛错：' + e.message); }
 ok(!document.body.classList.contains('nav-open'), '点击 backdrop → 关闭抽屉');
