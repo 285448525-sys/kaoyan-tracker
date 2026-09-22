@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922b';
+  var APP_VERSION = '20260922c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -489,28 +489,12 @@
   /* ============ 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ============ */
   function renderHome() {
     renderHomeHero();
-    renderHomeStats();
     renderHomeSysTasks();
     renderHomeTodo();
   }
 
-  /* 首页 Memphis 统计组：接真实数据（此前 4 格无任何赋值，恒为 0/-- 的死卡片） */
-  function renderHomeStats() {
-    var ds = Store.todayStr();
-    var plan = Store.getPlan(ds) || [];
-    var done = plan.filter(function (i) { return i.done; }).length;
-    var todoEl = document.getElementById('m-stat-todo');
-    if (todoEl) todoEl.textContent = plan.length ? (done + '/' + plan.length) : '0';
-    var weekMin = 0;
-    for (var i = 0; i < 7; i++) {
-      var d = Store.dateStr(Store.addDays(new Date(ds + 'T00:00:00'), -i));
-      weekMin += Store.totalMinutesForDay(Store.getDay(d) || {});
-    }
-    var weekEl = document.getElementById('m-stat-week');
-    if (weekEl) weekEl.textContent = String(Math.round(weekMin));
-    var streakEl = document.getElementById('m-stat-streak');
-    if (streakEl) streakEl.textContent = String(Store.consecutiveStreak());
-  }
+  /* ⚠️ 统计组 `#m-stat-*` 的唯一写入方是 workspace.js 的 renderStats()（含 30s 定时与 tab 点击刷新）。
+     此处不要再写同一批元素，否则两个写入方互相覆盖、数值抖动。改统计口径请改 workspace.js。 */
 
   /* 系统待处理项（生词 / 数学错题 / 408 错题）置顶于「今天要做的事」，点行直达 */
   function renderHomeSysTasks() {
@@ -2098,10 +2082,12 @@
 
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
-    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
+    // roadmap / routine 已于 v20260922c 降级为数据页子标签，旧入口自动落到 data
+    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', roadmap:'data', routine:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
+    var dataSub = { record:'review', plan:'review', summary:'review', roadmap:'roadmap', routine:'routine' };
     var real = map[target] || target;
     showTab(real);
-    if (real === 'data') { showSub('data', (target === 'record' || target === 'plan' || target === 'summary') ? 'review' : 'overview'); }
+    if (real === 'data') { showSub('data', dataSub[target] || 'overview'); }
     else if (real === 'vocab') { showSub('vocab', target === 'review' ? 'review' : 'words'); }
     else if (real === 'settings') { showSub('settings', (target === 'manual' || target === 'guide' || target === 'sites') ? 'help' : 'base'); }
     else if (real === 'mistakes') { showSub('mistakes', target === 'sentences' ? 'sentences' : 'mistakes'); }

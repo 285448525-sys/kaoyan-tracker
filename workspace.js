@@ -107,22 +107,14 @@
   function renderStats() {
     var S = window.Store;
     if (!S) return;
-    var cfg = (typeof S.getConfig === 'function') ? S.getConfig() : {};
 
-    // 距考研天数
-    var cd = '--';
-    if (cfg && cfg.examDate) {
-      var diff = Math.round(
-        (new Date(cfg.examDate + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000
-      );
-      cd = diff >= 0 ? diff : ('-' + Math.abs(diff));
-    }
-    setText('#m-stat-cd', cd);
+    // 注：距考研天数已由顶栏倒计时胶囊承担，统计组不再重复这一格（#m-stat-cd 随 P1 移除）
 
-    // 今日待办（未完成计划数）
+    // 今日待办（已完成 / 总数）
     var plan = (typeof S.getPlan === 'function') ? (S.getPlan(todayStr()) || []) : [];
-    var todo = plan.filter(function (p) { return !p.done; }).length;
-    setText('#m-stat-todo', todo);
+    var unDone = plan.filter(function (p) { return !p.done; }).length;
+    var doneN = plan.length - unDone;
+    setText('#m-stat-todo', plan.length ? (doneN + '/' + plan.length) : '0');
 
     // 本周专注（分钟）
     var mins = 0;
