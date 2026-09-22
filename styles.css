@@ -2638,6 +2638,17 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .hh-countdown .tab-ic, .hh-countdown .ic { width: 16px; height: 16px; }
 .hh-countdown .tab-ic svg, .hh-countdown .ic svg { width: 16px; height: 16px; }
 .hh-cd-text { white-space: nowrap; }
+/* 倒计时紧迫感（情绪驱动：≤30 天实底橙，≤7 天深橙 + 呼吸光环，不新增元素） */
+.hh-countdown.urgent { background: var(--primary); color: #fff; }
+.hh-countdown.urgent .tab-ic, .hh-countdown.urgent .ic { color: #fff; }
+.hh-countdown.critical { background: var(--primary-deep); color: #fff; animation: cd-pulse 2.4s ease-in-out infinite; }
+@keyframes cd-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(154, 52, 18, .38); }
+  50%      { box-shadow: 0 0 0 7px rgba(154, 52, 18, 0); }
+}
+
+/* 今日专注达标：进度条转糖果绿（成就感反馈） */
+.home-hero-card.done .hhc-bar > i { background: linear-gradient(90deg, var(--c-green), #2BB673); }
 
 
 .home-hero-card {

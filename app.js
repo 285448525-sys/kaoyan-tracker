@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260922a';
+  var APP_VERSION = '20260922b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -564,6 +564,13 @@
     }
     var cdText = document.getElementById('home-cd-text');
     if (cdText) cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天') : (diff === 0 ? '距考研 · 今天' : '距考研 --');
+    // 紧迫感分级：≤30 天实底橙，≤7 天深橙呼吸（仅加 class，不新增元素）
+    var cdBtn = document.querySelector('.hh-countdown');
+    if (cdBtn) {
+      var n = (typeof diff === 'number') ? diff : -1;
+      cdBtn.classList.toggle('urgent', n > 0 && n <= 30);
+      cdBtn.classList.toggle('critical', n > 0 && n <= 7);
+    }
     // 今日专注 + 进度环（软目标 6h）
     var focusNum = document.getElementById('home-focus-num');
     if (focusNum) focusNum.textContent = fmtMinShort(totalMin);
@@ -573,6 +580,9 @@
     if (sub) sub.textContent = (totalMin >= goalMin) ? '已达成今日专注目标' : ('完成今日目标还差 ' + fmtMinShort(goalMin - totalMin));
     var bar = document.getElementById('home-focus-bar');
     if (bar) bar.style.width = pct + '%';
+    // 达标：进度条转绿（成就感）
+    var hero = document.getElementById('home-hero-card');
+    if (hero) hero.classList.toggle('done', totalMin >= goalMin);
     // CTA 文案：计时中显示「继续学习」
     var t = Store.getTimer();
     var ctaText = document.getElementById('home-cta-text');
