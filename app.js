@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260923a';
+  var APP_VERSION = '20260923b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1665,6 +1665,11 @@
         renderMistakeList();
       });
       top.appendChild(del);
+      // P1-4 保存后行内改分类 / 科目 / 备注（不拦录入流程）
+      var ed = el('button', 'plan-del', '改');
+      ed.title = '修改分类 / 科目 / 备注';
+      ed.addEventListener('click', function () { toggleMistakeEdit(item, m); });
+      top.appendChild(ed);
       item.appendChild(top);
       item.appendChild(el('div', 'mistake-content', m.content || ''));
       var meta = [];
@@ -1690,6 +1695,62 @@
       });
       refs.mistakeList.appendChild(grp);
     });
+  }
+
+  /* ---------- P1-4 错题卡片行内编辑：分类 / 科目 / 备注 ---------- */
+  function toggleMistakeEdit(item, m) {
+    var old = item.querySelector('.m-inline-edit');
+    if (old) { old.remove(); return; }
+    var box = el('div', 'm-inline-edit');
+    var isGeneral = (m.scope === 'general');
+    var cats = m.scope === 'math' ? MATH_MISTAKE_CATS : (m.scope === 'cs408' ? CS408_MISTAKE_CATS : MISTAKE_TYPES);
+    var curCat = isGeneral ? (m.type || '其他') : (m.category || '其他');
+
+    var rowCat = el('div', 'm-edit-row');
+    rowCat.appendChild(el('label', '', '分类'));
+    var selCat = el('select');
+    cats.forEach(function (c) { var o = el('option'); o.value = c; o.textContent = c; if (c === curCat) o.selected = true; selCat.appendChild(o); });
+    rowCat.appendChild(selCat);
+    box.appendChild(rowCat);
+
+    var selSub = null;
+    if (isGeneral) {
+      var rowSub = el('div', 'm-edit-row');
+      rowSub.appendChild(el('label', '', '科目'));
+      selSub = el('select');
+      var o0 = el('option'); o0.value = ''; o0.textContent = '不指定'; selSub.appendChild(o0);
+      MISTAKE_SUBJECTS.forEach(function (s) { var o = el('option'); o.value = s; o.textContent = s; if (s === (m.subject || '')) o.selected = true; selSub.appendChild(o); });
+      rowSub.appendChild(selSub);
+      box.appendChild(rowSub);
+    }
+
+    var rowNote = el('div', 'm-edit-row');
+    rowNote.appendChild(el('label', '', '备注'));
+    var inpNote = el('input'); inpNote.type = 'text'; inpNote.value = m.note || ''; inpNote.placeholder = '知识点 / 错因（可选）';
+    rowNote.appendChild(inpNote);
+    box.appendChild(rowNote);
+
+    var acts = el('div', 'm-edit-row m-edit-acts');
+    var save = el('button', 'btn btn-primary', '保存');
+    save.type = 'button';
+    save.addEventListener('click', function () {
+      var patch = isGeneral
+        ? { type: selCat.value, subject: selSub ? selSub.value : '', note: inpNote.value.trim() }
+        : { category: selCat.value, note: inpNote.value.trim() };
+      if (isGeneral) Store.updateMistake(m.id, patch);
+      else if (m.scope === 'math') Store.updateMathMistake(m.id, patch);
+      else Store.update408Mistake(m.id, patch);
+      renderMistakeList();
+      showToast('已更新', 'ok');
+    });
+    var cancel = el('button', 'btn btn-ghost', '取消');
+    cancel.type = 'button';
+    cancel.addEventListener('click', function () { box.remove(); });
+    acts.appendChild(save); acts.appendChild(cancel);
+    box.appendChild(acts);
+
+    item.appendChild(box);
+    if (selCat) selCat.focus();
   }
 
   /* ============ 侧边栏折叠 + 偏好记忆 ============ */

@@ -928,6 +928,16 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .plan-prog-line { font-size: 13px; color: var(--muted); text-align: right; margin-top: 6px; }
 
 /* ============ 数学：错题回顾态 ============ */
+/* P1-4 错题卡片行内编辑（分类 / 科目 / 备注） */
+.m-inline-edit { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: grid; gap: 8px; }
+.m-edit-row { display: flex; align-items: center; gap: 8px; }
+.m-edit-row > label { flex: 0 0 44px; font-size: 12px; color: var(--txt-3); }
+.m-edit-row select, .m-edit-row input[type=text] { flex: 1; min-width: 0; }
+.m-edit-acts { justify-content: flex-end; }
+.m-edit-acts .btn { flex: 0 0 auto; padding: 6px 16px; font-size: 13px; }
+@media (max-width: 600px) {
+  .m-edit-row > label { flex: 0 0 38px; }
+}
 .mistake-item.reviewed { opacity: .72; }
 .mistake-item.reviewed .mistake-content { text-decoration: line-through; }
 .mistake-review { align-self: flex-start; margin-top: var(--sp-1); }

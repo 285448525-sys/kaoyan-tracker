@@ -341,6 +341,7 @@
   }
   function addMistake(m) { m.id = 'mk_' + nextSeq(); state.mistakes.push(m); save(); return m; }
   function removeMistake(id) { state.mistakes = state.mistakes.filter(function (x) { return x.id !== id; }); save(); }
+  function updateMistake(id, patch) { var arr = state.mistakes || []; for (var i = 0; i < arr.length; i++) { if (arr[i].id === id) { for (var k in patch) { if (patch.hasOwnProperty(k)) arr[i][k] = patch[k]; } } } save(); }
 
   /* ---------- 学习网站 ---------- */
   function getUserWebsites() { return state.websites; }
@@ -955,7 +956,7 @@
     totalMinutesForDay: totalMinutesForDay, resetDay: resetDay,
     addExam: addExam, removeExam: removeExam, getExams: getExams,
     getPlan: getPlan, setPlan: setPlan, addDailyPlanItem: addDailyPlanItem, updateDailyPlanItem: updateDailyPlanItem, toggleDailyPlanItem: toggleDailyPlanItem, removeDailyPlanItem: removeDailyPlanItem,
-    getMistakes: getMistakes, addMistake: addMistake, removeMistake: removeMistake,
+    getMistakes: getMistakes, addMistake: addMistake, removeMistake: removeMistake, updateMistake: updateMistake,
     getUserWebsites: getUserWebsites, addWebsite: addWebsite, removeWebsite: removeWebsite,
     getModuleMastery: getModuleMastery, setModuleMastery: setModuleMastery, addModule: addModule,
     getSubjectChapters: getSubjectChapters, setSubjectChapters: setSubjectChapters,
