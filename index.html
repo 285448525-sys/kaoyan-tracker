@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260923b" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260923b" />
+  <link rel="icon" href="app-icon.svg?v=20260923c" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20260923c" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923b" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923c" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923b" />
-  <link rel="stylesheet" href="styles.css?v=20260923b" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260923c" />
+  <link rel="stylesheet" href="styles.css?v=20260923c" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -604,6 +604,16 @@
       </div></div>
 
 
+      <!-- 近 30 天热力图 + 薄弱科目提示 -->
+      <div class="section">
+<div class="card">
+        <h2 class="card-title"><span class="ic-inline" data-icon="fire"></span> 近 30 天打卡</h2>
+        <div id="heat30" class="heat30"></div>
+        <div id="heat30-sum" class="heat30-sum"></div>
+        <div id="heat30-legend" class="heat30-legend"><span>少</span><i class="h30 l0"></i><i class="h30 l1"></i><i class="h30 l2"></i><i class="h30 l3"></i><i class="h30 l4"></i><span>多</span></div>
+        <div id="weak-subject" class="weak-subject"></div>
+      </div></div>
+
       <!-- 学习战报（借鉴 K12 学习台分享海报：周/月聚合 + 一键生成海报） -->
       <div class="section">
 <div class="card battle-card">
@@ -946,14 +956,14 @@
   <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
   <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20260923b"></script>
-  <script src="iconset.js?v=20260923b"></script>
-  <script src="words.js?v=20260923b"></script>
-  <script src="store.js?v=20260923b"></script>
-  <script src="charts.js?v=20260923b"></script>
-  <script src="share.js?v=20260923b"></script>
-  <script src="sentences.js?v=20260923b"></script>
-  <script src="app.js?v=20260923b"></script>
-  <script src="workspace.js?v=20260923b"></script>
+  <script src="qrcode.min.js?v=20260923c"></script>
+  <script src="iconset.js?v=20260923c"></script>
+  <script src="words.js?v=20260923c"></script>
+  <script src="store.js?v=20260923c"></script>
+  <script src="charts.js?v=20260923c"></script>
+  <script src="share.js?v=20260923c"></script>
+  <script src="sentences.js?v=20260923c"></script>
+  <script src="app.js?v=20260923c"></script>
+  <script src="workspace.js?v=20260923c"></script>
 </body>
 </html>

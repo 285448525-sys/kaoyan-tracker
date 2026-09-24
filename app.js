@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260923b';
+  var APP_VERSION = '20260923c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -1385,7 +1385,91 @@
       } else { refs.countdown.textContent = '未设置考研日期'; }
     }
     renderScoreCard();
+    renderHeat30();
+    renderWeakSubject();
     renderBattleReport();
+  }
+
+  /* ---------- 近 30 天打卡热力图（P2-9） ---------- */
+  function minutesOfDay(day) {
+    if (!day || !day.durations) return 0;
+    var t = 0;
+    for (var k in day.durations) { if (day.durations.hasOwnProperty(k)) t += Number(day.durations[k]) || 0; }
+    return t;
+  }
+  function renderHeat30() {
+    var box = document.getElementById('heat30');
+    if (!box) return;
+    box.innerHTML = '';
+    var days = Store.getDays() || {};
+    var checkins = {};
+    (Store.getCheckins ? Store.getCheckins() : []).forEach(function (d) { checkins[d] = true; });
+    var total = 0, activeDays = 0;
+    eachDayInRange(30, function (ds, d) {
+      var min = minutesOfDay(days[ds]);
+      if (min === 0 && checkins[ds]) min = 1;   // 只打卡没计时也算有记录
+      total += min;
+      if (min > 0) activeDays++;
+      var lv = min <= 0 ? 0 : (min < 30 ? 1 : (min < 60 ? 2 : (min < 150 ? 3 : 4)));
+      var cell = el('i', 'h30 l' + lv);
+      cell.title = ds + '：' + (min > 1 ? min + ' 分钟' : (min === 1 ? '已打卡' : '无记录'));
+      box.appendChild(cell);
+    });
+    var sumEl = document.getElementById('heat30-sum');
+    if (sumEl) sumEl.textContent = '30 天共 ' + activeDays + ' 天有记录 · 累计 ' + (Math.round(total / 60 * 10) / 10) + ' 小时';
+  }
+
+  /* ---------- 薄弱科目提示（P2-9）：近 14 天各科时长排序 ---------- */
+  function renderWeakSubject() {
+    var box = document.getElementById('weak-subject');
+    if (!box) return;
+    box.innerHTML = '';
+    var subs = Store.getSubjects() || [];
+    if (!subs.length) {
+      box.appendChild(el('div', 'weak-empty', '还没配置考试科目，去「我的 → 设置」勾选后这里会提示该补哪科。'));
+      return;
+    }
+    var days = Store.getDays() || {};
+    var sum = {};
+    subs.forEach(function (s) { sum[s.key] = 0; });
+    var n = 0;
+    eachDayInRange(14, function (ds) {
+      n++;
+      var d = days[ds];
+      if (!d || !d.durations) return;
+      for (var k in d.durations) {
+        if (d.durations.hasOwnProperty(k) && sum[k] !== undefined) sum[k] += Number(d.durations[k]) || 0;
+      }
+    });
+    var arr = subs.map(function (s) { return { name: s.name, key: s.key, min: sum[s.key] || 0 }; })
+      .sort(function (a, b) { return a.min - b.min; });
+    var zero = arr.filter(function (x) { return x.min === 0; });
+    var tip = el('div', 'weak-tip');
+    if (zero.length === arr.length) {
+      tip.appendChild(el('span', 'weak-ic', '⚠️'));
+      tip.appendChild(el('span', '', '近 ' + n + ' 天没有任何科目计时记录，先去「计时」页开一次。'));
+    } else {
+      var weak = arr[0];
+      tip.appendChild(el('span', 'weak-ic', '⚠️'));
+      var t = el('span', '', '最该补的是「' + weak.name + '」：近 14 天只有 ' + weak.min + ' 分钟');
+      if (zero.length > 1) t.textContent += '（另有 ' + (zero.length - 1) + ' 科零记录）';
+      tip.appendChild(t);
+    }
+    box.appendChild(tip);
+    var list = el('div', 'weak-bars');
+    arr.forEach(function (x) {
+      var row = el('div', 'weak-row');
+      row.appendChild(el('span', 'weak-name', x.name));
+      var bar = el('span', 'weak-bar-wrap');
+      var max = Math.max.apply(null, arr.map(function (y) { return y.min; })) || 1;
+      var fill = el('i', 'weak-bar-fill' + (x.min === 0 ? ' zero' : ''));
+      fill.style.width = Math.max(4, Math.round(x.min / max * 100)) + '%';
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      row.appendChild(el('span', 'weak-min', x.min + '′'));
+      list.appendChild(row);
+    });
+    box.appendChild(list);
   }
 
   /* ============ 学习战报（借鉴 K12 学习台分享海报）：周/月聚合统计 ============ */

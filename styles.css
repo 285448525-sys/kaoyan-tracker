@@ -928,6 +928,37 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .plan-prog-line { font-size: 13px; color: var(--muted); text-align: right; margin-top: 6px; }
 
 /* ============ 数学：错题回顾态 ============ */
+/* P2-9 近 30 天打卡热力图 + 薄弱科目提示 */
+.heat30 { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
+.heat30 .h30 { display: block; padding-top: 100%; border-radius: 4px; background: #eceef2; }
+.heat30 .h30.l1 { background: #cdeed8; }
+.heat30 .h30.l2 { background: #8fdcb0; }
+.heat30 .h30.l3 { background: #46c684; }
+.heat30 .h30.l4 { background: #16a34a; }
+.heat30-sum { margin-top: 8px; font-size: var(--fs-xs); color: var(--txt-3); }
+.heat30-legend { margin-top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--txt-3); }
+.heat30-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.heat30-legend i.l0 { background: #eceef2; }
+.heat30-legend i.l1 { background: #cdeed8; }
+.heat30-legend i.l2 { background: #8fdcb0; }
+.heat30-legend i.l3 { background: #46c684; }
+.heat30-legend i.l4 { background: #16a34a; }
+.weak-subject { margin-top: var(--sp-3); border-top: 1px dashed var(--line); padding-top: var(--sp-3); }
+.weak-tip { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--txt-2); }
+.weak-ic { flex: 0 0 auto; }
+.weak-empty { font-size: var(--fs-sm); color: var(--txt-3); }
+.weak-bars { margin-top: 10px; display: grid; gap: 6px; }
+.weak-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); }
+.weak-name { flex: 0 0 84px; color: var(--txt-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weak-bar-wrap { flex: 1; height: 8px; background: #eceef2; border-radius: 4px; overflow: hidden; }
+.weak-bar-fill { display: block; height: 100%; background: var(--c-english); border-radius: 4px; }
+.weak-bar-fill.zero { background: #d8dbe2; }
+.weak-min { flex: 0 0 46px; text-align: right; color: var(--txt-3); font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  .heat30 { grid-template-columns: repeat(10, 1fr); }
+  .weak-name { flex-basis: 72px; }
+}
+
 /* P1-4 错题卡片行内编辑（分类 / 科目 / 备注） */
 .m-inline-edit { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: grid; gap: 8px; }
 .m-edit-row { display: flex; align-items: center; gap: 8px; }
