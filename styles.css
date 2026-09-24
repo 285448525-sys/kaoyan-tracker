@@ -928,6 +928,11 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .plan-prog-line { font-size: 13px; color: var(--muted); text-align: right; margin-top: 6px; }
 
 /* ============ 数学：错题回顾态 ============ */
+/* P0-3 番茄模式开关（计时卡内，一行） */
+.pomo-switch { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--fs-sm); color: var(--txt-2); cursor: pointer; }
+.pomo-switch input { width: 18px; height: 18px; flex: none; accent-color: var(--primary); }
+.pomo-tip { margin-top: 8px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--ok-soft); color: var(--ok-ink); font-size: var(--fs-sm); }
+
 /* P2-9 近 30 天打卡热力图 + 薄弱科目提示 */
 .heat30 { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
 .heat30 .h30 { display: block; padding-top: 100%; border-radius: 4px; background: #eceef2; }

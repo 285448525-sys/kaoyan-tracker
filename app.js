@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260923c';
+  var APP_VERSION = '20260923d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -382,21 +382,51 @@
     var nt = Store.getTimer();
     nt.subjectKey = key; nt.running = true; nt.startTs = Date.now(); nt.accumulated = 0;
     Store.setTimer(nt);
+    pomoReset();
     startTick(); showGlobalTimer(key); renderTimerState();
   }
   function endTimer() {
     commitTimer();
     Store.setTimer({ subjectKey: null, startTs: 0, accumulated: 0, running: false });
     stopTick();
+    pomoReset();
     hideGlobalTimer();
     renderTimerState();
     renderData(); renderToday(); renderPlan();
   }
+  /* ---------- P0-3 番茄模式：25 分钟自动暂停提醒（开关在计时卡内） ---------- */
+  var POMO_MIN = 25;
+  var pomoFired = false;   // 本轮是否已触发（恢复计时后重新计时）
+  function pomoEnabled() {
+    var box = document.getElementById('cfg-pomo');
+    return !!(box && box.checked);
+  }
+  function pomoReset() { pomoFired = false; var tip = document.getElementById('pomo-tip'); if (tip) { tip.hidden = true; tip.textContent = ''; } }
+  function checkPomo() {
+    if (!pomoEnabled() || pomoFired) return;
+    if (currentElapsed() < POMO_MIN * 60000) return;
+    pomoFired = true;
+    var t = Store.getTimer();
+    if (!t.running) return;
+    t.accumulated = (t.accumulated || 0) + (Date.now() - t.startTs);
+    t.running = false; t.startTs = 0;
+    Store.setTimer(t);
+    stopTick();
+    renderTimerState();
+    var tip = document.getElementById('pomo-tip');
+    if (tip) {
+      tip.hidden = false;
+      tip.textContent = '🍅 一个番茄完成（' + POMO_MIN + ' 分钟），休息 5 分钟再继续';
+    }
+    showToast('🍅 25 分钟到了，休息 5 分钟吧', 'ok');
+  }
+
   function startTick() {
     stopTick();
     timerInterval = setInterval(function () {
       var t = Store.getTimer();
       if (!t.running) return;
+      checkPomo();
       var live = document.getElementById('live-timer');
       if (live) live.textContent = fmt(currentElapsed());
       var info = document.getElementById('timer-active-info');
@@ -5976,10 +6006,21 @@
       } else {
         t.running = true; t.startTs = Date.now();
         Store.setTimer(t);
+        pomoReset();
         startTick();
       }
       renderTimerState();
     });
+    // P0-3 番茄模式开关：记住选择，切换时清掉上一轮提示
+    var pomoBox = document.getElementById('cfg-pomo');
+    if (pomoBox) {
+      pomoBox.checked = !!Store.getConfig().pomoEnabled;
+      pomoBox.addEventListener('change', function () {
+        Store.setConfig({ pomoEnabled: !!pomoBox.checked });
+        pomoReset();
+        showToast(pomoBox.checked ? '番茄模式已开：25 分钟提醒休息' : '番茄模式已关', 'ok');
+      });
+    }
     refs.manualDate = $('manual-date');
     refs.manualDurations = $('manual-durations');
     refs.manualCompleted = $('manual-completed');
