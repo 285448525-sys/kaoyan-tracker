@@ -34,28 +34,39 @@ window.switchTab('settings');
 Store.setTheme('dark');
 window.applyTheme();
 assert(document.documentElement.getAttribute('data-theme') === 'dark', 'applyTheme 把 dark 写到 <html>');
-const chips = Array.from(document.querySelectorAll('#theme-mode-group .chip'));
-assert(chips.length === 2, '设置页只有 2 个主题 chip（浅色/深色，无跟随系统）');
-assert(chips.find(c => c.getAttribute('data-theme') === 'dark').classList.contains('active'), 'dark chip 为 active');
-assert(!chips.find(c => c.getAttribute('data-theme') === 'light').classList.contains('active'), 'light chip 不为 active');
+// 主题 UI 已由「2 个 chip」收敛为单个开关 checkbox（#theme-toggle + #theme-mode-label）
+const toggle = document.getElementById('theme-toggle');
+const themeLabel = document.getElementById('theme-mode-label');
+assert(!!toggle, '设置页存在主题开关 #theme-toggle');
+assert(toggle.checked === true, '深色模式下开关为 checked');
+assert(themeLabel && themeLabel.textContent === '深色', '标签显示「深色」（实际 ' + (themeLabel && themeLabel.textContent) + '）');
+Store.setTheme('light');
+window.applyTheme();
+assert(document.documentElement.getAttribute('data-theme') === 'light', 'applyTheme 把 light 写到 <html>');
+assert(toggle.checked === false, '浅色模式下开关未选中');
+assert(themeLabel && themeLabel.textContent === '浅色', '标签显示「浅色」');
+Store.setTheme('dark');
+window.applyTheme();
+assert(document.documentElement.getAttribute('data-theme') === 'dark', 'applyTheme 回到 dark');
 
 // ---- 3) toggleTheme 在 light/dark 间切换 ----
 Store.setTheme('light');
 window.toggleTheme(); assert(Store.getTheme() === 'dark', 'toggle 1: light→dark');
 window.toggleTheme(); assert(Store.getTheme() === 'light', 'toggle 2: dark→light');
 
-// ---- 4) 点击 chip 切换主题 ----
-const darkChip = chips.find(c => c.getAttribute('data-theme') === 'dark');
-darkChip.click();
-assert(Store.getTheme() === 'dark', '点击 dark chip 切换到 dark');
-assert(darkChip.classList.contains('active'), 'dark chip 被高亮');
+// ---- 4) 点击开关切换主题 ----
+Store.setTheme('light'); window.applyTheme();
+toggle.click();
+assert(Store.getTheme() === 'dark', '点击开关切换到 dark');
+assert(toggle.checked === true, '开关变为 checked（浅→深）');
 
 // ---- 5) 侧边栏不再有 theme-toggle / help-btn ----
 assert(!document.getElementById('themeToggle'), '侧边栏 themeToggle 已移除');
 assert(!document.getElementById('btnHelp'), '侧边栏 btnHelp 已移除');
 
-// ---- 6) 设置页无「跟随系统」字样 ----
-assert(!/跟随系统/.test(document.getElementById('theme-mode-group').textContent), '设置页无「跟随系统」选项');
+// ---- 6) 主题区只有浅/深两态，无「跟随系统」 ----
+const themeRow = toggle.closest('.field-row') || toggle.parentElement.parentElement;
+assert(themeRow && !/跟随系统/.test(themeRow.textContent), '主题区无「跟随系统」选项');
 
 console.log(failures === 0 ? '\nALL PASS ✅' : '\nFAILED ❌ (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);

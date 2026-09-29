@@ -118,42 +118,22 @@ testContainer('renderMonthHeatmap', b6, '热力图还是空白', '去计时学�
 var overviewBtn = document.querySelector('#tab-data .sub-tab-btn[data-sub="overview"]');
 if (overviewBtn) overviewBtn.click();
 
-// 7) weakness-report
-var w = document.getElementById('weakness-report');
-ok(!!w, 'weakness-report 容器存在');
-if (w) testContainer('renderWeaknessReport', w, '还没有薄弱分析', '去刷 5 道题生成薄弱分析', []);
-
-// 8) goal-progress
-var g = document.getElementById('goal-progress');
-ok(!!g, 'goal-progress 容器存在');
-if (g) testContainer('renderGoalProgress', g, '还没设目标', '去设置科目目标', []);
-
-// 9) subject-bars
-var sb = document.getElementById('subject-bars');
-ok(!!sb, 'subject-bars 容器存在');
-if (sb) testContainer('renderSubjectBars(app)', sb, '还没有科目时长', '去设置科目', []);
-
-// 10) subject-stats
-var ss = document.getElementById('subject-stats');
-ok(!!ss, 'subject-stats 容器存在');
-if (ss) testContainer('renderSubjectStats', ss, '科目统计还是空的', '去设置科目', []);
+// 7-10) 旧容器 weakness-report / goal-progress / subject-bars / subject-stats 已随数据页收敛下线，
+//      由「近 30 天打卡热力图 + 薄弱科目提示」（#heat30 / #weak-subject）取代
+var wk = document.getElementById('weak-subject');
+ok(!!wk, 'weak-subject（取代 weakness-report）容器存在');
+var ht = document.getElementById('heat30');
+ok(!!ht, 'heat30 热力图容器存在');
+ok(!!document.getElementById('heat30-sum'), 'heat30-sum 汇总容器存在');
 
 // ===== 第三部分：app.js 按钮点击 → 真实路由（practice/cs408 变 active）=====
 // 恢复真实 switchTab/showSub 以便验证 DOM 路由
 window.switchTab = origSwitch;
 window.showSub = origShow;
-var weakAct = w && w.querySelector('.empty-act');
-if (weakAct) {
-  try {
-    weakAct.click();
-    var cs408Btn = document.querySelector('.tab-btn[data-tab="cs408"]');
-    ok(!!cs408Btn && cs408Btn.classList.contains('active'), '点击「去刷 5 道题」→ cs408 标签激活');
-    // cs408 升级为顶层标签，点击 CTA 后 tab-cs408 激活即可；子面板渲染由 render408* 负责
-    ok(true, '点击「去刷 5 道题」→ 路由到 cs408（不抛错）');
-  } catch (e) { ok(false, '点击路由不抛错 (' + e.message + ')'); }
-} else {
-  ok(false, 'weakness 操作按钮存在');
-}
+// 旧「去刷 5 道题」CTA 与 cs408 一级 tab 均已下线（P2-7 起 cs408 入口在计时页内），
+// 改为校验新容器确实完成渲染
+ok(document.querySelectorAll('#heat30 .h30').length === 30, '热力图渲染出 30 格');
+ok(!!wk && wk.children.length > 0, '薄弱科目提示已渲染出内容');
 
 // ---- 运行期错误兜底 ----
 ok(runtimeErrors.length === 0, '无运行期错误' + (runtimeErrors.length ? '：' + runtimeErrors.join('; ') : ''));

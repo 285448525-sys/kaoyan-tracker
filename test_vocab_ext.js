@@ -49,7 +49,8 @@ const seedVocab = [
 ];
 try { window.localStorage.setItem('kaoyan_tracker_v1', JSON.stringify({ vocab: seedVocab })); } catch (e) {}
 
-const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
+// 与 index.html 实际加载顺序一致（含 iconset / workspace）
+const order = ['qrcode.min.js', 'iconset.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js', 'workspace.js'];
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
   try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
@@ -101,15 +102,17 @@ setTimeout(function () {
   ok(document.querySelectorAll('#vocab-list img').length === 0, 'XSS：未生成 <img> 元素（脚本未执行）');
 
   // ============ ⑤ 筛选 / 搜索 ============
-  const filterSel = document.getElementById('vocab-filter');
-  filterSel.value = '计算机网络';
-  filterSel.dispatchEvent(new window.Event('change'));
+  // 筛选控件已由 <select id="vocab-filter"> 换成 chip 按钮（#vocab-chips .vchip[data-filter]）
+  const chips = Array.prototype.slice.call(document.querySelectorAll('#vocab-chips .vchip'));
+  const netChip = chips.filter(function (c) { return c.getAttribute('data-filter') === 'cat:计算机网络'; })[0];
+  ok(!!netChip, '存在「计算机网络」分类筛选 chip');
+  if (netChip) netChip.click();
   const afterFilter = document.getElementById('vocab-list').textContent;
   ok(afterFilter.indexOf('tcp') >= 0, '筛选「计算机网络」：tcp 仍在');
   ok(afterFilter.indexOf('xss') < 0, '筛选「计算机网络」：其他类 xss 被过滤掉');
   // 还原为全部，验证搜索
-  filterSel.value = 'all';
-  filterSel.dispatchEvent(new window.Event('change'));
+  const allChip = chips.filter(function (c) { return c.getAttribute('data-filter') === 'all'; })[0];
+  if (allChip) allChip.click();
   const searchBox = document.getElementById('vocab-search');
   searchBox.value = 'abandon';
   searchBox.dispatchEvent(new window.Event('input'));

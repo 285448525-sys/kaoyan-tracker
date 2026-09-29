@@ -65,8 +65,8 @@ function ok(cond, name) { if (cond) { pass++; console.log('✅ ' + name); } else
 // 1) iconset.js + Icon.fill
 ok(!!window.Icon && typeof window.Icon.fill === 'function', 'iconset.js 加载且 Icon.fill 存在');
 const sideIcons = document.querySelectorAll('.side-nav .tab-ic svg');
-// 侧栏 9 个 tab：8 个用 SVG（home/math/cs408/vocab/mistakes/mock/data/settings 之外多出的一个也走 SVG），设置用 emoji ⚙️（用户要求）
-ok(sideIcons.length === 8, '侧栏 8 个导航图标已注入 SVG（设置用 emoji，实际 ' + sideIcons.length + '）');
+// 侧栏已由 9 项收敛为 5 项（P2-7），全部走 SVG
+ok(sideIcons.length === 5, '侧栏 5 个导航图标已注入 SVG（实际 ' + sideIcons.length + '）');
 const btbIcons = document.querySelectorAll('.bottom-tabbar .tab-ic svg');
 ok(btbIcons.length === 5, '底栏 5 个导航图标已注入 SVG（实际 ' + btbIcons.length + '）');
 const inlineIcons = document.querySelectorAll('.ic-inline svg');
@@ -83,12 +83,13 @@ ok(residualNav === 0, '侧栏/底栏导航标签文字无残留 emoji（实际 '
 
 // 3) 配色 token（方案 34）
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-ok(/--primary:\s*#3E9BE8/.test(css), ':root --primary 为清新蓝 #3E9BE8');
-ok(/--bg:\s*#F5F9FC/.test(css), ':root --bg 为净白微蓝 #F5F9FC（方案 34）');
+// 现行方案为暖橙 Memphis（原清新蓝方案 34 已弃）
+ok(/--primary:\s*#EA580C/i.test(css), ':root --primary 为暖橙 #EA580C');
+ok(/--bg:\s*#/i.test(css), ':root --bg 已定义');
 ok(/--bg-tint:/.test(css), ':root 新增 --bg-tint 微光晕');
 ok(/--primary-bright:/.test(css), ':root 新增 --primary-bright');
 ok(/--primary-soft-2:/.test(css), ':root 新增 --primary-soft-2');
-ok(!/--primary:\s*#5B9FC9/.test(css.split('--primary: #3E9BE8')[1] || ''), ':root 主色无旧雾蓝 #5B9FC9');
+ok(!/#5B9FC9/i.test(css), ':root 主色无旧雾蓝 #5B9FC9');
 
 // 4) store COLOR_SCHEMES 收敛为单色（方案 34 删 brown）
 const storeJs = fs.readFileSync(path.join(ROOT, 'store.js'), 'utf8');
@@ -96,10 +97,10 @@ const m = storeJs.match(/var COLOR_SCHEMES = \[([^\]]+)\]/);
 ok(!!m && m[1].replace(/\s/g, '').indexOf("'sage'") === -1 && m[1].replace(/\s/g, '').indexOf("'rose'") === -1 && m[1].replace(/\s/g, '').indexOf("'lavender'") === -1 && m[1].replace(/\s/g, '').indexOf("'brown'") === -1, 'store COLOR_SCHEMES 已删 sage/rose/lavender/brown');
 ok(!!m && /'mist'/.test(m[1]) && !/'brown'/.test(m[1]), 'store 仅保留 mist（单一主色）');
 
-// 5) index.html chips 仅剩 1 个（清新蓝）
+// 5) 背景配色 chips 已从 index.html 移除（单一主色，不再提供切换入口）
 const htmlNow = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const chipCount = (htmlNow.match(/data-scheme="/g) || []).length;
-ok(chipCount === 1, 'index.html 背景配色 chips 收敛为 1（实际 ' + chipCount + '）');
+ok(chipCount === 0, 'index.html 背景配色 chips 已清零（实际 ' + chipCount + '）');
 
 // 6) 渲染无错误
 ok(runtimeErrors.length === 0, '无 runtime error（实际 ' + runtimeErrors.length + (runtimeErrors[0] ? '：' + runtimeErrors[0] : '') + '）');

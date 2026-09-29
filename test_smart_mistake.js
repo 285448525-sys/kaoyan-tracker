@@ -49,9 +49,12 @@ const $ = function (id) { return document.getElementById(id); };
 ['mistake-scope', 'mistake-math-cat', 'mistake-cs408-cat', 'mistake-content', 'mistake-note', 'btn-add-mistake', 'mistake-types', 'mistake-subject']
   .forEach(function (id) { ok('旧字段 id 仍在 DOM：#' + id, !!$(id)); });
 
-// ---------- 2) 新录入三按钮 + 状态 + 手动归档折叠 ----------
-['btn-smart-organize', 'btn-save-direct', 'btn-manual-organize', 'mistake-smart-status', 'mistake-manual-details']
-  .forEach(function (id) { ok('新控件 id 在 DOM：#' + id, !!$(id)); });
+// ---------- 2) 主流程保存按钮 + 更多折叠区 ----------
+// P0-2：录入区简化为「一个大输入框 + 保存错题」，原本的 智能整理/直接存/手动归档 三按钮
+//       收敛为：主区只留 #btn-save-direct，AI 归类收进 #mistake-manual-details 折叠区
+['btn-save-direct', 'mistake-smart-status', 'mistake-manual-details']
+  .forEach(function (id) { ok('主流程控件 id 在 DOM：#' + id, !!$(id)); });
+ok('主录入区不再有「手动归档」独立按钮（已收敛）', !$('btn-manual-organize'));
 ok('手动归档默认折叠（details.open=false）', $('mistake-manual-details') && $('mistake-manual-details').open === false);
 
 // ---------- 3) 视觉模型配置卡 ----------

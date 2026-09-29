@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260923d';
+  var APP_VERSION = '20260929a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -391,8 +391,19 @@
     stopTick();
     pomoReset();
     hideGlobalTimer();
+    autoCheckin();   // 完成一次专注 → 自动打卡（手动打卡按钮已随首页重构下线）
     renderTimerState();
     renderData(); renderToday(); renderPlan();
+  }
+  // 自动打卡：专注结束时写入当日打卡，驱动「连续学习天数」
+  function autoCheckin() {
+    var ds = Store.todayStr();
+    if (typeof Store.checkin !== 'function' || Store.isCheckedIn(ds)) return;
+    Store.checkin(ds);
+    if (typeof renderCheckinCard === 'function') { try { renderCheckinCard(); } catch (e) {} }
+    // 首页「连续学习（天）」由 workspace.renderStats 渲染，其轮询是 30s；
+    // 打卡后立即刷一次，否则用户看到的是过期数字
+    try { if (window.KYWorkspace && typeof window.KYWorkspace.renderStats === 'function') window.KYWorkspace.renderStats(); } catch (e) {}
   }
   /* ---------- P0-3 番茄模式：25 分钟自动暂停提醒（开关在计时卡内） ---------- */
   var POMO_MIN = 25;
@@ -577,7 +588,7 @@
       try { diff = Math.ceil((new Date(examDate) - new Date(today)) / 86400000); } catch (e) { diff = '--'; }
     }
     var cdText = document.getElementById('home-cd-text');
-    if (cdText) cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天') : (diff === 0 ? '距考研 · 今天' : '距考研 --');
+    if (cdText) cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天') : (diff === 0 ? '距考研 · 今天' : '点此设考研日期');
     // 紧迫感分级：≤30 天实底橙，≤7 天深橙呼吸（仅加 class，不新增元素）
     var cdBtn = document.querySelector('.hh-countdown');
     if (cdBtn) {
@@ -751,6 +762,13 @@
     var carryTipEl = document.getElementById('plan-carry-tip');
     if (!plan.length) {
       if (emptyHintEl) emptyHintEl.classList.remove('hidden');
+      // 文案跟着 AI 开关走：AI 没开时不能引导用户去点看不见的按钮
+      var emptyTextEl = document.getElementById('plan-empty-text');
+      if (emptyTextEl) {
+        emptyTextEl.textContent = document.body.classList.contains('ai-on')
+          ? '今天还没有计划，点下面「AI 帮我拆」让它替你拆任务。'
+          : '今天还没有计划，在下面输入框加一条，比如「复盘英语阅读错题」。';
+      }
       if (carryTipEl) carryTipEl.classList.add('hidden');
       emptyHint(refs.planList, '今天还没有计划，生成一份或手动添加吧', { icon: 'list', label: '去制定计划', fn: function () { switchTab('data'); showSub('data','review'); } });
       return;
@@ -2932,6 +2950,7 @@
         cfg.aiEnabled = !!box.checked;
         if (typeof Store.setConfig === 'function') Store.setConfig(cfg);
         applyAiVisibility();
+        try { renderPlan(); } catch (e) {}   // 首页空态文案跟着 AI 开关走
         showToast(box.checked ? 'AI 入口已显示' : 'AI 入口已收起', 'ok');
       });
     }

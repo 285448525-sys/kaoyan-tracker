@@ -148,16 +148,20 @@ Store.recordMathStat('线性代数', false);
 // 确保数学章节已预填：init 会预填，但上面 importJSON 清状态时把 mathChapters 重置为空，
 // 薄弱分支 → 章节映射依赖这些章节，否则会落到「该分支暂无章节数据」导致映射断言失败。这里补回生产环境应有的章节。
 if (!Store.getMathChapters().length) Store.setMathChapters(Store.getMathVolumeTemplates()[Store.getMathVolume()].slice());
+// A3 薄弱分析：旧 #weakness-report（按刷题正确率找薄弱分支）已随数据页收敛下线，
+// 现由「薄弱科目提示」#weak-subject 承担（口径改为近 14 天各科计时时长）
 window.__switchTab('data');
-const wkBox = document.querySelector('#weakness-report');
-ok('A3 薄弱点报告容器存在', !!wkBox);
-ok('A3 渲染出分类行 wk-row', !!document.querySelector('#weakness-report .wk-row'));
-ok('A3 出现薄弱标签 wk-weak', !!document.querySelector('#weakness-report .wk-status.wk-weak'));
-ok('A3 出现优先复习清单 wk-priority', !!document.querySelector('#weakness-report .wk-priority'));
-// 薄弱分支应含概率统计，且映射到章节（概率 ·）
-const priorityText = Array.from(document.querySelectorAll('#weakness-report .wk-priority')).map(function (p) { return p.textContent; }).join(' | ');
-ok('A3 优先复习清单含“概率统计”', /概率统计/.test(priorityText), priorityText);
-ok('A3 薄弱分支映射出对应章节（概率 ·）', /概率 ·/.test(priorityText), priorityText);
+// 注入科目：薄弱分析按「各科计时时长」排序，没科目就没有分析对象
+if (!(Store.getSubjects() || []).length) {
+  Store.setConfig({ subjects: [{ key: 'math', name: '数学', target: 0 }, { key: 'english', name: '英语', target: 0 }] });
+  window.__switchTab('data');
+}
+const wkBox = document.querySelector('#weak-subject');
+ok('A3 薄弱分析容器存在（#weak-subject）', !!wkBox);
+ok('A3 渲染出科目行 weak-row', !!document.querySelector('#weak-subject .weak-row'));
+ok('A3 出现薄弱结论 weak-tip', !!document.querySelector('#weak-subject .weak-tip'));
+const wkTip = (document.querySelector('#weak-subject .weak-tip') || {}).textContent || '';
+ok('A3 薄弱结论给出可执行指引', /最该补的是/.test(wkTip) || /没有任何科目计时|还没配置考试科目/.test(wkTip), wkTip);
 
 // =================== 结果 ===================
 console.log('\n========== 测试结果 ==========');

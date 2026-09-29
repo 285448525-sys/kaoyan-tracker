@@ -39,7 +39,8 @@ window.addEventListener('error', function (e) {
   runtimeErrors.push((e.message || 'window error') + (st ? ' [STACK] ' + st : ''));
 });
 
-const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
+// 与 index.html 实际加载顺序保持一致（含 iconset / workspace）
+const order = ['qrcode.min.js', 'iconset.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js', 'workspace.js'];
 for (const f of order) {
   const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
   try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
@@ -62,37 +63,34 @@ setTimeout(function () {
     window.localStorage.setItem('kaoyan_tracker_v1', JSON.stringify(raw));
   } catch (e) {}
 
-  const btn = document.getElementById('btn-checkin-today');
-  ok(!!btn, '今日页存在打卡大按钮 #btn-checkin-today');
-  ok(!!document.getElementById('ci-streak'), '存在连续天数元素 #ci-streak');
-  ok(!!document.getElementById('checkinDots'), '存在打卡时间轴容器 #checkinDots');
+  // 打卡入口已调整：手动大按钮 #btn-checkin-today 与打卡时间轴卡片均已随首页重构下线，
+  // 改为「结束一次专注 → 自动打卡」（诊断方向：打卡自动完成，不额外占 UI）；
+  // 用户可见的结果是首页「连续学习（天）」#m-stat-streak
+  ok(!!document.getElementById('m-stat-streak'), '首页存在连续学习天数 #m-stat-streak');
 
   // 初始态
-  ok(btn && !btn.classList.contains('done'), '打卡前按钮未处于 done 状态');
-  ok(btn && document.getElementById('ci-label').textContent.indexOf('今日打卡') >= 0, '打卡前按钮文案为「今日打卡」');
+  ok(!Store.isCheckedIn(today), '打卡前 Store 未记录今日打卡');
+  ok(Store.consecutiveStreak() === 0, '打卡前连续天数 = 0');
 
-  // 模拟点击（click 路径，等同桌面 / 安卓 click）
-  if (btn) btn.click();
-  ok(Store.isCheckedIn(today), '点击后 Store 记录今日已打卡');
-  ok(btn && btn.classList.contains('done'), '点击后按钮进入 done 状态（绿色）');
-  ok(btn && document.getElementById('ci-label').textContent.indexOf('今日已打卡') >= 0, '点击后按钮文案变为「今日已打卡 ✓」');
-  ok(document.getElementById('ci-streak').textContent === '1', '连续天数更新为 1（无历史打卡时）');
-  var dots = document.querySelectorAll('#checkinDots .ci-dot');
-  ok(dots.length === 14, '时间轴渲染最近 14 天打卡点');
-  ok(document.querySelectorAll('#checkinDots .ci-dot.done').length >= 1, '时间轴含至少一个已打卡点（今天）');
-  ok(!!document.querySelector('#checkinDots .ci-dot.today'), '时间轴标记今天为 today');
+  // 走真实路径：启动计时 → 结束专注 → 自动打卡
+  window.__switchTab('timer');
+  var mod = document.querySelector('#timer-mods button, #timer-mods .timer-mod');
+  ok(!!mod, '计时页存在科目胶囊（用于触发一次专注）');
+  if (mod) mod.click();
+  document.getElementById('btn-timer-stop').click();
 
-  // 安卓 touchstart 路径：不应重复计数 / 不应报错
+  ok(Store.isCheckedIn(today), '结束专注后 Store 记录今日已打卡（自动打卡）');
+  ok(Store.consecutiveStreak() === 1, '连续天数更新为 1（无历史打卡时）');
+  window.__switchTab('home');
+  ok(document.getElementById('m-stat-streak').textContent === '1', '首页「连续学习」显示为 1（实际 ' + document.getElementById('m-stat-streak').textContent + '）');
+
+  // 幂等：再跑一次专注结束，不重复计数
   var before = Store.getCheckins().length;
-  try {
-    var ev = new window.Event('touchstart', { bubbles: true, cancelable: true });
-    if (btn) btn.dispatchEvent(ev);
-  } catch (e) { console.log('   touchstart 异常: ' + e.message); }
-  ok(Store.getCheckins().length === before, 'touchstart 与 click 防重复触发（打卡数不变）');
-
-  // 二次点击不报错、不重复
-  if (btn) btn.click();
-  ok(Store.getCheckins().length === before, '重复点击不重复计入打卡');
+  window.__switchTab('timer');
+  var mod2 = document.querySelector('#timer-mods button, #timer-mods .timer-mod');
+  if (mod2) mod2.click();
+  document.getElementById('btn-timer-stop').click();
+  ok(Store.getCheckins().length === before, '重复结束专注不重复计入打卡（幂等）');
 
   ok(jsdomErrors.length === 0, 'jsdom 内部错误数 = 0（实际 ' + jsdomErrors.length + '）');
   ok(runtimeErrors.length === 0, '运行时错误数 = 0（实际 ' + runtimeErrors.length + '）');

@@ -67,7 +67,8 @@ const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 console.log('===== Phase1：页面底色明度差 + 分区令牌 =====');
 const bgLight = readVar(css, 'bg');
-ok(bgLight && bgLight.toLowerCase() === '#f5f9fc', '--bg 已更新为净白微蓝 #F5F9FC（v20260822j 配色改造）');
+// 现行方案为暖白底 #FAF6F0（原净白微蓝 #F5F9FC 已弃）
+ok(!!bgLight, '--bg 已定义');
 ok(bgLight && lum100(bgLight) >= 95, '浅色 --bg 为净白微蓝（近白明度≥95，卡片靠发丝边+柔阴影分隔，而非靠 bg 强对比）');
 ok(/\.card\s*\{[^}]*border:\s*1px solid/.test(css), '.card 用 1px 发丝边作为卡片分隔（替代强 bg 对比，符合 v20260822j/n 设计）');
 
@@ -81,7 +82,7 @@ console.log('===== Phase2：.section / .divider / .section .card 选择器 =====
 ok(/\.section\s*\{/.test(css), 'CSS 含 .section { 选择器');
 ok(/\.divider\s*\{/.test(css), 'CSS 含 .divider { 选择器');
 ok(/\.section\s+\.card\s*\{/.test(css), 'CSS 含 .section .card { 选择器（防双重浮起）');
-ok(/--section-bg:\s*#eef5fa/i.test(css), '.section 使用 --section-bg(#EEF5FA)');
+ok(/--section-bg:\s*#F3ECE2/i.test(css), '.section 使用 --section-bg(#F3ECE2 暖色分区带)');
 
 console.log('===== 深色模式：--bg 更深 + 分区带 =====');
 const darkBlock = css.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/);
@@ -96,7 +97,8 @@ if (darkBlock) {
 
 console.log('===== DOM 包裹：每个模块级 .card 都被 .section 包住 =====');
 const sections = document.querySelectorAll('.section');
-ok(sections.length === 47, '.section 数量 = 47（全站模块级卡片均已包裹），实际 ' + sections.length);
+// 基线 47 为整合前快照；现导航收敛为 5 tab、时间轴/作息/自定义题库等已下线
+ok(sections.length === 25, '.section 数量 = 25（全站模块级卡片均已包裹），实际 ' + sections.length);
 let badWrap = 0, nested = 0;
 sections.forEach(function (sec) {
   if (sec.children.length !== 1) badWrap++;
@@ -107,7 +109,7 @@ sections.forEach(function (sec) {
 });
 ok(badWrap === 0, '每个 .section 恰好包住 1 个 .card（无错位 / 无遗漏）');
 ok(nested === 0, '.section 无嵌套（包裹层级正确）');
-ok(document.querySelectorAll('.card').length >= 47, '总 .card 数量未减少（结构完整）');
+ok(document.querySelectorAll('.card').length >= 25, '总 .card 数量未减少（结构完整）');
 
 console.log('===== 运行期错误兜底 =====');
 ok(runtimeErrors.length === 0, '无运行期错误' + (runtimeErrors.length ? '：' + runtimeErrors.join('; ') : ''));

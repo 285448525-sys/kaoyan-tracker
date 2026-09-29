@@ -54,8 +54,16 @@ function buildHarness(protocol) {
   const { window } = dom;
   const registerSpy = { calls: 0, arg: null };
   try {
+    // mock 需覆盖代码实际用到的全部 SW API：register / getRegistrations / ready / addEventListener
+    // （缺任何一个都会让 xxx(...).then 在 undefined 上调用，产生假错误）
     Object.defineProperty(window.navigator, 'serviceWorker', {
-      value: { register: function (p) { registerSpy.calls++; registerSpy.arg = p; return Promise.resolve(); } },
+      value: {
+        register: function (p) { registerSpy.calls++; registerSpy.arg = p; return Promise.resolve({}); },
+        getRegistrations: function () { return Promise.resolve([]); },
+        addEventListener: function () {},
+        ready: Promise.resolve({ addEventListener: function () {} }),
+        controller: null
+      },
       configurable: true
     });
   } catch (e) { /* jsdom 可能已定义，忽略 */ }
@@ -69,7 +77,7 @@ function buildHarness(protocol) {
   window.HTMLCanvasElement.prototype.toBlob = function (cb) { if (cb) cb({}); };
   try { window.localStorage.setItem('kaoyan_tour_done', '1'); } catch (e) {}
   window.fetch = window.fetch || function () { return Promise.reject(new Error('fetch disabled in test')); };
-  const order = ['qrcode.min.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js'];
+  const order = ['qrcode.min.js', 'iconset.js', 'words.js', 'store.js', 'charts.js', 'share.js', 'sentences.js', 'app.js', 'workspace.js'];
   for (const f of order) {
     const code = fs.readFileSync(path.join(ROOT, f), 'utf8');
     try { window.eval(code); } catch (e) { console.error('❌ 加载 ' + f + ' 失败: ' + e.message); process.exit(1); }
