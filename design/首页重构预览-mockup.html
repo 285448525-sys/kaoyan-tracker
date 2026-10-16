@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>首页重构 · 可预览原型（方案 A / B 切换）</title>
+<style>
+/* ===== 全量沿用线上 token，不新增色值 ===== */
+:root{
+  --primary:#EA580C; --primary-strong:#C2410C; --primary-deep:#9A3412; --primary-bright:#F97316;
+  --primary-soft:#FFF1E6; --primary-soft-2:#FDEFE2; --primary-softer:#FCF6EF;
+  --bg:#FAF6F0; --card:#FFFFFF; --surface-2:#F3ECE2;
+  --ink:#1E293B; --ink-2:#475569; --muted:#64748B;
+  --line:#E8E1D4;
+  --ok:#16A34A; --warn:#D97706; --danger:#DC2626;
+  --radius:16px; --radius-sm:12px; --radius-xs:10px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --fs-xs:12px; --fs-sm:13px; --fs-base:14.5px; --fs-md:16px;
+  --shadow-hard:5px 5px 0 #1F1A14; --shadow-hard-s:3px 3px 0 #1F1A14;
+  --ink-line:#1F1A14;
+  /* 糖果色（用户已授权，仅方案 B 使用） */
+  --c-blue:#3DA5FF; --c-green:#3DD68C; --c-purple:#9B6BFF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--ink); font-size:var(--fs-base); line-height:1.5;
+  background-image:radial-gradient(rgba(31,26,20,.055) 1.5px,transparent 1.5px);
+  background-size:26px 26px; background-position:-13px -13px;
+}
+
+/* ===== 原型控制条（非产品UI） ===== */
+.proto-bar{
+  position:fixed; top:0; left:0; right:0; height:48px; z-index:99;
+  display:flex; align-items:center; gap:var(--sp-3); padding:0 var(--sp-4);
+  background:var(--ink-line); color:#fff; font-size:var(--fs-sm); flex-wrap:nowrap; overflow:hidden;
+}
+.proto-bar b{font-weight:800; white-space:nowrap}
+.proto-bar .hint{opacity:.7; font-size:11px; white-space:nowrap}
+.proto-bar .seg,.proto-bar .vw{display:inline-flex; gap:2px; background:rgba(255,255,255,.14); border-radius:999px; padding:2px; flex:none}
+.proto-bar button{
+  border:0; background:transparent; color:#fff; font:inherit; font-weight:700;
+  padding:5px 13px; border-radius:999px; cursor:pointer; font-size:var(--fs-xs); white-space:nowrap;
+}
+.proto-bar button.on{background:var(--primary); color:#fff}
+.proto-bar .vw{margin-left:auto}
+.proto-bar .vw button.on{background:#fff; color:var(--ink-line)}
+
+/* ===== 应用外壳（侧栏示意 + 主区） ===== */
+.stage{display:flex; padding-top:48px; align-items:flex-start}
+
+.side{
+  flex:0 0 226px; padding:var(--sp-5) var(--sp-4); background:#FFD23F; min-height:calc(100vh - 48px);
+  border-right:3px solid var(--ink-line);
+}
+.side .brand{display:flex; align-items:center; gap:10px; margin-bottom:var(--sp-5)}
+.side .logo{width:38px;height:38px;border-radius:12px;background:var(--card);border:3px solid var(--ink-line);display:grid;place-items:center;font-weight:900;color:var(--primary-deep)}
+.side h1{font-size:15px;margin:0;font-weight:900}
+.side .sub{font-size:11px;color:#7a5a00;margin:0}
+.side .grp{font-size:11px;font-weight:800;color:#7a5a00;margin:var(--sp-4) 0 var(--sp-2);letter-spacing:.06em}
+.side .nav{display:block;width:100%;text-align:left;background:#fff;border:3px solid var(--ink-line);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-hard-s);padding:9px 11px;margin-bottom:6px;font-weight:800;font-size:var(--fs-sm);cursor:pointer;color:var(--ink)}
+.side .nav.on{background:var(--ink-line);color:#fff;box-shadow:none}
+
+.main{flex:1; min-width:0; padding:var(--sp-4) var(--sp-5) var(--sp-4)}
+.shell{max-width:976px; margin:0 auto; display:flex; flex-direction:column; gap:8px}
+
+/* ===== ① 顶部问候区 ===== */
+.home-header{display:flex; align-items:center; justify-content:space-between; gap:var(--sp-4)}
+.hh-eyebrow{font-size:var(--fs-xs); color:var(--muted); letter-spacing:.04em; line-height:1.3}
+.hh-name{font-size:18px; font-weight:800; line-height:1.25}
+.hh-quote{font-size:var(--fs-sm); color:var(--muted); line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52ch}
+.hh-countdown{
+  display:inline-flex; align-items:center; gap:6px; cursor:pointer; flex:none;
+  padding:6px 12px; border-radius:999px; border:1px solid var(--primary);
+  background:var(--primary-soft); color:var(--primary-deep);
+  font-size:var(--fs-xs); font-weight:800; white-space:nowrap;
+}
+.hh-countdown .ic{width:13px;height:13px;border-radius:50%;border:2px solid currentColor;display:inline-block;flex:none}
+.hh-countdown.urgent{background:var(--primary); color:#fff; border-color:var(--primary)}
+
+/* ===== ② 核心行动区：数字 + 主按钮合一 ===== */
+.hero{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--sp-4);
+  background:var(--card); border:3px solid var(--ink-line); border-radius:var(--radius);
+  box-shadow:var(--shadow-hard-s); padding:var(--sp-3) var(--sp-4);
+}
+.hero-l{flex:1; min-width:0}
+.hero-top{display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-3)}
+.hero-lbl{font-size:var(--fs-sm); color:var(--muted); font-weight:600}
+.hero-goal{font-size:var(--fs-sm); color:var(--muted); font-variant-numeric:tabular-nums}
+.hero-num{
+  font-size:28px; font-weight:900; color:var(--primary-strong); line-height:1.05;
+  font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.hero-sub{font-size:var(--fs-xs); color:var(--muted); margin-top:1px}
+.hero-bar{height:7px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:7px}
+.hero-bar > i{display:block; height:100%; border-radius:999px; background:var(--primary)}
+.hero-r{flex:none}
+.hero-cta{
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  padding:12px 24px; border-radius:999px; border:0; background:var(--primary); color:#fff;
+  font-weight:800; font-size:var(--fs-base); letter-spacing:.02em; white-space:nowrap;
+  box-shadow:0 7px 18px -8px rgba(234,88,12,.55);
+}
+.hero-cta:hover{background:var(--primary-strong)}
+.hero-cta .play{width:0;height:0;border-left:9px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent;flex:none}
+.hero.done .hero-num{color:var(--ok)}
+.hero.done .hero-bar > i{background:var(--ok)}
+
+/* ===== ③ 快捷入口 ===== */
+.quick3{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-2)}
+.q3{
+  display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;
+  padding:9px 8px; border:1px solid var(--line); border-radius:var(--radius-sm);
+  background:var(--card); color:var(--ink); font:inherit; font-size:var(--fs-xs); font-weight:800;
+}
+.q3:hover{border-color:var(--primary)}
+.q3 .ic{width:17px;height:17px;flex:none;color:var(--primary); display:grid; place-items:center}
+.q3 .ic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== ④ 指标区：方案 A / B 分叉点 ===== */
+.m-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.m-stat{border-radius:var(--radius-sm); padding:8px 10px; border:3px solid var(--ink-line); text-align:center; box-shadow:var(--shadow-hard-s)}
+.m-stat .num{font-size:24px; font-weight:900; line-height:1.05; font-variant-numeric:tabular-nums}
+.m-stat .lbl{font-size:11px; font-weight:700; margin-top:2px}
+
+/* —— 方案 A：收敛暖色（推荐）—— */
+body.scheme-a .m-stat.a1{background:var(--primary-soft); color:var(--primary-strong)}
+body.scheme-a .m-stat.a2{background:var(--primary-soft-2); color:var(--primary-deep)}
+body.scheme-a .m-stat.a3{background:var(--surface-2); color:var(--ink)}
+
+/* —— 方案 B：保留糖果（底色统一白，每块只留一处彩色）—— */
+body.scheme-b .m-stat{background:var(--card); box-shadow:none}
+body.scheme-b .m-stat.a1{border-color:var(--c-blue); color:var(--c-blue)}
+body.scheme-b .m-stat.a2{border-color:var(--c-green); color:#149A5E}
+body.scheme-b .m-stat.a3{border-color:var(--c-purple); color:#6D3FD1}
+
+/* ===== ⑤ 今日待办区 ===== */
+.todo-head{display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); padding:0 2px}
+.todo-title{font-size:var(--fs-md); font-weight:800}
+.todo-count{font-size:var(--fs-xs); color:var(--muted); font-variant-numeric:tabular-nums}
+.todo-card{
+  background:var(--card); border:3px solid var(--ink-line); border-radius:var(--radius);
+  box-shadow:var(--shadow-hard-s); padding:10px;
+}
+.sys-tasks{display:flex; flex-direction:column; gap:5px; margin-bottom:7px}
+.sys-row{
+  display:flex; align-items:center; gap:7px; width:100%; cursor:pointer; text-align:left;
+  padding:6px 9px; border-radius:var(--radius-xs); border:1px solid var(--primary);
+  background:var(--primary-soft); color:var(--ink); font:inherit; font-size:var(--fs-sm); font-weight:700;
+}
+.sys-row .cnt{margin-left:auto; color:var(--primary-deep); font-weight:900; font-variant-numeric:tabular-nums}
+.plan-list{display:flex; flex-direction:column; gap:5px; overflow:hidden}
+.plan-item{
+  display:flex; align-items:center; gap:9px; min-height:38px;
+  padding:4px 9px; border:1px solid var(--line); border-radius:var(--radius-xs); background:#f9fafb;
+}
+.plan-item.done{background:#ecfdf5; border-color:#a7f3d0}
+.plan-item.done .pt{text-decoration:line-through; color:var(--muted)}
+.pchk{width:20px;height:20px;border-radius:999px;border:2px solid var(--primary);display:grid;place-items:center;flex:none;font-size:11px;color:#fff;cursor:pointer}
+.plan-item.done .pchk{background:var(--ok);border-color:var(--ok)}
+.pt{flex:1; min-width:0; display:inline-flex; align-items:center; gap:7px; font-size:var(--fs-sm);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pdot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.pmin{font-size:var(--fs-xs); color:var(--muted); flex:none; cursor:pointer; padding:2px 5px; border-radius:var(--radius-xs)}
+.pmin:hover{background:var(--primary-soft); color:var(--primary)}
+.pdel{border:0;background:transparent;color:var(--muted);font:inherit;font-size:var(--fs-xs);cursor:pointer;padding:3px 5px;flex:none}
+.pdel:hover{color:var(--danger)}
+.plan-item.hide{display:none}
+.more-row{
+  display:none; align-items:center; justify-content:center; gap:5px; cursor:pointer; width:100%;
+  padding:6px; margin-top:5px; border:1px dashed var(--line); border-radius:var(--radius-xs);
+  background:transparent; color:var(--muted); font:inherit; font-size:var(--fs-xs); font-weight:700;
+}
+.more-row.show{display:flex}
+.todo-add{display:flex; align-items:center; gap:7px; margin-top:9px; flex-wrap:wrap}
+.todo-add input{
+  flex:1; min-width:170px; font:inherit; font-size:var(--fs-sm); padding:8px 10px;
+  border:1px solid var(--line); border-radius:var(--radius-xs); background:var(--surface-2); color:var(--ink);
+}
+.todo-add select,.todo-add .btn{
+  font:inherit; font-size:var(--fs-sm); padding:8px 10px; border:1px solid var(--line);
+  border-radius:var(--radius-xs); background:var(--surface-2); color:var(--ink);
+}
+.todo-add .btn{cursor:pointer; font-weight:800; background:var(--card)}
+.todo-add .btn.primary{background:var(--primary); border-color:var(--primary); color:#fff}
+.plan-empty{display:flex; align-items:center; gap:7px; padding:2px 2px 8px; font-size:var(--fs-sm); color:var(--muted)}
+
+/* ===== 测量浮层（原型辅助，A 落地时不需要） ===== */
+.meter{
+  position:fixed; right:14px; bottom:14px; z-index:100; width:246px;
+  background:rgba(31,26,20,.94); color:#fff; border-radius:12px; padding:11px 13px;
+  font-size:11.5px; line-height:1.75; font-variant-numeric:tabular-nums;
+}
+.meter h4{margin:0 0 6px; font-size:12px; font-weight:800; letter-spacing:.04em; opacity:.85}
+.meter .row{display:flex; justify-content:space-between; gap:8px}
+.meter .row span:last-child{opacity:.8}
+.meter .sum{margin-top:7px; padding-top:7px; border-top:1px solid rgba(255,255,255,.18); font-weight:800; display:block}
+.meter .ok{color:#7EE2A8}
+.meter .bad{color:#FFB4B4}
+.meter .toggle{position:absolute; top:8px; right:10px; cursor:pointer; opacity:.6; font-size:14px; border:0; background:none; color:#fff}
+body.nometer .meter{display:none}
+
+/* ===== 移动端模拟 ===== */
+body.vw-mobile .side{display:none}
+body.vw-mobile .main{padding:10px 12px}
+body.vw-mobile .shell{max-width:375px; gap:6px}
+body.vw-mobile .hero{flex-direction:column; align-items:stretch; gap:8px; padding:9px 11px}
+body.vw-mobile .hero-r{width:100%}
+body.vw-mobile .hero-cta{width:100%; justify-content:center; padding:11px 20px}
+body.vw-mobile .hero-num{font-size:26px}
+body.vw-mobile .hero-bar{margin-top:5px; height:6px}
+body.vw-mobile .hh-quote{display:none}
+body.vw-mobile .q3{flex-direction:column; gap:4px; padding:7px 4px}
+/* 移动端第二档收紧：待办区是高度大头（实测 400px） */
+body.vw-mobile .todo-card{padding:8px}
+body.vw-mobile .sys-tasks{gap:4px; margin-bottom:6px}
+body.vw-mobile .sys-row{padding:5px 8px; font-size:12px}
+body.vw-mobile .plan-list{gap:4px}
+body.vw-mobile .plan-item{min-height:35px; padding:3px 8px; gap:8px}
+body.vw-mobile .plan-item .pt{font-size:12.5px}
+body.vw-mobile .more-row{padding:5px; margin-top:4px}
+body.vw-mobile .todo-add{margin-top:7px; gap:6px}
+body.vw-mobile .todo-add input{padding:7px 9px; min-width:120px}
+body.vw-mobile .todo-add select,body.vw-mobile .todo-add .btn{padding:7px 9px}
+body.vw-mobile .m-stat{padding:7px 8px}
+body.vw-mobile .m-stat .num{font-size:22px}
+
+/* 矮屏（≤680px 高，如 iPhone SE 640）：列表降到 2 行、进一步压缩，保证一屏不滚
+   注：同时挂 body.short-screen，便于原型里程序化验证矮屏效果（真实设备走 media query） */
+@media (max-height:680px){ body.short-screen-impl {} }
+body.short-screen .home-header{padding-bottom:0}
+body.short-screen .hh-quote{display:none}
+body.short-screen .hero{padding:8px 11px}
+body.short-screen .hero-num{font-size:24px}
+body.short-screen .hero-sub{display:none}
+body.short-screen .quick3 .q3{padding:6px 4px}
+body.short-screen .m-stat{padding:6px 8px}
+body.short-screen .m-stat .num{font-size:20px}
+body.short-screen .m-stat .lbl{font-size:10px}
+body.short-screen .todo-card{padding:7px}
+body.short-screen .sys-tasks{gap:3px; margin-bottom:5px}
+body.short-screen .sys-row{padding:4px 8px}
+body.short-screen .plan-item{min-height:32px}
+body.short-screen .todo-add{margin-top:6px}
+body.short-screen .todo-add input,body.short-screen .todo-add select,body.short-screen .todo-add .btn{padding:6px 8px; font-size:12.5px}
+body.short-screen .meter{display:none}
+
+/* 真实设备矮屏：与上面同规则（媒体查询版本） */
+@media (max-height:680px){
+  body .hh-quote{display:none}
+  body .hero{padding:8px 11px}
+  body .hero-num{font-size:24px}
+  body .hero-sub{display:none}
+  body .quick3 .q3{padding:6px 4px}
+  body .m-stat{padding:6px 8px}
+  body .m-stat .num{font-size:20px}
+  body .m-stat .lbl{font-size:10px}
+  body .todo-card{padding:7px}
+  body .sys-tasks{gap:3px; margin-bottom:5px}
+  body .sys-row{padding:4px 8px}
+  body .plan-item{min-height:32px}
+  body .todo-add{margin-top:6px}
+  body .todo-add input,body .todo-add select,body .todo-add .btn{padding:6px 8px; font-size:12.5px}
+  body .meter{display:none}
+}
+body.vw-mobile .meter{display:none}
+body.vw-mobile .proto-bar{flex-wrap:nowrap; overflow-x:auto}
+@media (max-width:380px){
+  .q3{font-size:11.5px}
+  .m-stat .num{font-size:22px}
+  .m-stat .lbl{font-size:10px}
+}
+</style>
+</head>
+<body class="scheme-a vw-desktop">
+
+<!-- ===== 原型控制条 ===== -->
+<div class="proto-bar">
+  <b>首页重构预览</b>
+  <span class="hint">基线 a0989b9 · v20261016e</span>
+  <span class="seg">
+    <button id="btnA" class="on" onclick="setScheme('a')">方案 A 收敛暖色</button>
+    <button id="btnB" onclick="setScheme('b')">方案 B 保留糖果</button>
+  </span>
+  <span class="seg">
+    <button id="btnOver" onclick="demoOverflow()">演示「超出 4 行」</button>
+    <button id="btnDone" onclick="demoDone()">演示「已达标」</button>
+  </span>
+  <span class="vw">
+    <button id="btnD" class="on" onclick="setVw('desktop')">桌面 976px</button>
+    <button id="btnM" onclick="setVw('mobile')">移动 375px</button>
+  </span>
+</div>
+
+<div class="stage">
+  <!-- 侧栏（示意，现状不改） -->
+  <aside class="side">
+    <div class="brand">
+      <span class="logo">录</span>
+      <div><h1>考研学习记录</h1><p class="sub">计时 · 计划 · 学科 · 词汇</p></div>
+    </div>
+    <p class="grp">学习</p>
+    <button class="nav on">首页</button>
+    <button class="nav">计时</button>
+    <button class="nav">错题</button>
+    <button class="nav">词汇</button>
+    <p class="grp">我的</p>
+    <button class="nav">我的</button>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <div class="shell" id="shell">
+
+      <!-- ① 顶部问候区 -->
+      <header class="home-header" id="blkHeader">
+        <div>
+          <div class="hh-eyebrow">晚上好</div>
+          <div class="hh-name">润芝</div>
+          <div class="hh-quote">「你不需要很厉害才能开始，但要开始才会很厉害。」</div>
+        </div>
+        <button class="hh-countdown" title="去设置考研日期">
+          <span class="ic"></span><span>距考研 65 天</span>
+        </button>
+      </header>
+
+      <!-- ② 核心行动区：数字 + 主按钮合一 -->
+      <div class="hero" id="hero">
+        <div class="hero-l">
+          <div class="hero-top">
+            <span class="hero-lbl">今日专注</span>
+            <span class="hero-goal">目标 8h 0m</span>
+          </div>
+          <div class="hero-num" id="focusNum">2h 45m</div>
+          <div class="hero-sub" id="focusSub">完成今日目标还差 5h 15m</div>
+          <div class="hero-bar"><i id="focusBar" style="width:34%"></i></div>
+        </div>
+        <div class="hero-r">
+          <button class="hero-cta" title="去计时页"><span class="play"></span><span id="ctaText">开始计时</span></button>
+        </div>
+      </div>
+
+      <!-- ③ 快捷入口 -->
+      <div class="quick3" id="blkQuick">
+        <button class="q3"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5"/></svg></span><span>错题复习</span></button>
+        <button class="q3"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h11a3 3 0 0 1 0 6H4zM4 11h13a3 3 0 0 1 0 6H4z"/></svg></span><span>背单词</span></button>
+        <button class="q3"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg></span><span>看数据</span></button>
+      </div>
+
+      <!-- ④ 指标区 -->
+      <div class="m-grid" id="blkGrid">
+        <div class="m-stat a1"><div class="num">165</div><div class="lbl">本周专注（分）</div></div>
+        <div class="m-stat a2"><div class="num">1</div><div class="lbl">连续学习（天）</div></div>
+        <div class="m-stat a3"><div class="num" id="goalPct">34%</div><div class="lbl">今日目标达成</div></div>
+      </div>
+
+      <!-- ⑤ 今日待办区 -->
+      <div class="todo-head" id="blkTodoHead">
+        <span class="todo-title">今天要做的事</span>
+        <span class="todo-count" id="todoCount">1/3 完成</span>
+      </div>
+      <div class="todo-card" id="blkTodo">
+        <div class="sys-tasks">
+          <button class="sys-row">待复习生词<span class="cnt">12 个</span></button>
+          <button class="sys-row">数学待复盘<span class="cnt">3 道</span></button>
+        </div>
+        <div class="plan-list" id="planList">
+          <div class="plan-item done">
+            <span class="pchk">✓</span>
+            <span class="pt"><span class="pdot" style="background:#F97316"></span>数学二 · 第 5 章特征值习题</span>
+            <span class="pmin">90 分钟</span><button class="pdel">删除</button>
+          </div>
+          <div class="plan-item">
+            <span class="pchk"></span>
+            <span class="pt"><span class="pdot" style="background:#EA580C"></span>英语二 2019 阅读 Text 2 精读</span>
+            <span class="pmin">45 分钟</span><button class="pdel">删除</button>
+          </div>
+          <div class="plan-item">
+            <span class="pchk"></span>
+            <span class="pt"><span class="pdot" style="background:#9A3412"></span>408 数据结构 · 图论错题复盘</span>
+            <span class="pmin">60 分钟</span><button class="pdel">删除</button>
+          </div>
+          <!-- 演示用：默认隐藏，点「演示超出 4 行」才出现 -->
+          <div class="plan-item hide">
+            <span class="pchk"></span>
+            <span class="pt"><span class="pdot" style="background:#FDBA74"></span>政治 1000 题 马原第 3 章</span>
+            <span class="pmin">40 分钟</span><button class="pdel">删除</button>
+          </div>
+          <div class="plan-item hide">
+            <span class="pchk"></span>
+            <span class="pt"><span class="pdot" style="background:#EA580C"></span>背单词 100 个</span>
+            <span class="pmin">30 分钟</span><button class="pdel">删除</button>
+          </div>
+        </div>
+        <button class="more-row" id="moreRow" onclick="expandList()">还有 2 条 · 展开</button>
+        <div class="todo-add">
+          <input placeholder="添加计划项，如：复盘英语阅读错题" />
+          <select><option>科目</option><option>政治</option><option>英语二</option><option>数学二</option><option>408</option></select>
+          <button class="btn">＋ 添加</button>
+          <button class="btn primary">AI 帮我拆</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ===== 测量浮层（不进文档流，所以不影响真实高度） ===== -->
+<div class="meter" id="meter">
+  <button class="toggle" title="隐藏/显示" onclick="document.body.classList.toggle('nometer')">×</button>
+  <h4>实测高度（原型自检）</h4>
+  <div class="row"><span>① 顶部问候区</span><span id="m1">—</span></div>
+  <div class="row"><span>② 核心行动区</span><span id="m2">—</span></div>
+  <div class="row"><span>③ 快捷入口</span><span id="m3">—</span></div>
+  <div class="row"><span>④ 指标区</span><span id="m4">—</span></div>
+  <div class="row"><span>⑤ 今日待办区</span><span id="m5">—</span></div>
+  <span class="sum" id="mTotal">—</span>
+</div>
+
+<script>
+function setScheme(s){
+  document.body.className = document.body.className.replace(/scheme-[ab]/, 'scheme-' + s);
+  document.getElementById('btnA').classList.toggle('on', s === 'a');
+  document.getElementById('btnB').classList.toggle('on', s === 'b');
+}
+function setVw(v){
+  document.body.classList.toggle('vw-mobile', v === 'mobile');
+  document.getElementById('btnD').classList.toggle('on', v === 'desktop');
+  document.getElementById('btnM').classList.toggle('on', v === 'mobile');
+  measure();
+}
+function expandList(){
+  listExpanded = true;
+  layoutList();
+  measure();
+}
+function demoOverflow(){
+  document.querySelectorAll('.plan-item.hide').forEach(function(e){ e.classList.remove('hide'); });
+  layoutList();
+  if (!document.getElementById('moreRow').classList.contains('show')) {
+    // 强制演示：造 2 条临时项
+    var list = document.getElementById('planList');
+    for (var i = 0; i < 2; i++) {
+      var d = document.createElement('div');
+      d.className = 'plan-item extra-tmp';
+      d.innerHTML = '<span class="pchk"></span><span class="pt"><span class="pdot" style="background:#9A3412"></span>' +
+        (i === 0 ? '政治 1000 题 马原第 3 章' : '背单词 100 个') + '</span>' +
+        '<span class="pmin">' + (i === 0 ? '40 分钟' : '30 分钟') + '</span><button class="pdel">删除</button>';
+      list.appendChild(d);
+    }
+  }
+  layoutList();
+  measure();
+}
+function demoDone(){
+  var hero = document.getElementById('hero');
+  var on = hero.classList.toggle('done');
+  document.getElementById('focusNum').textContent = on ? '8h 10m' : '2h 45m';
+  document.getElementById('focusSub').textContent = on ? '已达成今日专注目标 · 超出 10m' : '完成今日目标还差 5h 15m';
+  document.getElementById('focusBar').style.width = on ? '100%' : '34%';
+  document.getElementById('goalPct').textContent = on ? '102%' : '34%';
+  document.getElementById('ctaText').textContent = on ? '继续学习' : '开始计时';
+  measure();
+}
+// 列表限高：按可见行数（桌面 4 / 移动 3 / 矮屏 2），超出给「还有 N 条」
+// listExpanded = 用户已点过「展开」，此时不再折叠（整页不折叠，仅列表展开）
+var listExpanded = false;
+function layoutList(){
+  var shortScreen = window.innerHeight <= 680 || document.body.classList.contains('short-screen');
+  var cap = document.body.classList.contains('vw-mobile') ? (shortScreen ? 2 : 3) : 4;
+  var all = Array.prototype.slice.call(document.querySelectorAll('#planList .plan-item'));
+  var row = document.getElementById('moreRow');
+  if (listExpanded) {
+    all.forEach(function(el){ el.classList.remove('hide'); });
+    row.classList.remove('show');
+    return;
+  }
+  all.forEach(function(el){ el.classList.remove('hide'); });
+  var over = Math.max(0, all.length - cap);
+  all.forEach(function(el, i){ if (i >= cap) el.classList.add('hide'); });
+  row.classList.toggle('show', over > 0);
+  row.textContent = '还有 ' + over + ' 条 · 展开';
+}
+function measure(){
+  layoutList();
+  var map = {m1:'#blkHeader', m2:'#hero', m3:'#blkQuick', m4:'#blkGrid', m5:'#blkTodo'};
+  // ⑤ 高度含标题行
+  Object.keys(map).forEach(function(k){
+    var el = document.querySelector(map[k]);
+    var out = document.getElementById(k);
+    if (el && out) out.textContent = Math.round(el.getBoundingClientRect().height) + 'px';
+  });
+  var todoHeadH = document.getElementById('blkTodoHead').getBoundingClientRect().height;
+  document.getElementById('m5').textContent = Math.round(document.getElementById('blkTodo').getBoundingClientRect().height + todoHeadH) + 'px';
+  var shell = document.getElementById('shell').getBoundingClientRect().height;
+  var main = document.querySelector('.main');
+  var cs = getComputedStyle(main);
+  var avail = window.innerHeight - 48 - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  var fits = shell <= avail;
+  var t = document.getElementById('mTotal');
+  t.textContent = '合计 ' + Math.round(shell) + 'px ／ 可用 ' + Math.round(avail) + 'px · ' + (fits ? '一屏不滚 ✓' : '超出 ✗');
+  t.className = 'sum ' + (fits ? 'ok' : 'bad');
+}
+window.addEventListener('resize', measure);
+window.addEventListener('load', function(){ setTimeout(measure, 60); });
+</script>
+</body>
+</html>
