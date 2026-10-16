@@ -672,6 +672,8 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .gt-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: gtPulse 1.2s ease-in-out infinite; }
 .gt-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
 .gt-time { font-variant-numeric: tabular-nums; font-weight: 700; }
+.gt-pause { margin-left: 2px; border: none; background: rgba(255,255,255,.22); color: #fff; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px; }
+.gt-pause:active { background: rgba(255,255,255,.35); }
 .gt-stop { margin-left: 2px; border: none; background: rgba(255,255,255,.22); color: #fff; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px; }
 .gt-stop:active { background: rgba(255,255,255,.35); }
 @keyframes gtPulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
@@ -1299,6 +1301,34 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 }
 .plan-empty-hint.hidden { display: none; }
 .plan-empty-hint .ic-inline svg { width: 16px; height: 16px; color: var(--primary); }
+
+/* 首次使用三步引导（P0-3）：复用现有卡片与 data-goto 跳转，不加新浮动元素 */
+.home-onboard {
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  background: var(--primary-soft-2);
+  border-radius: var(--radius-md);
+}
+.home-onboard.hidden { display: none; }
+.home-onboard-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.home-onboard-step {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 9px 10px; margin-bottom: 6px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13px; color: var(--text);
+  cursor: pointer;
+}
+.home-onboard-step:last-of-type { margin-bottom: 0; }
+.home-onboard-step b {
+  flex: 0 0 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--primary); color: #fff;
+  border-radius: 50%; font-size: 12px; font-weight: 700;
+}
+.home-onboard-note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 
 /* 学科页统一学科头 */
 .subject-hero {

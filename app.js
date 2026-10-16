@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20260929a';
+  var APP_VERSION = '20261016a';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -331,6 +331,7 @@
     setWeightPair(refs.wVocab, refs.wVocabNum, w.vocab);
     setWeightPair(refs.wMistake, refs.wMistakeNum, w.mistake);
     updateWeightTotal();
+    renderScoreWeightDesc();
   }
   function onWeightChange() {
     Store.setScoreWeights({
@@ -373,7 +374,9 @@
     var t = Store.getTimer();
     if (t.running && t.subjectKey) {
       var mins = Math.round(currentElapsed() / 60000);
-      if (mins > 0) Store.addDuration(Store.todayStr(), t.subjectKey, mins);
+      if (mins > 0) { Store.addDuration(Store.todayStr(), t.subjectKey, mins); }
+      // 不足 1 分钟的专注不计入时长，但必须明示，不能让用户以为「学了没记上」
+      else if (mins <= 0) { showToast('本次专注不足 1 分钟，未计入时长', 'info'); }
     }
   }
   function startTimerFor(key) {
@@ -400,7 +403,6 @@
     var ds = Store.todayStr();
     if (typeof Store.checkin !== 'function' || Store.isCheckedIn(ds)) return;
     Store.checkin(ds);
-    if (typeof renderCheckinCard === 'function') { try { renderCheckinCard(); } catch (e) {} }
     // 首页「连续学习（天）」由 workspace.renderStats 渲染，其轮询是 30s；
     // 打卡后立即刷一次，否则用户看到的是过期数字
     try { if (window.KYWorkspace && typeof window.KYWorkspace.renderStats === 'function') window.KYWorkspace.renderStats(); } catch (e) {}
@@ -424,6 +426,7 @@
     Store.setTimer(t);
     stopTick();
     renderTimerState();
+    showGlobalTimer(t.subjectKey);
     var tip = document.getElementById('pomo-tip');
     if (tip) {
       tip.hidden = false;
@@ -531,6 +534,7 @@
   function renderHome() {
     renderHomeHero();
     renderHomeSysTasks();
+    renderHomeOnboard();
     renderHomeTodo();
   }
 
@@ -568,6 +572,24 @@
     if (window.Icon && typeof Icon.fill === 'function') Icon.fill(box);
   }
 
+  /* 首次使用引导（P0-3）：三项数据全空时才出现，任一有数据即隐藏；不加新浮动元素，复用 data-goto 委托 */
+  function renderHomeOnboard() {
+    var box = document.getElementById('home-onboard');
+    if (!box) return;
+    var ds = Store.todayStr();
+    var hasData = (Store.getVocab ? (Store.getVocab() || []).length : 0) > 0
+      || (Store.getMistakes ? (Store.getMistakes() || []).length : 0) > 0
+      || (Store.getPlan ? (Store.getPlan(ds) || []).length : 0) > 0
+      || (Store.totalMinutesForDay ? Store.totalMinutesForDay(Store.getDay(ds) || { durations: {} }) : 0) > 0;
+    box.classList.toggle('hidden', hasData);
+    if (!hasData) {
+      box.onclick = function (e) {
+        var b = e.target.closest('[data-goto]');
+        if (b) switchTab(b.getAttribute('data-goto'));
+      };
+    }
+  }
+
   function renderHomeHero() {
     var cfg = Store.getConfig();
     var today = Store.todayStr();
@@ -596,10 +618,13 @@
       cdBtn.classList.toggle('urgent', n > 0 && n <= 30);
       cdBtn.classList.toggle('critical', n > 0 && n <= 7);
     }
-    // 今日专注 + 进度环（软目标 6h）
+    // 今日专注 + 进度环（目标接 cfg.goalHours，未设置回落 6h 软目标）
     var focusNum = document.getElementById('home-focus-num');
     if (focusNum) focusNum.textContent = fmtMinShort(totalMin);
-    var goalMin = 360;
+    var goalHours = Number(Store.getConfig().goalHours) || 0;
+    var goalMin = goalHours > 0 ? Math.round(goalHours * 60) : 360;
+    var goalEl = document.getElementById('home-focus-goal');
+    if (goalEl) goalEl.textContent = '目标 ' + fmtMinShort(goalMin);
     var pct = Math.min(100, Math.round(totalMin / goalMin * 100));
     var sub = document.getElementById('home-focus-sub');
     if (sub) sub.textContent = (totalMin >= goalMin) ? '已达成今日专注目标' : ('完成今日目标还差 ' + fmtMinShort(goalMin - totalMin));
@@ -659,9 +684,12 @@
     var name = hardcoded ? hardcoded.name : key;
     subs.forEach(function (s) { if (s.key === key) name = s.name; });
     var lbl = document.getElementById('gt-label');
-    if (lbl) lbl.textContent = (name || '学习') + ' 计时中';
+    var t = Store.getTimer();
+    if (lbl) lbl.textContent = t && t.running === false ? ((name || '学习') + ' 已暂停') : ((name || '学习') + ' 计时中');
     var gt = document.getElementById('gt-time');
     if (gt) gt.textContent = fmt(currentElapsed());
+    var pauseBtn = document.getElementById('gt-pause');
+    if (pauseBtn) pauseBtn.textContent = (t && t.running === false) ? '继续' : '暂停';
     bar.hidden = false;
   }
   function hideGlobalTimer() {
@@ -1424,6 +1452,12 @@
   }
 
   /* ============ 数据看板 ============ */
+  function renderScoreWeightDesc() {
+    var elp = document.getElementById('score-weight-desc');
+    if (!elp) return;
+    var w = Store.getScoreWeights();
+    elp.textContent = '得分 = 学习时长(' + w.duration + ') + 计划完成(' + w.plan + ') + 生词复习(' + w.vocab + ') + 错题整理(' + w.mistake + ')，满分 100；没学习的日子记为 0 分，不注水。';
+  }
   function renderData() {
     var cfg = Store.getConfig();
     if (refs.countdown) {
@@ -1432,6 +1466,7 @@
         refs.countdown.innerHTML = diff >= 0 ? ('距离考研还有 <b>' + diff + '</b> 天') : ('考研已结束 ' + Math.abs(diff) + ' 天');
       } else { refs.countdown.textContent = '未设置考研日期'; }
     }
+    renderScoreWeightDesc();
     renderScoreCard();
     renderHeat30();
     renderWeakSubject();
@@ -2276,7 +2311,7 @@
   /* ============ 今日学习总结（独立模块）+ 提醒推送 ============ */
   function switchTab(target) {
     // 备考时间轴 / 每日作息 已于 v20260922l 彻底删除（含数据），旧入口一律落回数据总览
-    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', roadmap:'data', routine:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab' };
+    var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', roadmap:'data', routine:'data', math:'math', cs408:'cs408', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', manual:'settings', mistake:'mistakes', practice:'math', data:'data', settings:'settings', vocab:'vocab', me:'settings', my:'settings', profile:'settings', home:'home', timer:'timer', mistakes:'mistakes' };
     var dataSub = { record:'review', plan:'review', summary:'review' };
     var real = map[target] || target;
     showTab(real);
@@ -2311,45 +2346,12 @@
     var due = Store.getDueVocab(ds).length;
     body.appendChild(sLine('待复习生词(记忆曲线)', due + ' 个'));
     body.appendChild(sLine('连续打卡', Store.consecutiveStreak() + ' 天'));
-    renderCheckinCard();
     if (refs.summaryEdit) refs.summaryEdit.value = (day.summary || '');
   }
-  /* 统一的打卡逻辑：今日页大按钮 + 总结页按钮共用 */
-  function doCheckin() {
-    var ds = Store.todayStr();
-    if (Store.isCheckedIn(ds)) { showToast('今天已经打卡啦 ✅', 'ok'); renderCheckinCard(); return; }
-    Store.checkin(ds);
-    showToast('已打卡 ' + ds + ' ✅', 'ok');
-    fireConfetti();
-    renderCheckinCard();
-    renderSummary();
-    renderTodayAggregate();
-  }
-  /* 今日页打卡卡片渲染：连续天数 + 大按钮状态 + 最近 14 天打卡时间轴 */
-  function renderCheckinCard() {
-    var ds = Store.todayStr();
-    var checked = Store.isCheckedIn(ds);
-    var streak = Store.consecutiveStreak();
-    if (refs.ciStreak) refs.ciStreak.textContent = streak;
-    if (refs.ciLabel) refs.ciLabel.textContent = checked ? '今日已打卡 ✓' : '今日打卡';
-    if (refs.btnCheckinToday) {
-      refs.btnCheckinToday.classList.toggle('done', checked);
-      refs.btnCheckinToday.disabled = checked;
-      if (checked) { refs.btnCheckinToday.classList.remove('pop'); void refs.btnCheckinToday.offsetWidth; refs.btnCheckinToday.classList.add('pop'); }
-    }
-    // 最近 14 天打卡点（时间轴）
-    if (refs.checkinDots) {
-      var active = {}; (Store.getCheckins() || []).forEach(function (d) { active[d] = true; });
-      var html = '';
-      for (var i = 13; i >= 0; i--) {
-        var d = new Date(); d.setDate(d.getDate() - i);
-        var key = d.toISOString().slice(0, 10);
-        var cls = 'ci-dot' + (active[key] ? ' done' : '') + (key === ds ? ' today' : '');
-        html += '<span class="' + cls + '" title="' + key + '"></span>';
-      }
-      refs.checkinDots.innerHTML = html;
-    }
-  }
+  /* 手动打卡 UI 已随首页重构删除（v20260922l）：原 renderCheckinCard / doCheckin /
+     #btn-checkin-today / #ci-streak / #checkinDots 全部清空，打卡唯一入口 =
+     结束一次专注 → autoCheckin()（app.js:402）。test_tabs.js 已改为显式断言
+     「手动入口不存在」，避免元素缺失静默通过造成的假绿。 */
   /* 绑定点击 + 触摸：安卓浏览器同时触发 touchstart/click 时用标记防重复，
      彻底规避部分机型 click 不触发或 300ms 延迟导致“点了没反应” */
   function bindTap(el, fn) {
@@ -5298,22 +5300,24 @@
   }
 
   /* ============ 新手完整引导（全屏分步导览，过一遍所有功能） ============ */
+  /* ⚠️ tab 字段只允许现存 8 个顶层 tab：home/timer/math/cs408/mistakes/vocab/data/settings
+     （旧 today/config/plan/record/summary/review/sentences/manual 已随页面重构删除，
+       依赖别名表兜底会把用户带到与文案不符的页面——v20261016a 全量重写） */
   var TOUR_STEPS = [
-    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'today', text: '这是你的专属考研进度管理站：每日打卡、专注计时、错题本、长难句分析、背单词一应俱全。先完成关键配置，让 AI 讲解开箱即用。' },
-    { icon: '🤖', title: '优先配置：AI 能力', tab: 'config', target: '.ai-card', text: '错题 AI 讲解、长难句深度分析需要 AI 接口。填接口地址（推荐 DeepSeek，https://api.deepseek.com/v1）、模型（deepseek-chat）与 Key。你的 Key 经本站服务器中转，不会暴露在浏览器。' },
-    { icon: 'calendar', title: '今日总览', tab: 'today', text: '打开先看这里：距考研天数、今日学习分钟、计划完成度、连续打卡、各科目进度一目了然。' },
-    { icon: 'rocket', title: '快速开始 4 步', tab: 'today', text: '首次使用走 4 步：配置 → 勾科目 → 定计划 → 计时。完成后引导卡自动隐藏。' },
-    { icon: 'compass', title: '每日计划', tab: 'plan', text: '自动或手动安排今日学习任务，完成会自动勾掉，和计时联动。' },
-    { icon: 'clock', title: '按模块计时', tab: 'record', text: '每科独立计时器，开始/结束把时长记到今日；也支持番茄钟和限时倒计时。' },
-    { icon: 'list', title: '总结与分享', tab: 'summary', text: '写每日总结、生成打卡卡片发群里，带二维码邀请朋友一起打卡。' },
-    { icon: 'chart', title: '数据看板', tab: 'data', text: '热力图、趋势、饼图、雷达图、科目进度、周报，全来自你的本地记录。' },
-    { icon: '📐', title: '数学模块', tab: 'math', text: '章节进度（可折叠分组）、错题整理、刷题、题库，系统化学数学。' },
-    { icon: '💻', title: '408 模块', tab: 'cs408', text: '四科章节、错题间隔复习、知识点速记、历年真题得分追踪。' },
-    { icon: '🐞', title: '错题本', tab: 'mistakes', text: '跨科目整理错题，标记回顾后按间隔复习自动排期。' },
-    { icon: 'refresh', title: '复习 / 自测', tab: 'review', text: '查词记生词，按记忆曲线每天推送待复习词；切到「测验模式」可做 4 选 1 自测（设置可自定义题量/范围/模式）。' },
-    { icon: '🧩', title: '长难句', tab: 'sentences', text: '粘贴长难句自动拆解结构、标注考点词、归纳同义替换；还可一键 AI 深度分析。' },
-    { icon: 'cloud', title: '云端同步', tab: 'config', text: '用手机号作为唯一账号：填手机号注册并上传，换设备输入同一手机号即可同步，无需密码。' },
-    { icon: '📖', title: '说明书', tab: 'manual', text: '所有功能说明都集中在「说明书」页，随时回来查。引导到此结束，接下来就靠你自己探索啦！' }
+    { icon: 'hand', title: '欢迎使用考研学习记录', tab: 'home', text: '这是你的专属考研进度管理站：打卡、专注计时、错题本、背单词一应俱全。先设好考研日期和科目，后面全靠它提醒你。' },
+    { icon: 'calendar', title: '第一步：设置考研日期', tab: 'settings', target: '.config-fold', text: '到「我的 → 备考核心」填考研日期并勾选你要考的科目。倒计时、每日计划、得分都从这两项来。' },
+    { icon: 'clock', title: '首页看今天', tab: 'home', text: '首页一屏给你答案：距考研几天、今天专注了多久、待复习的生词和错题、今天的计划。统计每 30 秒自动刷新。' },
+    { icon: 'timer', title: '按科目计时', tab: 'timer', text: '选一科点「开始」，时长自动记到今日；结束即自动打卡。中途可以暂停，离开页面顶部还有全局计时条。' },
+    { icon: 'list', title: '今日计划', tab: 'home', text: '首页「今天要做的事」：手动加一条，或用「AI 帮我拆」自动排。没做完的明天会自动顺延。' },
+    { icon: 'chart', title: '数据看板', tab: 'data', text: '总览看近 30 天得分、打卡热力图、学习战报；复盘页看每日计划、章节进度。' },
+    { icon: '📐', title: '数学', tab: 'math', text: '章节进度按卷种（数一/数二/数三）分开记，附分类刷题和历年真题得分打卡。' },
+    { icon: '💻', title: '408', tab: 'cs408', text: '四科章节进度 + 真题打卡 + 错题间隔复习，到期自动进待复习。' },
+    { icon: '🐞', title: '错题本', tab: 'mistakes', text: '粘贴题目就能存；到期错题会用速查卡提醒你自测，数学答对自动拉长复习间隔。' },
+    { icon: 'vocab', title: '背单词', tab: 'vocab', text: '「高频词」导一份词库，「生词」页查词即存；按记忆曲线每天推待复习词。' },
+    { icon: '🧩', title: '长难句', tab: 'mistakes', text: '错题页切到「长难句」：粘贴一句英文，自动拆结构、标考点词、归纳同义替换。' },
+    { icon: 'cloud', title: '多设备同步（可选）', tab: 'settings', target: '.cloud-sync-card', text: '「我的 → 连接与密钥」填手机号即注册，换设备输同一手机号就能同步。不填只存本机，功能不受影响。' },
+    { icon: '🤖', title: 'AI 能力（可选）', tab: 'settings', target: '.ai-card', text: '「连接与密钥 → AI 实验室」打开开关并填 Key，才会出现「AI 归类 / AI 排计划 / 拍题解答」。不配 Key 全站照常能用。' },
+    { icon: '📖', title: '使用说明', tab: 'settings', text: '「我的 → 帮助」是按五部分组织的完整说明书，忘了怎么用随时回来查。引导到此结束，接下来靠你自己探索啦！' }
   ];
   var tourIdx = 0, tourEl = null;
   function startTour() {
@@ -5495,7 +5499,9 @@
   }
 
   function initKeyboardShortcuts() {
-    var KEY_MAP = { '1': 'config', '2': 'today', '3': 'plan', '4': 'summary', '5': 'record', '6': 'data', '7': 'mistakes', '8': 'math', '9': 'cs408', '0': 'websites' };
+    /* 数字键 1-8 对应侧栏顺序：首页/计时/数学/408/错题/词汇/数据/我的
+       （旧映射 config/today/plan/summary/record/websites 指向的页面已删除——v20261016a 重排） */
+    var KEY_MAP = { '1': 'home', '2': 'timer', '3': 'math', '4': 'cs408', '5': 'mistakes', '6': 'vocab', '7': 'data', '8': 'settings' };
     document.addEventListener('keydown', function (e) {
       // 输入框中不触发
       var tag = (e.target.tagName || '').toLowerCase();
@@ -5504,8 +5510,8 @@
       var k = e.key;
       if (KEY_MAP[k]) { e.preventDefault(); switchTab(KEY_MAP[k]); }
       if (k === 't' || k === 'T') { e.preventDefault(); toggleTheme(); }
-      /* N：新建任务 → 跳到计划页并聚焦添加框 */
-      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('data'); showSub('data','review'); setTimeout(function () { var pi = document.getElementById('plan-item-text'); if (pi) pi.focus(); }, 200); }
+      /* N：新建任务 → 回首页并聚焦今日待办输入框（计划表在首页） */
+      if (k === 'n' || k === 'N') { e.preventDefault(); switchTab('home'); setTimeout(function () { var pi = document.getElementById('plan-text'); if (pi) pi.focus(); }, 200); }
       /* 斜杠 /：聚焦第一个搜索/输入框 */
       if (k === '/') { e.preventDefault(); var si = document.querySelector('.tab-panel.active input[type="text"], .tab-panel.active input[type="search"]'); if (si) si.focus(); }
     });
@@ -5806,7 +5812,6 @@
     renderPlan();
     renderToday();
     renderHome();   // 首页重设计（v20260825c）：首屏即渲染
-    renderCheckinCard();
     renderMistakeTypes();
     populateMistakeSubjects();
     renderAiConfig();
@@ -6011,10 +6016,10 @@
     refs.timerMods = $('timer-mods');
     refs.gtStop = $('gt-stop');
     if (refs.gtStop) refs.gtStop.addEventListener('click', endTimer);
-    refs.btnTimerStop = $('btn-timer-stop');
-    refs.btnTimerPause = $('btn-timer-pause');
-    if (refs.btnTimerStop) refs.btnTimerStop.addEventListener('click', endTimer);
-    if (refs.btnTimerPause) refs.btnTimerPause.addEventListener('click', function () {
+    // 全局计时条暂停/继续：与计时页按钮同一份逻辑（P1-3：离开计时页也能暂停）
+    refs.gtPause = $('gt-pause');
+    if (refs.gtPause) refs.gtPause.addEventListener('click', toggleTimerPause);
+    function toggleTimerPause() {
       var t = Store.getTimer();
       if (!t.subjectKey) return;
       if (t.running) {
@@ -6029,7 +6034,12 @@
         startTick();
       }
       renderTimerState();
-    });
+      showGlobalTimer(t.subjectKey);
+    }
+    refs.btnTimerStop = $('btn-timer-stop');
+    refs.btnTimerPause = $('btn-timer-pause');
+    if (refs.btnTimerStop) refs.btnTimerStop.addEventListener('click', endTimer);
+    if (refs.btnTimerPause) refs.btnTimerPause.addEventListener('click', toggleTimerPause);
     // P0-3 番茄模式开关：记住选择，切换时清掉上一轮提示
     var pomoBox = document.getElementById('cfg-pomo');
     if (pomoBox) {
@@ -6178,11 +6188,12 @@
     refs.btnAiSummary = $('btn-ai-summary');
     refs.aiSummaryOut = $('ai-summary-out');
 
-    // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）
-    refs.btnCheckinToday = $('btn-checkin-today');
-    refs.ciStreak = $('ci-streak');
-    refs.ciLabel = $('ci-label');
-    refs.checkinDots = $('checkinDots');
+    // 今日打卡卡片（主页大按钮 + 连续天数 + 时间轴）已于 v20260922l 随首页重构下线，
+    // refs 置空仅为兼容旧调用路径，不再绑定任何事件
+    refs.btnCheckinToday = null;
+    refs.ciStreak = null;
+    refs.ciLabel = null;
+    refs.checkinDots = null;
 
     // 学习计划
     refs.masteryList = $('mastery-list');
@@ -6549,8 +6560,7 @@
     refs.btnClearSentence.addEventListener('click', function () { refs.sentenceInput.value = ''; refs.sentenceResult.innerHTML = ''; });
     // 高频词搜索
     refs.hfSearch.addEventListener('input', renderHfWords);
-    // 今日总结：打卡 + 分享
-    bindTap(refs.btnCheckinToday, doCheckin);
+    // 今日总结：分享（手动打卡按钮已下线，打卡改由「结束一次专注 → autoCheckin」触发）
     refs.btnShareSummary.addEventListener('click', onShareToday);
     if (refs.btnAiSummary) refs.btnAiSummary.addEventListener('click', onAiSummary);
     if (refs.btnSaveSummary) refs.btnSaveSummary.addEventListener('click', onSaveSummary);
@@ -6625,7 +6635,6 @@
     renderAll();
     applySidebar();
     renderTodayAggregate();
-    renderCheckinCard();
     } catch (e) {
       if (window.console) console.error('[init] 渲染阶段异常（导航已可用，不影响切换）:', e);
     }
@@ -6634,7 +6643,7 @@
     function applyHash() {
       var hash = (location.hash || '').replace(/^#/, '');
       if (!hash) return;
-      var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math' };
+      var map = { today:'home', dashboard:'home', record:'data', plan:'data', summary:'data', sentences:'mistakes', words:'vocab', review:'vocab', translate:'vocab', config:'settings', websites:'settings', sites:'settings', manual:'settings', mistake:'mistakes', practice:'math', me:'settings', my:'settings', profile:'settings', home:'home', timer:'timer', math:'math', cs408:'cs408', mistakes:'mistakes', vocab:'vocab', data:'data', settings:'settings' };
       var real = map[hash] || hash;
       var activeBtn = document.querySelector('.tab-btn.active');
       var current = activeBtn ? activeBtn.getAttribute('data-tab') : 'home';

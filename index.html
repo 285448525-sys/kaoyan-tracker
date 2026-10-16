@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20260929a" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20260929a" />
+  <link rel="icon" href="app-icon.svg?v=20261016a" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20261016a" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260929a" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016a" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20260929a" />
-  <link rel="stylesheet" href="styles.css?v=20260929a" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016a" />
+  <link rel="stylesheet" href="styles.css?v=20261016a" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -126,7 +126,7 @@
       <header class="home-header">
         <div class="hh-greet">
           <div class="hh-eyebrow" id="home-greet-eyebrow">下午好</div>
-          <div class="hh-name" id="home-greet-name">润芝</div>
+          <div class="hh-name" id="home-greet-name">同学</div>
           <div class="hh-quote" id="m-quote">「慢慢来，比较快。」</div>
         </div>
         <button class="hh-countdown" data-goto="settings" type="button" aria-label="考研倒计时">
@@ -139,7 +139,7 @@
       <div class="home-hero-card" id="home-hero-card">
         <div class="hhc-row">
           <span class="hhc-label">今日专注</span>
-          <span class="hhc-goal">目标 6h</span>
+          <span class="hhc-goal" id="home-focus-goal">今日目标</span>
         </div>
         <div class="hhc-main">
           <div class="hhc-left">
@@ -148,11 +148,11 @@
           </div>
         </div>
         <div class="hhc-bar" id="home-focus-bar-wrap"><i id="home-focus-bar"></i></div>
-          <button class="home-cta" id="home-cta" data-goto="timer" type="button">
-            <span class="home-cta-play"></span>
-            <span id="home-cta-text">开始计时</span>
-          </button>
-        </div>
+      </div>
+      <button class="home-cta" id="home-cta" data-goto="timer" type="button">
+        <span class="home-cta-play"></span>
+        <span id="home-cta-text">开始计时</span>
+      </button>
 
         <!-- 快捷入口（P2-8：三个最常用的动作，一键直达） -->
         <div class="home-quick3">
@@ -176,6 +176,13 @@
         </div>
         <div class="card home-todo-card">
           <div id="home-sys-tasks" class="home-sys-tasks"></div>
+          <div id="home-onboard" class="home-onboard hidden">
+            <p class="home-onboard-title">第一次用？按这三步走，两分钟上手：</p>
+            <button type="button" class="home-onboard-step" data-goto="vocab"><b>1</b><span>去「词汇」导一份高频词，今天就能背</span></button>
+            <button type="button" class="home-onboard-step" data-goto="mistakes"><b>2</b><span>随手记一道错题，到期会自动提醒你复习</span></button>
+            <button type="button" class="home-onboard-step" data-goto="timer"><b>3</b><span>开一次计时，学完自动打卡</span></button>
+            <p class="home-onboard-note">全程不需要配任何 Key，不配 AI 也能完整用。</p>
+          </div>
           <div id="plan-empty-hint" class="plan-empty-hint">
             <span class="ic-inline" data-icon="sparkles"></span>
             <span id="plan-empty-text">今天还没有计划，在下面输入框加一条吧。</span>
@@ -610,7 +617,7 @@
         <h2 class="card-title"><span class="ic-inline" data-icon="chart"></span> 近 30 天学习得分</h2>
         <div id="score-summary" class="score-summary"></div>
         <div id="score-bars" class="score-bars"></div>
-        <p class="card-sub">得分 = 学习时长(50) + 计划完成(20) + 生词复习(15) + 错题整理(15)，满分 100；没学习的日子记为 0 分，不注水。</p>
+        <p class="card-sub" id="score-weight-desc">得分 = 学习时长 + 计划完成 + 生词复习 + 错题整理，满分 100；没学习的日子记为 0 分，不注水。</p>
       </div></div>
 
 
@@ -950,6 +957,7 @@
     <span class="gt-dot"></span>
     <span class="gt-label" id="gt-label">计时中</span>
     <span class="gt-time" id="gt-time">00:00:00</span>
+    <button class="gt-pause" id="gt-pause" type="button" aria-label="暂停或继续计时">暂停</button>
     <button class="gt-stop" id="gt-stop" type="button" aria-label="结束计时">结束</button>
   </div>
 
@@ -966,14 +974,14 @@
   <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
   <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20260929a"></script>
-  <script src="iconset.js?v=20260929a"></script>
-  <script src="words.js?v=20260929a"></script>
-  <script src="store.js?v=20260929a"></script>
-  <script src="charts.js?v=20260929a"></script>
-  <script src="share.js?v=20260929a"></script>
-  <script src="sentences.js?v=20260929a"></script>
-  <script src="app.js?v=20260929a"></script>
-  <script src="workspace.js?v=20260929a"></script>
+  <script src="qrcode.min.js?v=20261016a"></script>
+  <script src="iconset.js?v=20261016a"></script>
+  <script src="words.js?v=20261016a"></script>
+  <script src="store.js?v=20261016a"></script>
+  <script src="charts.js?v=20261016a"></script>
+  <script src="share.js?v=20261016a"></script>
+  <script src="sentences.js?v=20261016a"></script>
+  <script src="app.js?v=20261016a"></script>
+  <script src="workspace.js?v=20261016a"></script>
 </body>
 </html>

@@ -158,11 +158,13 @@ guard('数据热力图-翻页', function () {
   const now = document.querySelector('#heat-now');
   if (now) now.click();
 });
-// 今日打卡
-guard('今日打卡-打卡按钮', function () {
-  window.__switchTab('today');
-  const ck = document.querySelector('#btn-checkin-today');
-  if (ck) ck.click();
+// 今日打卡：手动打卡卡片/按钮已随首页重构下线（test_checkin.js:66-67 记录），
+// 改为显式断言「手动入口不存在」，避免元素缺失时静默通过造成的假绿
+guard('今日打卡-手动入口已下线', function () {
+  window.__switchTab('home');
+  if (document.querySelector('#btn-checkin-today')) throw new Error('手动打卡按钮 #btn-checkin-today 仍存在');
+  if (document.querySelector('#ci-streak')) throw new Error('打卡时间轴卡片 #ci-streak 仍存在');
+  if (!document.getElementById('m-stat-streak')) throw new Error('首页连续学习天数 #m-stat-streak 缺失');
 });
 // 长难句分析
 guard('长难句-分析', function () {
