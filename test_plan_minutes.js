@@ -121,6 +121,39 @@ if (listEl) {
   }
 }
 
+// —— 6. 超长文本不再静默截断（P2-4 后半）：>80 字给 warn toast，且落库确实截到 80 ——
+const toastEl = doc.getElementById('toast');
+ok(!!toastEl, '存在 #toast 提示容器');
+const longText = 'A'.repeat(100);
+doc.getElementById('plan-daily-text').value = longText;
+doc.getElementById('btn-plan-daily-add').click();
+plan = Store.getPlan(today) || [];
+const longItem = plan.filter(p => p.text === 'A'.repeat(80))[0];
+ok(!!longItem, '超长文本落库为前 80 字');
+ok(!!longItem && longItem.text.length === 80, '落库文本长度恰为 80，实际=' + (longItem && longItem.text.length));
+ok(!!toastEl && /80\s*字/.test(toastEl.textContent), '超长时弹出截断提示，实际="' + (toastEl && toastEl.textContent) + '"');
+ok(!!toastEl && toastEl.className.indexOf('warn') >= 0, '截断提示为 warn 级别，实际 class="' + (toastEl && toastEl.className) + '"');
+
+// —— 7. 不超长时仍是普通成功提示（不误报截断） ——
+doc.getElementById('plan-daily-text').value = '短计划';
+doc.getElementById('btn-plan-daily-add').click();
+ok(!!toastEl && /已添加 1 条计划/.test(toastEl.textContent) && !/80\s*字/.test(toastEl.textContent), '未超长时不出现截断提示，实际="' + (toastEl && toastEl.textContent) + '"');
+
+// —— 8. 行内编辑输入框与添加路径同口径限长 ——
+const listEl2 = doc.getElementById('plan-daily-list');
+const txtSpan = listEl2 && listEl2.querySelector('.plan-item .plan-text span');
+if (txtSpan) {
+  txtSpan.click();
+  const editInp = listEl2.querySelector('input.plan-edit-input');
+  ok(!!editInp, '点击计划文本进入行内编辑');
+  ok(!!editInp && editInp.maxLength === 80, '行内编辑框 maxLength=80，与添加路径同口径，实际=' + (editInp && editInp.maxLength));
+  if (editInp) {
+    editInp.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  }
+} else {
+  ok(false, '未找到可编辑的计划文本');
+}
+
 ok(s.errs.length === 0, '无 jsdomError (' + s.errs.join('|') + ')');
 
 console.log('P2-4 计划项预计用时: ' + pass + ' passed, ' + fail + ' failed');

@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016c';
+  var APP_VERSION = '20261016d';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -949,6 +949,7 @@
     span.innerHTML = '';
     var inp = document.createElement('input');
     inp.type = 'text'; inp.className = 'plan-edit-input'; inp.value = orig;
+    inp.maxLength = 80;   // 与添加路径的 80 字上限对齐，防两处口径不一
     span.appendChild(inp);
     inp.focus(); inp.select();
     var finished = false;
@@ -1012,12 +1013,15 @@
     if (!lines.length) { alert('请输入计划内容（可多行，每行一条）'); return; }
     var subj = $('plan-daily-subject') ? $('plan-daily-subject').value : '';
     var mins = $('plan-daily-minutes') ? parseInt($('plan-daily-minutes').value || '0', 10) || 0 : 0;
+    // 超长静默截断改为有提示（P2-4）：贴长文进去不再无声丢内容
+    var truncated = lines.filter(function (t) { return t.length > 80; }).length;
     lines.forEach(function (t) { Store.addDailyPlanItem(planViewDate, { text: t.slice(0, 80), minutes: mins, done: false, subjectKey: subj || '' }); });
     ta.value = '';
     var minsSel = $('plan-daily-minutes'); if (minsSel) minsSel.value = '';   // 添加后复位，防连续添加串味
     renderPlanDaily(); renderPlanHistory();
     if (planViewDate === Store.todayStr()) { renderPlan(); renderToday(); }
-    showToast('已添加 ' + lines.length + ' 条计划 ✅');
+    if (truncated) showToast('已添加 ' + lines.length + ' 条计划（' + truncated + ' 条超 80 字，已截取前 80 字）', 'warn');
+    else showToast('已添加 ' + lines.length + ' 条计划 ✅');
   }
   function renderPlanHistory() {
     var list = $('plan-history-list'); if (!list) return;
