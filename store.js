@@ -97,7 +97,9 @@
         subjects: [],
         sidebarCollapsed: false,
         subjectExpanded: {}, // { 科目key: true } 配置页带子结构科目的展开态（数学/408）
-        scoreWeights: { duration: 50, plan: 20, vocab: 15, mistake: 15 } // 单日得分四项权重（合计满分100）
+        scoreWeights: { duration: 50, plan: 20, vocab: 15, mistake: 15 }, // 单日得分四项权重（合计满分100）
+        aiEnabled: false,    // AI 实验室总开关：null/未拨过时按「是否配了 Key」自动判定
+        pomoEnabled: false   // 番茄模式：满 25 分钟自动暂停提醒
       },
       mathVolume: '', // 当前数学卷种：'数学一'|'数学二'|'数学三'，空时按默认（数学一）处理
       cs408BooksCollapsed: {}, // { 书名: true } 408 各书折叠态（true=折叠）
@@ -167,19 +169,17 @@
       var p = JSON.parse(raw);
       var d = defaults();
       var cfgIn = (p.config && p.config.subjects) ? p.config : null;
-      var cfgOut = {
-        nickname: cfgIn ? (cfgIn.nickname !== undefined ? cfgIn.nickname : d.config.nickname) : d.config.nickname,
-        major: cfgIn ? (cfgIn.major !== undefined ? cfgIn.major : d.config.major) : d.config.major,
-        examDate: cfgIn ? (cfgIn.examDate !== undefined ? cfgIn.examDate : d.config.examDate) : d.config.examDate,
-        targetTotal: cfgIn ? (cfgIn.targetTotal !== undefined ? cfgIn.targetTotal : d.config.targetTotal) : d.config.targetTotal,
-        goalHours: cfgIn ? (cfgIn.goalHours !== undefined ? cfgIn.goalHours : d.config.goalHours) : d.config.goalHours,
-        estimatorK: cfgIn ? (cfgIn.estimatorK !== undefined ? cfgIn.estimatorK : d.config.estimatorK) : d.config.estimatorK,
-        autoPlan: cfgIn ? (cfgIn.autoPlan !== undefined ? cfgIn.autoPlan : d.config.autoPlan) : d.config.autoPlan,
-        subjects: cfgIn ? cfgIn.subjects : d.config.subjects,
-        sidebarCollapsed: cfgIn ? (cfgIn.sidebarCollapsed !== undefined ? cfgIn.sidebarCollapsed : d.config.sidebarCollapsed) : d.config.sidebarCollapsed,
-        subjectExpanded: cfgIn && cfgIn.subjectExpanded && typeof cfgIn.subjectExpanded === 'object' ? cfgIn.subjectExpanded : d.config.subjectExpanded,
-        scoreWeights: cfgIn && cfgIn.scoreWeights && typeof cfgIn.scoreWeights === 'object' ? cfgIn.scoreWeights : d.config.scoreWeights
-      };
+      // 以 defaults 的键为准逐项取值 + 类型校验（此前是写死白名单，新加的
+      // aiEnabled / pomoEnabled 漏在名单外 → 刷新后开关失效；改成循环后不会再漏）
+      var cfgOut = {};
+      Object.keys(d.config).forEach(function (k) {
+        var dv = d.config[k];
+        var iv = cfgIn ? cfgIn[k] : undefined;
+        if (iv === undefined) { cfgOut[k] = dv; return; }
+        if (Array.isArray(dv)) { cfgOut[k] = Array.isArray(iv) ? iv : dv; return; }
+        if (dv !== null && typeof dv === 'object') { cfgOut[k] = (iv !== null && typeof iv === 'object' && !Array.isArray(iv)) ? iv : dv; return; }
+        cfgOut[k] = (typeof iv === typeof dv) ? iv : dv;
+      });
       return {
         config: cfgOut,
         days: (p.days && typeof p.days === 'object') ? p.days : {},
