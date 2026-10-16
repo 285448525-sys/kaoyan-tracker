@@ -28,8 +28,8 @@
   <title>考研学习记录 · 计时/计划/学科/词汇/云端同步</title>
   <meta name="description" content="考研学习记录：按模块计时、每日计划、单月热力图、错题整理、资料网站与今日总结分享，支持云端实时同步与邀请好友一起打卡。" />
   <link rel="canonical" href="https://kaoyan-tracker.pages.dev/" />
-  <link rel="icon" href="app-icon.svg?v=20261016b" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="app-icon.svg?v=20261016b" />
+  <link rel="icon" href="app-icon.svg?v=20261016c" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg?v=20261016c" />
   <meta name="theme-color" content="#EA580C" />
   <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -39,14 +39,14 @@
   <meta property="og:title" content="考研学习记录 · 一起打卡" />
   <meta property="og:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
   <meta property="og:url" content="https://kaoyan-tracker.pages.dev/" />
-  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016b" />
+  <meta property="og:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016c" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="考研学习记录 · 一起打卡" />
   <meta name="twitter:description" content="计时、计划、学科、词汇、错题本，支持云端实时同步，邀请好友一起学习。" />
-  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016b" />
-  <link rel="stylesheet" href="styles.css?v=20261016b" />
+  <meta name="twitter:image" content="https://kaoyan-tracker.pages.dev/og-image.png?v=20261016c" />
+  <link rel="stylesheet" href="styles.css?v=20261016c" />
   <style>
   .loader-c{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background-color:#FCEFD8;background-image:radial-gradient(rgba(31,26,20,.12) 1.5px,transparent 1.5px);background-size:26px 26px;
@@ -673,6 +673,15 @@
           <textarea id="plan-daily-text" rows="2" placeholder="添加计划，可多行，每行一条…"></textarea>
           <div class="plan-daily-add-row">
             <select id="plan-daily-subject" class="todo-subject"><option value="">不指定科目</option></select>
+            <select id="plan-daily-minutes" class="todo-subject plan-min-sel" title="预计用时">
+              <option value="">不计时</option>
+              <option value="30">30 分钟</option>
+              <option value="45">45 分钟</option>
+              <option value="60">1 小时</option>
+              <option value="90">1.5 小时</option>
+              <option value="120">2 小时</option>
+              <option value="180">3 小时</option>
+            </select>
             <button id="btn-plan-daily-add" class="btn btn-ghost">＋ 添加</button>
             <button id="btn-plan-ai" class="btn btn-primary" data-ai>🤖 AI 安排这天</button>
           </div>
@@ -975,14 +984,14 @@
   <!-- 移动端 FAB：直接添加错题（P0-2：原「拍题」依赖视觉模型 key，点了没用） -->
   <button class="fab-action" id="fabAction" aria-label="添加错题" title="添加错题"><span class="tab-ic" data-icon="plus"></span></button>
 
-  <script src="qrcode.min.js?v=20261016b"></script>
-  <script src="iconset.js?v=20261016b"></script>
-  <script src="words.js?v=20261016b"></script>
-  <script src="store.js?v=20261016b"></script>
-  <script src="charts.js?v=20261016b"></script>
-  <script src="share.js?v=20261016b"></script>
-  <script src="sentences.js?v=20261016b"></script>
-  <script src="app.js?v=20261016b"></script>
-  <script src="workspace.js?v=20261016b"></script>
+  <script src="qrcode.min.js?v=20261016c"></script>
+  <script src="iconset.js?v=20261016c"></script>
+  <script src="words.js?v=20261016c"></script>
+  <script src="store.js?v=20261016c"></script>
+  <script src="charts.js?v=20261016c"></script>
+  <script src="share.js?v=20261016c"></script>
+  <script src="sentences.js?v=20261016c"></script>
+  <script src="app.js?v=20261016c"></script>
+  <script src="workspace.js?v=20261016c"></script>
 </body>
 </html>

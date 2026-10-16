@@ -483,7 +483,13 @@ button, .tab-btn, .btb-btn, .icon-btn, input, select, textarea, label, a {
 .plan-item.done .plan-check { background: var(--ok); border-color: var(--ok); }
 .plan-text { flex: 1; font-size: 14px; display: inline-flex; align-items: center; gap: var(--sp-2); }
 .plan-subject-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
-.plan-min { font-size: 12px; color: var(--muted); flex: none; }
+.plan-min { font-size: 12px; color: var(--muted); flex: none; cursor: pointer; border-radius: var(--radius-xs); padding: 2px 6px; }
+.plan-min:hover { background: var(--primary-soft); color: var(--primary); }
+/* 未设置用时的计划项：显示「＋ 用时」虚线占位，提示可点设置（P2-4） */
+.plan-min-empty { border: 1px dashed var(--line); color: var(--txt-3, #94a3b8); }
+/* 行内「预计用时」下拉（P2-4 / 添加区同款） */
+.plan-min-sel { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--card); color: var(--ink); max-width: 92px; }
+.plan-daily-add-row .plan-min-sel { font-size: 13px; padding: var(--sp-2) 6px; max-width: 110px; }
 
 /* 完成印章（借鉴 K12 学习台 .stamp） */
 .stamp {

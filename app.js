@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016b';
+  var APP_VERSION = '20261016c';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -930,7 +930,9 @@
       txt.title = '点击编辑';
       txt.addEventListener('click', function () { startPlanDailyEdit(item, it, ds); });
       txtWrap.appendChild(txt);
-      var min = el('div', 'plan-min', it.minutes ? (it.minutes + ' 分钟') : '');
+      var min = el('div', 'plan-min' + (it.minutes ? '' : ' plan-min-empty'), it.minutes ? (it.minutes + ' 分钟') : '＋ 用时');
+      min.title = it.minutes ? '点击修改预计用时' : '点击设置预计用时';
+      min.addEventListener('click', function () { startPlanMinutesEdit(min, it, ds); });
       var del = el('button', 'plan-del', '删除');
       del.addEventListener('click', function () { Store.removeDailyPlanItem(ds, it.id); renderPlanDaily(); if (ds === Store.todayStr()) { renderPlan(); renderToday(); } });
       item.appendChild(chk); item.appendChild(txtWrap); item.appendChild(min); item.appendChild(del);
@@ -938,6 +940,7 @@
     });
   }
   // 行内编辑（雅思 startEdit 同款）：点文本→输入框，Enter/失焦保存，Esc 取消
+  // [20261016b] 顺带支持改「预计用时」：点分钟标签→下拉，改完立即落库（P2-4）
   function startPlanDailyEdit(itemEl, it, ds) {
     if (itemEl.querySelector('input.plan-edit-input')) return;
     var span = itemEl.querySelector('.plan-text');
@@ -969,13 +972,49 @@
       else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
     });
   }
+  // 计划项「预计用时」行内修改（P2-4）：点分钟标签 → 紧凑下拉，选值即存
+  var PLAN_MIN_OPTS = [0, 15, 30, 45, 60, 90, 120, 180, 240];
+  function startPlanMinutesEdit(minEl, it, ds) {
+    if (minEl.querySelector('select')) return;
+    var cur = it.minutes || 0;
+    minEl.textContent = '';
+    var sel = document.createElement('select');
+    sel.className = 'plan-min-sel';
+    sel.title = '设置预计用时';
+    PLAN_MIN_OPTS.forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = String(v);
+      o.textContent = v ? (v >= 60 ? (v % 60 === 0 ? (v / 60) + ' 小时' : (Math.floor(v / 60) + ' 时 ' + (v % 60) + ' 分')) : (v + ' 分钟')) : '不计时';
+      if (v === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+    minEl.appendChild(sel);
+    sel.focus();
+    function commit() {
+      var v = parseInt(sel.value || '0', 10) || 0;
+      if (v !== (it.minutes || 0)) {
+        Store.updateDailyPlanItem(ds, it.id, { minutes: v });
+        showToast('预计用时已更新为 ' + (v ? (v + ' 分钟') : '不计时') + ' ✅');
+      }
+      renderPlanDaily();
+      if (ds === Store.todayStr()) renderPlan();
+    }
+    sel.addEventListener('change', commit);
+    sel.addEventListener('blur', commit);
+    sel.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); sel.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); renderPlanDaily(); }
+    });
+  }
   function onPlanDailyAdd() {
     var ta = $('plan-daily-text'); if (!ta) return;
     var lines = ta.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
     if (!lines.length) { alert('请输入计划内容（可多行，每行一条）'); return; }
     var subj = $('plan-daily-subject') ? $('plan-daily-subject').value : '';
-    lines.forEach(function (t) { Store.addDailyPlanItem(planViewDate, { text: t.slice(0, 80), minutes: 0, done: false, subjectKey: subj || '' }); });
+    var mins = $('plan-daily-minutes') ? parseInt($('plan-daily-minutes').value || '0', 10) || 0 : 0;
+    lines.forEach(function (t) { Store.addDailyPlanItem(planViewDate, { text: t.slice(0, 80), minutes: mins, done: false, subjectKey: subj || '' }); });
     ta.value = '';
+    var minsSel = $('plan-daily-minutes'); if (minsSel) minsSel.value = '';   // 添加后复位，防连续添加串味
     renderPlanDaily(); renderPlanHistory();
     if (planViewDate === Store.todayStr()) { renderPlan(); renderToday(); }
     showToast('已添加 ' + lines.length + ' 条计划 ✅');
