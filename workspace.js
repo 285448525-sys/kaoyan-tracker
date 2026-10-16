@@ -77,12 +77,8 @@
     if (!S) return;
 
     // 注：距考研天数已由顶栏倒计时胶囊承担，统计组不再重复这一格（#m-stat-cd 随 P1 移除）
-
-    // 今日待办（已完成 / 总数）
-    var plan = (typeof S.getPlan === 'function') ? (S.getPlan(todayStr()) || []) : [];
-    var unDone = plan.filter(function (p) { return !p.done; }).length;
-    var doneN = plan.length - unDone;
-    setText('#m-stat-todo', plan.length ? (doneN + '/' + plan.length) : '0');
+    // 注：「今日待办 N/M」只在「今天要做的事」标题行出现一次（#home-todo-sub），
+    //     统计组第三格改口径为「今日目标达成 %」，消除同一数字说两遍（v20261016f）
 
     // 本周专注（分钟）
     var mins = 0;
@@ -98,6 +94,17 @@
     // 连续学习天数
     var streak = (typeof S.consecutiveStreak === 'function') ? S.consecutiveStreak() : 0;
     setText('#m-stat-streak', streak);
+
+    // 今日目标达成（%）：与 Hero 卡同一口径（goalHours，未设置回落 6h 软目标）
+    var cfg = (typeof S.getConfig === 'function') ? (S.getConfig() || {}) : {};
+    var goalHours = Number(cfg.goalHours) || 0;
+    var goalMin = goalHours > 0 ? Math.round(goalHours * 60) : 360;
+    var todayMin = 0;
+    if (typeof S.getDay === 'function' && typeof S.totalMinutesForDay === 'function') {
+      todayMin = S.totalMinutesForDay(S.getDay(todayStr()) || { durations: {} }) || 0;
+    }
+    var pct = goalMin > 0 ? Math.round(todayMin / goalMin * 100) : 0;
+    setText('#m-stat-goal', pct + '%');
   }
 
   /* ---------------- ② 每日语录 ---------------- */

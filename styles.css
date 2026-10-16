@@ -2714,11 +2714,13 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 
 /* ============ 首页简化（v20260903g）：顶栏 / Hero 轻卡 / 待办 ============ */
 
-.home-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 2px; gap: 12px; }
+.home-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0 2px; gap: 12px; }
 .hh-greet { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .hh-eyebrow { font-size: 12px; color: var(--muted); }
 .hh-name { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.2; }
-.hh-quote { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hh-quote { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* [v20261016f] 小屏隐藏语录：装饰性内容让位于行动区（桌面保留） */
+@media (max-width: 600px) { .hh-quote { display: none; } }
 .hh-countdown {
   flex: none; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
   padding: 8px 14px; border-radius: 999px; border: 0; font: inherit; font-weight: 600; font-size: 13px;
@@ -2752,13 +2754,15 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .hhc-label { font-size: 14px; color: var(--muted); }
 .hhc-goal { font-size: 13px; color: var(--muted); }
 .hhc-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.hhc-left { display: flex; flex-direction: column; gap: 4px; }
+.hhc-left { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .hhc-num { font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--primary-strong); }
 .hhc-sub { font-size: 12px; color: var(--muted); }
 .hhc-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 2px 0; }
 .hhc-bar > i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--primary); transition: width .3s ease; }
+/* [v20261016f] 「开始计时」并入 Hero 卡右侧：数字与动作同一张卡，省掉独立 CTA 行约 60px */
 .home-cta {
-  appearance: none; border: 0; cursor: pointer; width: 100%; padding: 11px 0; border-radius: 999px;
+  appearance: none; border: 0; cursor: pointer; flex: none;
+  padding: 11px 20px; border-radius: 999px;
   background: var(--primary); color: #fff; font-weight: 600; font-size: 15px;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform .15s ease, background .15s ease;
@@ -2766,6 +2770,12 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .home-cta:hover { background: var(--primary-strong); }
 .home-cta:active { transform: scale(.98); }
 .home-cta-play { width: 0; height: 0; border-left: 8px solid #fff; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+/* 移动端：按钮降到卡底整行（窄屏横排会把数字挤扁） */
+@media (max-width: 768px) {
+  .hhc-main { flex-wrap: wrap; }
+  .hhc-left { flex: 1 1 100%; }
+  .home-cta { flex: 1 1 100%; }
+}
 
 .home-redesign > .section-title { padding: 0 2px; }
 .section-title-row { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px; }
@@ -2776,7 +2786,19 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 .todo-subject { border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px; font: inherit; font-size: 13px; background: var(--bg); color: var(--ink); max-width: 110px; }
 .todo-add-btn, .todo-ai-btn { flex: none; white-space: nowrap; }
 .todo-ai-btn { color: var(--primary-strong); background: var(--primary-soft); }
-.home-todo-card .plan-list { max-height: 168px; overflow-y: auto; scrollbar-width: thin; }
+/* [v20261016f] 待办列表由「固定 168px 限高」改为「按行数限高」：
+   原 max-height:168px 小于实际内容 191px → 内容被裁 + 内部又出现一条滚动条（页中页）。
+   现在改为按行数显隐 + 一条「还有 N 条 · 展开」入口，列表本身不再内滚。 */
+.home-todo-card .plan-list { max-height: none; overflow: visible; }
+.plan-item.plan-item-off { display: none; }
+.plan-more-row {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: var(--sp-2) 0 0; padding: 9px 0; width: 100%; cursor: pointer;
+  border: 1px dashed var(--line); border-radius: var(--radius-sm); background: transparent;
+  color: var(--primary-strong); font: inherit; font-size: 13px; font-weight: 700;
+}
+.plan-more-row:hover { background: var(--primary-soft); border-style: solid; }
+.plan-more-row:active { transform: scale(.99); }
 .plan-empty-hint { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 2px 10px; font-size: 13px; color: var(--muted); }
 @media (max-width: 480px) {
   .todo-add-row { flex-wrap: wrap; }
@@ -3474,6 +3496,20 @@ input:focus,select:focus,textarea:focus{
 .m-stat.purple{ background:var(--c-purple); color:#fff; }
 .m-stat.orange{ background:var(--c-orange); }
 .m-stat.pink{ background:var(--c-pink); color:#fff; }
+
+/* [v20261016f] 首页统计组「方案 B：保留糖果，收敛使用」
+   原状三块整幅糖果色铺底，与暖橙主色无色彩关系、面积过大。
+   现改为：底色统一回卡片白，每块只保留一处彩色强调（数字着糖果色 + 同色 20% 描边），
+   既保住用户已授权的色彩记忆点，又让首屏暖度不被稀释。
+   仅作用于首页 #tab-home 内的统计组，其他页面的 .m-stat 用色不变。 */
+#tab-home .m-grid.m-g3 .m-stat { background: var(--card); color: var(--ink); }
+#tab-home .m-grid.m-g3 .m-stat .lbl { color: var(--muted); }
+#tab-home .m-grid.m-g3 .m-stat.blue { border-color: color-mix(in srgb, var(--c-blue) 45%, var(--ink-line)); }
+#tab-home .m-grid.m-g3 .m-stat.blue .num { color: var(--c-blue); }
+#tab-home .m-grid.m-g3 .m-stat.green { border-color: color-mix(in srgb, var(--c-green) 45%, var(--ink-line)); }
+#tab-home .m-grid.m-g3 .m-stat.green .num { color: var(--c-green); }
+#tab-home .m-grid.m-g3 .m-stat.purple { border-color: color-mix(in srgb, var(--c-purple) 45%, var(--ink-line)); }
+#tab-home .m-grid.m-g3 .m-stat.purple .num { color: var(--c-purple); }
 
 /* 语录 */
 .m-quote{

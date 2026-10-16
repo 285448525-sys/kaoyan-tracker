@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016e';
+  var APP_VERSION = '20261016f';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -888,7 +888,46 @@
     prog.appendChild(bar);
     prog.appendChild(el('span', 'plan-prog-label', doneCount + ' / ' + plan.length));
     refs.planList.appendChild(prog);
+    applyPlanRowLimit();
   }
+
+  /* [v20261016f] 首页待办列表按行数限高（桌面 4 行 / 移动 3 行 / 矮屏 2 行）
+     原固定 max-height:168px 装不下 191px 内容 → 裁切 + 嵌套滚动条。
+     超限时列表底部给一条「还有 N 条 · 展开」，只展开列表，不折叠整块、不跳转。 */
+  var planListExpanded = false;
+  function planRowLimit() {
+    if (document.body.classList.contains('short-screen')) return 2;
+    if (window.innerWidth <= 768) return 3;
+    return 4;
+  }
+  function applyPlanRowLimit() {
+    var box = refs.planList;
+    if (!box) return;
+    var items = box.querySelectorAll('.plan-item');
+    var old = box.querySelector('.plan-more-row');
+    if (old) old.remove();
+    if (!items.length) return;
+    var limit = planRowLimit();
+    var hidden = 0;
+    Array.prototype.forEach.call(items, function (it, i) {
+      var off = !planListExpanded && i >= limit;
+      it.classList.toggle('plan-item-off', off);
+      if (off) hidden++;
+    });
+    if (!hidden) return;
+    var row = el('button', 'plan-more-row');
+    row.type = 'button';
+    row.textContent = '还有 ' + hidden + ' 条 · 展开';
+    row.addEventListener('click', function () {
+      planListExpanded = true;
+      applyPlanRowLimit();
+    });
+    box.appendChild(row);
+  }
+  window.addEventListener('resize', function () {
+    if (planListExpanded) planListExpanded = false;
+    applyPlanRowLimit();
+  });
 
   /* ---------- 数据页·每日计划（日期切换 + 进度 + 行内编辑 + 历史 + AI） ---------- */
   var planViewDate = Store.todayStr();
