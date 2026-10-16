@@ -2596,10 +2596,13 @@ code { background: var(--bg); padding: 1px 5px; border-radius: var(--radius-sm);
 }
 
 /* ===== 首页重设计（v20260825c）：Hero + 三指标卡 + 四快捷入口 + 双栏 ===== */
+/* [v20261016g] 去掉 height: calc(100vh - 40px) 硬编码 + overflow-y:auto。
+   原写法把首页锁成固定视口高度并自带内层滚动条，是「页中页滚动」的真正来源，
+   也让「一屏不滚」变成靠外层留白凑数的巧合（内容 669px 却被撑到 760px，底部白挂 91px）。
+   改为自然高度：内容多高就多高，超出由整页滚动，不再有嵌套滚动容器。 */
 .tab-panel.active.home-redesign {
   display: flex; flex-direction: column; gap: 10px;
-  height: calc(100vh - var(--sp-5) * 2);
-  overflow-y: auto; padding-bottom: var(--sp-4); scrollbar-width: thin;
+  height: auto; overflow: visible; padding-bottom: var(--sp-2);
 }
 .home-redesign .card { margin-bottom: 0; }
 .home-redesign .m-grid { gap: 10px; margin: 0; }
@@ -3887,7 +3890,7 @@ body:not(.ai-on) [data-ai] { display: none !important; }
 .me-quick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin: 0 0 var(--sp-4); }
 .me-quick-btn {
   display: flex; align-items: center; gap: var(--sp-2); cursor: pointer; width: 100%;
-  padding: 12px var(--sp-3); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-3); border: 1px solid var(--line); border-radius: var(--radius-sm);
   background: var(--card); color: var(--ink); font: inherit; font-weight: 700; font-size: 14px; text-align: left;
 }
 .me-quick-btn:active { background: var(--primary-soft); }
@@ -3926,4 +3929,64 @@ body {
     background-repeat: repeat, no-repeat;
     background-attachment: fixed, fixed;
   }
+}
+
+/* ================================================================
+   [v20261016f] 首页「一屏不滚」垂直节奏收紧
+   实测基线：1280x800 页面 scrollHeight=832px > 视口 800px，首屏
+   「开始计时」被推到需要滚动的位置。拆解（改前）：
+     body padding-bottom 24 + .app-main 上下 24+24 + tab-home 内容 760 = 832
+   本段只针对首页收紧外层留白与块内间隙，其余 tab 一律不受影响
+   （body.home-tab-active 只在 showTab('home') 时挂上）。
+   ================================================================ */
+
+/* ① 外层：.app-main 上下 24px → 12px（仅首页）；底部 body 留白 24px → 12px */
+body.home-tab-active .app-main { padding-top: var(--sp-3) !important; padding-bottom: var(--sp-3) !important; }
+body.home-tab-active { padding-bottom: var(--sp-3); }
+@media (max-width: 860px) {
+  body.home-tab-active .app-main { padding-top: var(--sp-3) !important; padding-bottom: var(--sp-4) !important; }
+}
+
+/* ② 首页块间节奏 10px → 8px */
+#tab-home { gap: var(--sp-2); padding-bottom: var(--sp-2); }
+
+/* ③ Hero 卡：内边距 14→8、段间距 10→6、CTA 与进度条各收一档。
+      实测改前 132px（padding 12*2 + 标签行 22 + 数字行 49 + 进度条 14 + gap 8*2）。 */
+#tab-home .home-hero-card { padding: var(--sp-2) var(--sp-3); gap: 6px; }
+#tab-home .hhc-row { min-height: 18px; }
+#tab-home .hhc-label, #tab-home .hhc-goal { line-height: 1.3; }
+#tab-home .hhc-num { font-size: 26px; }
+#tab-home .hhc-main { gap: var(--sp-2); }
+#tab-home .home-cta { padding: 9px 18px; font-size: 14px; }
+#tab-home .hhc-bar { margin: 0; }
+
+/* ④ 问候区：昵称行高收紧（语录保留，桌面是设计意图） */
+#tab-home .hh-name { line-height: 1.1; }
+#tab-home .hh-quote { margin-top: 2px; }
+#tab-home .home-header { padding-bottom: 0; }
+
+/* ⑤ 快捷入口：图标+文字竖排紧凑化 */
+#tab-home .hq3-btn { padding: 6px 4px; gap: 2px; font-size: 12px; }
+#tab-home .hq3-btn .tab-ic, #tab-home .hq3-btn .tab-ic svg { width: 18px; height: 18px; }
+
+/* ⑥ 指标区：单元格内边距 12→10、数字 30→24、标签行距收紧 */
+#tab-home .m-grid.m-g3 { gap: var(--sp-2); }
+#tab-home .m-grid.m-g3 .m-stat { padding: 10px var(--sp-3); }
+#tab-home .m-grid.m-g3 .m-stat .num { font-size: 24px; }
+#tab-home .m-grid.m-g3 .m-stat .lbl { margin-top: 2px; font-size: 11.5px; line-height: 1.25; }
+
+/* ⑦ 待办区：卡片内边距与行距收紧（列表已改为按行限高，不再需要固定高度） */
+#tab-home .home-todo-card { padding: var(--sp-3); }
+#tab-home .home-todo-card .plan-list { margin: var(--sp-2) 0 0; }
+#tab-home .home-todo-card .todo-add-row { margin-top: var(--sp-2); }
+#tab-home .home-todo-card .plan-item { padding: var(--sp-2) var(--sp-3); }
+#tab-home .home-todo-card .plan-prog-row { margin-top: var(--sp-2); }
+#tab-home .section-title-row { line-height: 1.3; }
+
+/* 矮屏（≤ 700px 高，如横屏手机 / 小笔记本）进一步压缩 */
+@media (max-height: 700px) {
+  body.home-tab-active .app-main { padding-top: var(--sp-2) !important; padding-bottom: var(--sp-2) !important; }
+  #tab-home .home-hero-card { padding: var(--sp-2); gap: 5px; }
+  #tab-home .hh-quote { display: none; }
+  #tab-home .home-quick3 .hq3-btn { padding: var(--sp-1); }
 }

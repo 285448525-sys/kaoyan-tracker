@@ -1,9 +1,9 @@
-/* app.js — 主逻辑：配置 / 按模块计时 / 计划 / 今日总结分享 / 数据 / 错题 / 网站 */
+﻿/* app.js — 主逻辑：配置 / 按模块计时 / 计划 / 今日总结分享 / 数据 / 错题 / 网站 */
 (function () {
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016f';
+  var APP_VERSION = '20261016h';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -914,12 +914,20 @@
       it.classList.toggle('plan-item-off', off);
       if (off) hidden++;
     });
-    if (!hidden) return;
+    // 展开态下隐藏数为 0，此时仍要给出「收起」入口，否则用户无法回到紧凑视图
+    if (!hidden && !planListExpanded) return;
+    if (!hidden && items.length <= limit) return;
     var row = el('button', 'plan-more-row');
     row.type = 'button';
-    row.textContent = '还有 ' + hidden + ' 条 · 展开';
+    if (planListExpanded) {
+      row.textContent = '收起';
+      row.setAttribute('aria-expanded', 'true');
+    } else {
+      row.textContent = '还有 ' + hidden + ' 条 · 展开';
+      row.setAttribute('aria-expanded', 'false');
+    }
     row.addEventListener('click', function () {
-      planListExpanded = true;
+      planListExpanded = !planListExpanded;
       applyPlanRowLimit();
     });
     box.appendChild(row);
@@ -5959,6 +5967,9 @@
   function showTab(target) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === target); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + target); });
+    /* [v20261016f] 首页专属收紧外层留白：仅当首页可见时压缩 .app-main 上下内边距，
+       让「一屏不滚」成立（其他 tab 留白不变，避免影响阅读型页面）。 */
+    document.body.classList.toggle('home-tab-active', target === 'home');
     if (target === 'home') { renderHome(); }
     if (target === 'timer') { renderTimerState(); }
     if (target === 'math') { renderMathChapters(); renderExamPunch('math'); }
