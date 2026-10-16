@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016d';
+  var APP_VERSION = '20261016e';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -681,6 +681,9 @@
   }
 
   // 今日学习记录（按科目小格）
+  /* [20261016e] 口径纪律：total 必须与 Store.totalMinutesForDay(day) 完全一致（全量遍历 durations），
+     否则「总计」会把记录里存在、但当前未勾选的科目时长漏在格子外 → 格子相加 ≠ 总计（账不平）。
+     未配置科目若当天有记录，额外补一格显示，保证「总计 = 各格之和」恒成立。 */
   function renderRecMini() {
     var grid = document.getElementById('rec-mini-grid');
     var empty = document.getElementById('rec-empty');
@@ -688,16 +691,27 @@
     var chip = document.getElementById('timer-today-total');
     if (!grid) return;
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
-    var total = 0;
-    grid.innerHTML = '';
-    timerSubjects().forEach(function (s) {
-      var min = (day.durations && day.durations[s.key]) || 0;
-      total += min;
-      var cell = el('div', 'rec-mini-cell' + (min > 0 ? ' has' : ''));
-      cell.appendChild(el('span', 'nm', s.name));
-      cell.appendChild(el('span', 'v', min > 0 ? fmtMinShort(min) : '--'));
-      grid.appendChild(cell);
+    var subs = timerSubjects();
+    var seen = {};
+    subs.forEach(function (s) { seen[s.key] = true; });
+    // 记录里存在但当前未在科目表里的 key（例如用户删了科目、或背单词自动记的 english）
+    var extras = [];
+    Object.keys(day.durations || {}).forEach(function (k) {
+      var v = Number(day.durations[k]) || 0;
+      if (!seen[k] && v > 0) extras.push({ key: k, name: subjectNameOf(k) });
     });
+    // total 与 Store 全量口径对齐（含 extras），保证账平
+    var total = Store.totalMinutesForDay(day);
+    grid.innerHTML = '';
+    function cell(key, name) {
+      var min = (day.durations && day.durations[key]) || 0;
+      var c = el('div', 'rec-mini-cell' + (min > 0 ? ' has' : '')); 
+      c.appendChild(el('span', 'nm', name));
+      c.appendChild(el('span', 'v', min > 0 ? fmtMinShort(min) : '--'));
+      grid.appendChild(c);
+    }
+    subs.forEach(function (s) { cell(s.key, s.name); });
+    extras.forEach(function (x) { cell(x.key, x.name); });
     if (totalEl) setText(totalEl, fmtMinShort(total));
     if (chip) setText(chip, '今日 ' + fmtMinShort(total));
     if (empty) empty.style.display = total > 0 ? 'none' : '';
