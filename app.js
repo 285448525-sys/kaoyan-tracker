@@ -3,7 +3,7 @@
   'use strict';
 
   // 构建版本号：与 index.html 的 `?v=` 查询参数保持一致，用于破缓存 + 双源比对。
-  var APP_VERSION = '20261016a';
+  var APP_VERSION = '20261016b';
 
   // ===== XSS 防护助手（B6 收敛）=====
   // 规则：渲染任何「用户或云端他人输入」的文本时，默认当作纯文本：
@@ -358,12 +358,35 @@
   }
 
   /* ============ 按模块计时 ============ */
-  var TIMER_SUBJECTS = [
-    { key: 'english',  name: '英语二', icon: 'book',  accent: '#EA580C' },
-    { key: 'math',     name: '数学二', icon: 'math',  accent: '#6366F1' },
-    { key: 'politics', name: '政治',   icon: 'flag',  accent: '#F59E0B' },
-    { key: 'cs408',    name: '408',    icon: 'chip',  accent: '#10B981' }
+  // [20261016b] 科目名单一来源：名称/顺序一律以 Store.getSubjects()（配置页用户勾选结果）为准，
+  // 此处只保留「图标与兜底名」的静态映射。用户改名（英语一→英语二）或改勾选后，计时页 /
+  // 首页 / 今日记录 / 全局计时条会自动跟随，不再各写一份硬编码名。
+  var TIMER_SUBJECT_META = [
+    { key: 'politics', name: '政治', icon: 'flag' },
+    { key: 'english',  name: '英语', icon: 'book' },
+    { key: 'math',     name: '数学', icon: 'math' },
+    { key: 'cs408',    name: '408',  icon: 'chip' },
+    { key: 'major',    name: '专业课', icon: 'book' }
   ];
+  // 计时卡片 / 记录小格 / 标题用的科目列表（用户未配置任何科目时回落到静态兜底，避免空白页）
+  function timerSubjects() {
+    var subs = (Store.getSubjects() || []).slice();
+    if (subs.length) return subs;
+    return TIMER_SUBJECT_META.slice();
+  }
+  function subjectMeta(key) {
+    for (var i = 0; i < TIMER_SUBJECT_META.length; i++) {
+      if (TIMER_SUBJECT_META[i].key === key) return TIMER_SUBJECT_META[i];
+    }
+    return null;
+  }
+  // 按 key 取科目显示名：先用户配置，再静态兜底，最后原样返回 key
+  function subjectNameOf(key) {
+    var subs = Store.getSubjects() || [];
+    for (var i = 0; i < subs.length; i++) { if (subs[i].key === key) return subs[i].name; }
+    var m = subjectMeta(key);
+    return m ? m.name : (key || '学习中');
+  }
   var ORIG_TITLE = document.title; // 计时时临时改写标签页标题，结束后复原
   function currentElapsed() {
     var t = Store.getTimer();
@@ -445,8 +468,7 @@
       if (live) live.textContent = fmt(currentElapsed());
       var info = document.getElementById('timer-active-info');
       if (info && (!info.dataset.subject || info.dataset.subject !== t.subjectKey)) {
-        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
-        info.textContent = (subj ? subj.name : '学习中') + ' · 计时中';
+        info.textContent = subjectNameOf(t.subjectKey) + ' · 计时中';
         info.dataset.subject = t.subjectKey;
         info.className = '';
       }
@@ -476,8 +498,7 @@
         info.className = 'muted';
         info.removeAttribute('data-subject');
       } else {
-        var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
-        info.textContent = (subj ? subj.name : '学习中') + (t.running ? ' · 计时中' : ' · 已暂停');
+        info.textContent = subjectNameOf(t.subjectKey) + (t.running ? ' · 计时中' : ' · 已暂停');
         info.className = t.running ? '' : 'muted';
         info.dataset.subject = t.subjectKey;
       }
@@ -491,8 +512,7 @@
   function updateTimerTitle() {
     var t = Store.getTimer();
     if (t.running && t.subjectKey) {
-      var subj = TIMER_SUBJECTS.find(function (x) { return x.key === t.subjectKey; });
-      document.title = '▶ ' + fmt(currentElapsed()) + ' · ' + (subj ? subj.name : '计时') + ' · 考研学习记录';
+      document.title = '▶ ' + fmt(currentElapsed()) + ' · ' + subjectNameOf(t.subjectKey) + ' · 考研学习记录';
     } else {
       document.title = ORIG_TITLE;
     }
@@ -504,19 +524,24 @@
   }
 
 
-  // 四科计时卡片网格（参考雅思站卡片化设计，配色复用 subjectColorClass，逻辑层不动）
-  // 四科 pill（计时页 #timer-mods 与首页 #home-timer-rows 共用）
+  // 计时卡片网格（科目来源 Store.getSubjects()，未配置时回落静态兜底）
   function renderSubjectPills(box) {
     if (!box) return;
     box.innerHTML = '';
     var t = Store.getTimer();
     var otherRunning = !!(t.running && t.subjectKey);
-    TIMER_SUBJECTS.forEach(function (s) {
+    var subs = timerSubjects();
+    if (!subs.length) {
+      box.appendChild(el('div', 'empty-hint', '还没有科目，去「我的」里勾选考试科目'));
+      return;
+    }
+    subs.forEach(function (s) {
       var running = t.running && t.subjectKey === s.key;
       var card = el('div', 'mod-card' + (running ? ' running' : ''));
       card.style.setProperty('--accent', subjectColorClass(s.key, s.name));
       var ic = el('div', 'mod-ic');
-      ic.setAttribute('data-icon', s.icon);
+      var meta = subjectMeta(s.key);
+      ic.setAttribute('data-icon', (meta && meta.icon) || 'book');
       card.appendChild(ic);
       card.appendChild(el('div', 'mod-name', s.name));
       var btn = el('button', 'timer-start', running ? '进行中' : '开始');
@@ -610,7 +635,11 @@
       try { diff = Math.ceil((new Date(examDate) - new Date(today)) / 86400000); } catch (e) { diff = '--'; }
     }
     var cdText = document.getElementById('home-cd-text');
-    if (cdText) cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天') : (diff === 0 ? '距考研 · 今天' : '点此设考研日期');
+    if (cdText) {
+      cdText.textContent = (typeof diff === 'number' && diff > 0) ? ('距考研 ' + diff + ' 天')
+        : (diff === 0 ? '距考研 · 今天'
+          : (typeof diff === 'number' && diff < 0 ? '考研已结束' : '点此设考研日期'));
+    }
     // 紧迫感分级：≤30 天实底橙，≤7 天深橙呼吸（仅加 class，不新增元素）
     var cdBtn = document.querySelector('.hh-countdown');
     if (cdBtn) {
@@ -651,7 +680,7 @@
     if (sub) sub.textContent = done + '/' + plan.length + ' 完成';
   }
 
-  // 今日学习记录（四科小格）
+  // 今日学习记录（按科目小格）
   function renderRecMini() {
     var grid = document.getElementById('rec-mini-grid');
     var empty = document.getElementById('rec-empty');
@@ -661,7 +690,7 @@
     var day = Store.getDay(Store.todayStr()) || { durations: {} };
     var total = 0;
     grid.innerHTML = '';
-    TIMER_SUBJECTS.forEach(function (s) {
+    timerSubjects().forEach(function (s) {
       var min = (day.durations && day.durations[s.key]) || 0;
       total += min;
       var cell = el('div', 'rec-mini-cell' + (min > 0 ? ' has' : ''));
@@ -679,10 +708,7 @@
   function showGlobalTimer(key) {
     var bar = document.getElementById('global-timer');
     if (!bar) return;
-    var subs = Store.getSubjects();
-    var hardcoded = TIMER_SUBJECTS.find(function (s) { return s.key === key; });
-    var name = hardcoded ? hardcoded.name : key;
-    subs.forEach(function (s) { if (s.key === key) name = s.name; });
+    var name = subjectNameOf(key);
     var lbl = document.getElementById('gt-label');
     var t = Store.getTimer();
     if (lbl) lbl.textContent = t && t.running === false ? ((name || '学习') + ' 已暂停') : ((name || '学习') + ' 计时中');
@@ -1051,7 +1077,7 @@
     var subs = Store.getSubjects();
     var subjList = subs.map(function (s) { return s.name; }).join('、') || '政治、英语、数学、专业课(408)';
     var weak = computeKaoyanWeak();
-    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '暂无';
+    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '未识别到明显弱项';
     var cfg = Store.getConfig();
     var left = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date(ds + 'T00:00:00')) / 86400000) : null;
     var usr = (raw ? ('我今天想完成：' + raw + '\n\n') : '请直接为这天生成考研学习计划。\n\n') +
@@ -1216,7 +1242,7 @@
     var cfg = Store.getConfig();
     var left = cfg.examDate ? Math.ceil((new Date(cfg.examDate + 'T00:00:00') - new Date()) / 86400000) : null;
     var weak = computeKaoyanWeak();
-    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '暂无';
+    var weakStr = weak.length ? weak.map(function (w) { return w.label; }).join('、') : '未识别到明显弱项';
     var span = 14;
     var optDates = [];
     weekUpcomingDates(span).forEach(function (d, i) {
@@ -1555,10 +1581,10 @@
     box.appendChild(list);
   }
 
-  /* ============ 学习战报（借鉴 K12 学习台分享海报）：周/月聚合统计 ============ */
-  var battleRange = 'week';
-  function battleRangeDays() { return battleRange === 'month' ? 30 : 7; }
-  function battleRangeLabel() { return battleRange === 'month' ? '近 30 天' : '本周'; }
+  /* ============ 学习战报（借鉴 K12 学习台分享海报）：今日/周/月聚合统计 ============ */
+  var battleRange = 'today';
+  function battleRangeDays() { return battleRange === 'month' ? 30 : battleRange === 'week' ? 7 : 1; }
+  function battleRangeLabel() { return battleRange === 'month' ? '近 30 天' : battleRange === 'week' ? '本周' : '今日'; }
   function eachDayInRange(n, cb) {
     var today = new Date();
     for (var i = n - 1; i >= 0; i--) {
@@ -6392,7 +6418,7 @@
     if (battleRangeBox) {
       battleRangeBox.querySelectorAll('.seg-btn').forEach(function (b) {
         b.addEventListener('click', function () {
-          battleRange = b.getAttribute('data-range') || 'week';
+          battleRange = b.getAttribute('data-range') || 'today';
           battleRangeBox.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('active', x === b); });
           renderBattleReport();
         });
@@ -6719,8 +6745,17 @@
       doAutoPush(code);          // 先把离线期间的本地改动推上去
       doAutoPullCheck();         // 再拉云端最新（含冲突征询）
     }
-    window.addEventListener('online', function () { setOffline(false); tryCatchUpSync(); });
-    window.addEventListener('offline', function () { setOffline(true); });
+    window.addEventListener('online', function () {
+      setOffline(false);
+      var code = (refs.syncCode && refs.syncCode.value.trim().toUpperCase()) || '';
+      if (code && autoSyncEnabled) showToast('网络已恢复，正在同步到云端…', 'info');
+      tryCatchUpSync();
+    });
+    window.addEventListener('offline', function () {
+      setOffline(true);
+      var code = (refs.syncCode && refs.syncCode.value.trim().toUpperCase()) || '';
+      if (code && autoSyncEnabled) showToast('当前离线，记录已存本地，联网后自动同步', 'warn');
+    });
     setOffline(!navigator.onLine);   // 首屏按当前状态显示
 
     // SW 注册（必须协议守卫，保护"双击 index.html" file:// 场景）
